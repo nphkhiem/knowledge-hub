@@ -92,12 +92,82 @@ function isResetAndPlaying(state: EngineState): boolean {
   );
 }
 
+function hasValidStep(lesson: CompiledLesson, state: EngineState): boolean {
+  return (
+    Number.isInteger(state.stepIndex) &&
+    state.stepIndex >= 0 &&
+    state.stepIndex < lesson.snapshots.length
+  );
+}
+
+function hasValidStatus(state: EngineState): boolean {
+  return (
+    state.status === "idle" ||
+    state.status === "playing" ||
+    state.status === "paused" ||
+    state.status === "completed"
+  );
+}
+
+function hasCoherentCompletion(
+  lesson: CompiledLesson,
+  state: EngineState,
+): boolean {
+  const terminal = lesson.snapshots[state.stepIndex]?.terminal === true;
+  return (state.status === "completed") === terminal;
+}
+
+function hasValidModelCheck(
+  lesson: CompiledLesson,
+  state: EngineState,
+): boolean {
+  const modelCheck = state.modelCheck;
+  if (
+    typeof modelCheck !== "object" ||
+    modelCheck === null ||
+    Array.isArray(modelCheck)
+  ) {
+    return false;
+  }
+  if (typeof modelCheck.explanationRevealed !== "boolean") return false;
+  if (
+    modelCheck.selectedOptionId !== null &&
+    (typeof modelCheck.selectedOptionId !== "string" ||
+      !lesson.modelCheck.options.some(
+        (option) => option.id === modelCheck.selectedOptionId,
+      ))
+  ) {
+    return false;
+  }
+  return (
+    !modelCheck.explanationRevealed || modelCheck.selectedOptionId !== null
+  );
+}
+
+function isValidEngineState(
+  lesson: CompiledLesson,
+  state: EngineState,
+): boolean {
+  return (
+    hasValidStep(lesson, state) &&
+    hasValidStatus(state) &&
+    hasCoherentCompletion(lesson, state) &&
+    hasValidModelCheck(lesson, state)
+  );
+}
+
 export function transition(
   lesson: CompiledLesson,
   state: EngineState,
   command: EngineCommand,
 ): EngineState {
+  if (typeof state !== "object" || state === null) {
+    return createInitialEngineState(lesson);
+  }
   if (state.lessonId !== lesson.id) return state;
+  if (!isValidEngineState(lesson, state))
+    return createInitialEngineState(lesson);
+  if (typeof command !== "object" || command === null) return state;
 
   switch (command.type) {
     case "play":
@@ -121,5 +191,7 @@ export function transition(
       return seek(lesson, state, command.stepIndex);
     case "answer":
       return answer(lesson, state, command.optionId, command.revealExplanation);
+    default:
+      return state;
   }
 }

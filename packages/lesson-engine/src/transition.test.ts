@@ -1,6 +1,14 @@
 import { expect, test } from "vitest";
 import { compiledTwoPointersLesson } from "@knowledge-hub/lesson-testing";
-import { createInitialEngineState, transition } from "./index.js";
+import {
+  createInitialEngineState,
+  transition,
+  type EngineCommand,
+} from "./index.js";
+
+function probeEngineCommand(value: unknown): EngineCommand {
+  return value as EngineCommand;
+}
 
 test("creates the idle state at the first lesson snapshot", () => {
   expect(createInitialEngineState(compiledTwoPointersLesson)).toEqual({
@@ -49,12 +57,22 @@ test("play returns the unchanged state reference when already playing", () => {
 
 test("returns the unchanged state when lesson identity does not match", () => {
   const initial = createInitialEngineState(compiledTwoPointersLesson);
+  const forged = { ...initial, stepIndex: Number.NaN };
   const otherLesson = {
     ...compiledTwoPointersLesson,
     id: "dsa.other-lesson",
   };
 
-  expect(transition(otherLesson, initial, { type: "play" })).toBe(initial);
+  expect(transition(otherLesson, forged, { type: "play" })).toBe(forged);
+});
+
+test("returns a valid state unchanged for a runtime-unknown command", () => {
+  const initial = createInitialEngineState(compiledTwoPointersLesson);
+  const unknownCommand = probeEngineCommand({ type: "teleport", stepIndex: 3 });
+
+  expect(transition(compiledTwoPointersLesson, initial, unknownCommand)).toBe(
+    initial,
+  );
 });
 
 test("completed terminal state absorbs pause, play, and next in sequence", () => {

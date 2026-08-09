@@ -47,6 +47,44 @@ const engineCommandArbitrary: fc.Arbitrary<EngineCommand> = fc.oneof(
 const commandSequenceArbitrary = fc.array(engineCommandArbitrary, {
   maxLength: 200,
 });
+const runtimeCommandArbitrary: fc.Arbitrary<unknown> = fc.oneof(
+  engineCommandArbitrary,
+  fc.record({
+    type: fc
+      .string({ minLength: 1, maxLength: 30 })
+      .filter(
+        (type) =>
+          ![
+            "play",
+            "pause",
+            "restart",
+            "next",
+            "previous",
+            "seek",
+            "answer",
+          ].includes(type),
+      ),
+  }),
+  fc.constantFrom(null, undefined),
+  fc.integer(),
+);
+const longMixedCommandSequenceArbitrary = fc
+  .array(engineCommandArbitrary, {
+    minLength: 150,
+    maxLength: 200,
+    size: "max",
+  })
+  .filter(
+    (commands) => new Set(commands.map((command) => command.type)).size === 7,
+  );
+
+function probeEngineState(value: unknown): EngineState {
+  return value as EngineState;
+}
+
+function probeEngineCommand(value: unknown): EngineCommand {
+  return value as EngineCommand;
+}
 
 function replay(commands: readonly EngineCommand[]): EngineState {
   return commands.reduce(
@@ -66,6 +104,188 @@ function replayStates(
   }
   return states;
 }
+
+function isCoherentFrozenState(state: EngineState): boolean {
+  const lastStepIndex = compiledTwoPointersLesson.snapshots.length - 1;
+  const terminal =
+    compiledTwoPointersLesson.snapshots[state.stepIndex]?.terminal === true;
+  return (
+    Object.isFrozen(state) &&
+    Object.isFrozen(state.modelCheck) &&
+    state.lessonId === compiledTwoPointersLesson.id &&
+    state.stepIndex >= 0 &&
+    state.stepIndex <= lastStepIndex &&
+    (terminal ? state.status === "completed" : state.status !== "completed")
+  );
+}
+
+function preservesEveryInputState(commands: readonly EngineCommand[]): boolean {
+  let state = createInitialEngineState(compiledTwoPointersLesson);
+
+  for (const command of commands) {
+    const input = structuredClone(state);
+    const before = structuredClone(input);
+    state = transition(compiledTwoPointersLesson, input, command);
+    if (JSON.stringify(input) !== JSON.stringify(before)) return false;
+  }
+  return true;
+}
+
+test.prop(
+  [
+    fc.oneof(
+      fc.constantFrom(null, undefined),
+      fc.integer(),
+      fc.string(),
+      fc.boolean(),
+    ),
+  ],
+  { seed: 40_304_016 },
+)("recovers non-object runtime states without throwing", (runtimeState) => {
+  const initial = createInitialEngineState(compiledTwoPointersLesson);
+
+  const recovered = transition(
+    compiledTwoPointersLesson,
+    probeEngineState(runtimeState),
+    { type: "play" },
+  );
+
+  expect({
+    fresh: !Object.is(recovered, runtimeState),
+    state: recovered,
+  }).toEqual({
+    fresh: true,
+    state: initial,
+  });
+});
+
+test.prop(
+  [
+    fc.oneof(
+      fc.integer({ min: -500, max: -1 }),
+      fc.integer({
+        min: compiledTwoPointersLesson.snapshots.length,
+        max: 500,
+      }),
+      fc.integer({ min: -500, max: 500 }).map((value) => value + 0.5),
+      fc.constantFrom(
+        Number.NaN,
+        Number.POSITIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
+      ),
+    ),
+  ],
+  { seed: 40_304_010 },
+)(
+  "recovers invalid runtime step indices before applying commands",
+  (stepIndex) => {
+    const initial = createInitialEngineState(compiledTwoPointersLesson);
+    const forged = probeEngineState({ ...initial, stepIndex });
+
+    const recovered = transition(compiledTwoPointersLesson, forged, {
+      type: "play",
+    });
+
+    expect({
+      deeplyFrozen:
+        Object.isFrozen(recovered) && Object.isFrozen(recovered.modelCheck),
+      fresh: recovered !== forged,
+      state: recovered,
+    }).toEqual({
+      deeplyFrozen: true,
+      fresh: true,
+      state: initial,
+    });
+  },
+);
+
+test.prop(
+  [fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null))],
+  { seed: 40_304_011 },
+)(
+  "recovers invalid runtime playback statuses before applying commands",
+  (status) => {
+    fc.pre(
+      status !== "idle" &&
+        status !== "playing" &&
+        status !== "paused" &&
+        status !== "completed",
+    );
+    const initial = createInitialEngineState(compiledTwoPointersLesson);
+    const forged = probeEngineState({ ...initial, status });
+
+    const recovered = transition(compiledTwoPointersLesson, forged, {
+      type: "play",
+    });
+
+    expect({ fresh: recovered !== forged, state: recovered }).toEqual({
+      fresh: true,
+      state: initial,
+    });
+  },
+);
+
+test.prop([fc.boolean()], { seed: 40_304_012 })(
+  "recovers runtime states whose completion status disagrees with the snapshot",
+  (forgeTerminalAsPlaying) => {
+    const initial = createInitialEngineState(compiledTwoPointersLesson);
+    const forged = probeEngineState({
+      ...initial,
+      stepIndex: forgeTerminalAsPlaying
+        ? compiledTwoPointersLesson.snapshots.length - 1
+        : 1,
+      status: forgeTerminalAsPlaying ? "playing" : "completed",
+    });
+
+    const recovered = transition(compiledTwoPointersLesson, forged, {
+      type: "answer",
+      optionId: "move-right",
+      revealExplanation: false,
+    });
+
+    expect({ fresh: recovered !== forged, state: recovered }).toEqual({
+      fresh: true,
+      state: initial,
+    });
+  },
+);
+
+test.prop(
+  [
+    fc.constantFrom(
+      null,
+      undefined,
+      [],
+      {},
+      { selectedOptionId: "unknown-option", explanationRevealed: false },
+      { selectedOptionId: 1, explanationRevealed: false },
+      { selectedOptionId: null, explanationRevealed: "yes" },
+      { selectedOptionId: null, explanationRevealed: true },
+    ),
+  ],
+  { seed: 40_304_013 },
+)(
+  "recovers invalid runtime Model Check shapes before applying commands",
+  (modelCheck) => {
+    const initial = createInitialEngineState(compiledTwoPointersLesson);
+    const forged = probeEngineState({ ...initial, modelCheck });
+
+    const recovered = transition(compiledTwoPointersLesson, forged, {
+      type: "play",
+    });
+
+    expect({
+      deeplyFrozen:
+        Object.isFrozen(recovered) && Object.isFrozen(recovered.modelCheck),
+      fresh: recovered !== forged,
+      state: recovered,
+    }).toEqual({
+      deeplyFrozen: true,
+      fresh: true,
+      state: initial,
+    });
+  },
+);
 
 test.prop(
   [
@@ -113,44 +333,54 @@ test.prop([commandSequenceArbitrary], { seed: 40_304_002 })(
 test.prop([commandSequenceArbitrary], { seed: 40_304_003 })(
   "keeps arbitrary command sequences within one coherent lesson",
   (commands) => {
-    const states = replayStates(commands);
-    const lastStepIndex = compiledTwoPointersLesson.snapshots.length - 1;
-
-    expect(
-      states.every((state) => {
-        const terminal =
-          compiledTwoPointersLesson.snapshots[state.stepIndex]?.terminal ===
-          true;
-        return (
-          Object.isFrozen(state) &&
-          Object.isFrozen(state.modelCheck) &&
-          state.lessonId === compiledTwoPointersLesson.id &&
-          state.stepIndex >= 0 &&
-          state.stepIndex <= lastStepIndex &&
-          (terminal
-            ? state.status === "completed"
-            : state.status !== "completed")
-        );
-      }),
-    ).toBe(true);
+    expect(replayStates(commands).every(isCoherentFrozenState)).toBe(true);
   },
 );
 
 test.prop([commandSequenceArbitrary], { seed: 40_304_004 })(
   "does not mutate any input state across arbitrary command sequences",
   (commands) => {
-    let state = createInitialEngineState(compiledTwoPointersLesson);
-    let everyInputWasPreserved = true;
+    expect(preservesEveryInputState(commands)).toBe(true);
+  },
+);
 
-    for (const command of commands) {
-      const input = structuredClone(state);
-      const before = structuredClone(input);
-      state = transition(compiledTwoPointersLesson, input, command);
-      everyInputWasPreserved &&=
-        JSON.stringify(input) === JSON.stringify(before);
-    }
+test.prop([longMixedCommandSequenceArbitrary], {
+  seed: 40_304_014,
+  numRuns: 40,
+})(
+  "preserves all invariants across 150 to 200 mixed runtime commands",
+  (commands) => {
+    const firstReplay = replay(commands);
+    const secondReplay = replay(commands);
 
-    expect(everyInputWasPreserved).toBe(true);
+    expect({
+      coherentAndFrozen: replayStates(commands).every(isCoherentFrozenState),
+      deterministic:
+        JSON.stringify(firstReplay) === JSON.stringify(secondReplay),
+      includesEveryCommand: new Set(commands.map((command) => command.type))
+        .size,
+      inputsPreserved: preservesEveryInputState(commands),
+      lengthInRange: commands.length >= 150 && commands.length <= 200,
+    }).toEqual({
+      coherentAndFrozen: true,
+      deterministic: true,
+      includesEveryCommand: 7,
+      inputsPreserved: true,
+      lengthInRange: true,
+    });
+  },
+);
+
+test.prop([runtimeCommandArbitrary], { seed: 40_304_015 })(
+  "returns a defined state for every runtime command probe",
+  (runtimeCommand) => {
+    const result = transition(
+      compiledTwoPointersLesson,
+      createInitialEngineState(compiledTwoPointersLesson),
+      probeEngineCommand(runtimeCommand),
+    );
+
+    expect(result).toBeDefined();
   },
 );
 
