@@ -150,6 +150,9 @@ test("compiles the inward-pointer trace to the first matching pair", async () =>
     kind: "found",
     indices: [2, 4],
   });
+  expect(
+    lesson.snapshots.at(-1)?.objects.find(({ id }) => id === "pair-result"),
+  ).toMatchObject({ status: "found" });
 });
 
 function isDeeplyFrozen(value: unknown): boolean {
@@ -321,6 +324,55 @@ test("diagnoses a result status outside the set allowlist", () => {
       },
     ],
   });
+});
+
+test.each([
+  { label: "pending", value: ["pending"] },
+  { label: "found", value: ["found"] },
+  { label: "not-found", value: ["not-found"] },
+  { label: "numeric", value: 1 },
+])("rejects a $label non-string result status", ({ value }) => {
+  const compiled = compileLesson(
+    sourceWithTerminalAction({
+      type: "set",
+      objectId: "pair-result",
+      property: "status",
+      value,
+    }),
+    compiledContent,
+  );
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.invalid",
+        file: "lesson.yaml",
+        path: "timeline[0].actions[0].value",
+        message: "Result status must be pending, found, or not-found.",
+      },
+    ],
+  });
+});
+
+test("accepts a scalar pending result status", () => {
+  const compiled = compileLesson(
+    sourceWithTerminalAction({
+      type: "set",
+      objectId: "pair-result",
+      property: "status",
+      value: "pending",
+    }),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(true);
+  if (!compiled.ok) return;
+  const finalSnapshot = compiled.value.snapshots.at(-1);
+  expect(finalSnapshot?.result).toBeUndefined();
+  expect(
+    finalSnapshot?.objects.find(({ id }) => id === "pair-result"),
+  ).toMatchObject({ status: "pending" });
 });
 
 test("diagnoses connect when V1 has no connection primitive", () => {
@@ -929,6 +981,11 @@ test("publishes not-found after pointers cross without an equal pair", () => {
     result: { kind: "not-found" },
     terminal: true,
   });
+  expect(
+    compiled.value.snapshots
+      .at(-1)
+      ?.objects.find(({ id }) => id === "pair-result"),
+  ).toMatchObject({ status: "not-found" });
 });
 
 test("rejects ambiguous result association for multiple comparisons", () => {

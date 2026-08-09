@@ -2,6 +2,7 @@ import {
   sortDiagnostics,
   type LessonDiagnostic,
 } from "@knowledge-hub/lesson-schema";
+import type { ResultStatus } from "./resultStatus.js";
 
 export interface CompiledMarkdown {
   readonly html: string;
@@ -50,7 +51,7 @@ export type CompiledSceneObject =
     })
   | (CompiledSceneObjectBase & {
       readonly kind: "result";
-      readonly status: "pending" | "found" | "not-found";
+      readonly status: ResultStatus;
     });
 
 export interface SemanticSnapshot {

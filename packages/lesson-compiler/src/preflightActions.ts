@@ -2,6 +2,7 @@ import type {
   LessonDiagnostic,
   LessonSourceV1,
 } from "@knowledge-hub/lesson-schema";
+import { isResultStatus } from "./resultStatus.js";
 
 type SceneObjectV1 = LessonSourceV1["scene"]["objects"][number];
 
@@ -116,9 +117,7 @@ export function validateStaticActions(
             break;
           }
           const validProperty = action.property === "status";
-          const validValue = ["pending", "found", "not-found"].includes(
-            String(action.value),
-          );
+          const validValue = isResultStatus(action.value);
           if (!validProperty) {
             diagnostics.push({
               code: "reference.invalid",

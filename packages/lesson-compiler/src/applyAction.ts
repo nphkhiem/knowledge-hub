@@ -4,6 +4,7 @@ import type {
   LessonSourceV1,
   ValidationResult,
 } from "@knowledge-hub/lesson-schema";
+import { isResultStatus } from "./resultStatus.js";
 import type { CompiledSceneObject, SemanticSnapshot } from "./types.js";
 
 type LessonActionV1 = LessonSourceV1["timeline"][number]["actions"][number];
@@ -252,7 +253,7 @@ export function applyAction(
           `${context.path}.property`,
         );
       }
-      if (!["pending", "found", "not-found"].includes(String(action.value))) {
+      if (!isResultStatus(action.value)) {
         return failure(
           context,
           `Result status must be pending, found, or not-found.`,
@@ -260,7 +261,7 @@ export function applyAction(
           `${context.path}.value`,
         );
       }
-      const status = action.value as "pending" | "found" | "not-found";
+      const status = action.value;
       const currentComparison =
         status === "pending"
           ? undefined
