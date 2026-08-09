@@ -1,4 +1,2 @@
-export {
-  compiledTwoPointersLesson,
-  validTwoPointersSource,
-} from "./fixtures.js";
+export { validTwoPointersSource } from "@knowledge-hub/lesson-schema/testing";
+export { compiledTwoPointersLesson } from "./fixtures.js";

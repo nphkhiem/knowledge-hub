@@ -1,12 +1,12 @@
-function deepFreeze(value: unknown): void {
+function deepFreeze<Value>(value: Value): Value {
   if (typeof value !== "object" || value === null || Object.isFrozen(value)) {
-    return;
+    return value;
   }
   for (const nestedValue of Object.values(value)) deepFreeze(nestedValue);
-  Object.freeze(value);
+  return Object.freeze(value);
 }
 
-const validTwoPointersSourceValue = {
+export const validTwoPointersSource = deepFreeze({
   schemaVersion: 1,
   id: "dsa.two-pointers",
   slug: "two-pointers",
@@ -99,8 +99,4 @@ const validTwoPointersSourceValue = {
       },
     ],
   },
-} as const;
-
-deepFreeze(validTwoPointersSourceValue);
-
-export const validTwoPointersSource = validTwoPointersSourceValue;
+} as const);
