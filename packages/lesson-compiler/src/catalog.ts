@@ -1,7 +1,7 @@
 import { access, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { compileLessonPackage } from "./loadLessonPackage.js";
-import type { CompiledLesson } from "./types.js";
+import { LessonPackageError, type CompiledLesson } from "./types.js";
 
 async function findWorkspaceRoot(start: string): Promise<string> {
   let directory = start;
@@ -37,11 +37,59 @@ export async function getCompiledLessons(): Promise<readonly CompiledLesson[]> {
   const lessonDirectories = (
     await Promise.all(domains.map((domain) => childDirectories(domain)))
   ).flat();
-  const lessons = await Promise.all(
-    lessonDirectories.map(compileLessonPackage),
-  );
+  return compileLessonCatalog(lessonDirectories);
+}
 
-  return lessons.sort((left, right) => left.order - right.order);
+export async function compileLessonCatalog(
+  lessonDirectories: readonly string[],
+): Promise<readonly CompiledLesson[]> {
+  const entries = await Promise.all(
+    lessonDirectories.map(async (directory) => ({
+      directory,
+      lesson: await compileLessonPackage(directory),
+    })),
+  );
+  const ids = new Set<string>();
+  const collectionOrders = new Set<string>();
+  const routes = new Set<string>();
+  const diagnostics = entries.flatMap(({ directory, lesson }) => {
+    const entryDiagnostics = [];
+    const route = `${lesson.domain}/${lesson.slug}`;
+    const collectionOrder = `${lesson.collection}/${lesson.order}`;
+    if (ids.has(lesson.id)) {
+      entryDiagnostics.push({
+        code: "catalog.duplicate-id" as const,
+        file: join(directory, "lesson.yaml"),
+        path: "id",
+        message: `Lesson id "${lesson.id}" is duplicated in the catalog.`,
+      });
+    }
+    if (routes.has(route)) {
+      entryDiagnostics.push({
+        code: "catalog.duplicate-route" as const,
+        file: join(directory, "lesson.yaml"),
+        path: "slug",
+        message: `Lesson route "${route}" is duplicated in the catalog.`,
+      });
+    }
+    if (collectionOrders.has(collectionOrder)) {
+      entryDiagnostics.push({
+        code: "catalog.duplicate-order" as const,
+        file: join(directory, "lesson.yaml"),
+        path: "order",
+        message: `Order ${lesson.order} is duplicated in collection "${lesson.collection}".`,
+      });
+    }
+    ids.add(lesson.id);
+    collectionOrders.add(collectionOrder);
+    routes.add(route);
+    return entryDiagnostics;
+  });
+  if (diagnostics.length > 0) throw new LessonPackageError(diagnostics);
+
+  return entries
+    .map(({ lesson }) => lesson)
+    .sort((left, right) => left.order - right.order);
 }
 
 export async function getCompiledLesson(

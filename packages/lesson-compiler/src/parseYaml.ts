@@ -56,10 +56,7 @@ export function parseRestrictedYaml(
   }
 
   if (document) {
-    if (
-      document.directives.yaml.explicit ||
-      Object.keys(document.directives.tags).some((tag) => tag !== "!!")
-    ) {
+    if (/^%/mu.test(source)) {
       diagnostics.push({
         code: "yaml.directive",
         file,
@@ -75,7 +72,20 @@ export function parseRestrictedYaml(
         message: "YAML keys must be unique.",
       });
     }
-    if (document.errors.some((error) => error.code !== "DUPLICATE_KEY")) {
+    if (document.errors.some((error) => error.code === "TAG_RESOLVE_FAILED")) {
+      diagnostics.push({
+        code: "yaml.plain-string",
+        file,
+        path: "$",
+        message: "String values must be quoted in lesson YAML.",
+      });
+    }
+    if (
+      document.errors.some(
+        (error) =>
+          error.code !== "DUPLICATE_KEY" && error.code !== "TAG_RESOLVE_FAILED",
+      )
+    ) {
       diagnostics.push({
         code: "yaml.syntax",
         file,

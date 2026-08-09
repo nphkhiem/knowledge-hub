@@ -3,6 +3,10 @@ import type {
   LessonSourceV1,
 } from "@knowledge-hub/lesson-schema";
 
+function primitiveWithArticle(kind: string): string {
+  return `${kind === "array" ? "an" : "a"} ${kind}`;
+}
+
 export function validateLessonSemantics(
   source: LessonSourceV1,
   file: string,
@@ -11,6 +15,9 @@ export function validateLessonSemantics(
   const objectIds = new Set<string>();
   const optionIds = new Set<string>();
   const stepIds = new Set<string>();
+  const objectsById = new Map(
+    source.scene.objects.map((object) => [object.id, object] as const),
+  );
 
   for (const [objectIndex, object] of source.scene.objects.entries()) {
     if (objectIds.has(object.id)) {
@@ -25,27 +32,45 @@ export function validateLessonSemantics(
   }
 
   for (const [objectIndex, object] of source.scene.objects.entries()) {
-    if (object.kind === "pointer" && !objectIds.has(object.targetObjectId)) {
-      diagnostics.push({
-        code: "reference.broken",
-        file,
-        path: `scene.objects[${objectIndex}].targetObjectId`,
-        message: `Reference "${object.targetObjectId}" does not resolve to a scene object.`,
-      });
+    if (object.kind === "pointer") {
+      const target = objectsById.get(object.targetObjectId);
+      if (!target) {
+        diagnostics.push({
+          code: "reference.broken",
+          file,
+          path: `scene.objects[${objectIndex}].targetObjectId`,
+          message: `Reference "${object.targetObjectId}" does not resolve to a scene object.`,
+        });
+      } else if (target.kind !== "array") {
+        diagnostics.push({
+          code: "reference.wrong-kind",
+          file,
+          path: `scene.objects[${objectIndex}].targetObjectId`,
+          message: `Reference "${object.targetObjectId}" must resolve to an array, but resolves to ${primitiveWithArticle(target.kind)}.`,
+        });
+      }
     }
     if (object.kind === "comparison") {
       const references = [
-        ["arrayObjectId", object.arrayObjectId],
-        ["leftPointerId", object.leftPointerId],
-        ["rightPointerId", object.rightPointerId],
+        ["arrayObjectId", object.arrayObjectId, "array"],
+        ["leftPointerId", object.leftPointerId, "pointer"],
+        ["rightPointerId", object.rightPointerId, "pointer"],
       ] as const;
-      for (const [property, reference] of references) {
-        if (!objectIds.has(reference)) {
+      for (const [property, reference, expectedKind] of references) {
+        const target = objectsById.get(reference);
+        if (!target) {
           diagnostics.push({
             code: "reference.broken",
             file,
             path: `scene.objects[${objectIndex}].${property}`,
             message: `Reference "${reference}" does not resolve to a scene object.`,
+          });
+        } else if (target.kind !== expectedKind) {
+          diagnostics.push({
+            code: "reference.wrong-kind",
+            file,
+            path: `scene.objects[${objectIndex}].${property}`,
+            message: `Reference "${reference}" must resolve to ${primitiveWithArticle(expectedKind)}, but resolves to ${primitiveWithArticle(target.kind)}.`,
           });
         }
       }
@@ -77,14 +102,30 @@ export function validateLessonSemantics(
           ["toObjectId", action.toObjectId],
         ] as const;
         for (const [property, reference] of endpoints) {
-          if (!objectIds.has(reference)) {
+          const endpoint = objectsById.get(reference);
+          if (!endpoint) {
             diagnostics.push({
               code: "reference.broken",
               file,
               path: `timeline[${stepIndex}].actions[${actionIndex}].${property}`,
               message: `Reference "${reference}" does not resolve to a scene object.`,
             });
+          } else if (endpoint.kind !== "pointer") {
+            diagnostics.push({
+              code: "reference.wrong-kind",
+              file,
+              path: `timeline[${stepIndex}].actions[${actionIndex}].${property}`,
+              message: `Reference "${reference}" must resolve to a pointer, but resolves to ${primitiveWithArticle(endpoint.kind)}.`,
+            });
           }
+        }
+        if (action.fromObjectId === action.toObjectId) {
+          diagnostics.push({
+            code: "reference.invalid",
+            file,
+            path: `timeline[${stepIndex}].actions[${actionIndex}].toObjectId`,
+            message: "Connect actions require two distinct pointer endpoints.",
+          });
         }
       }
     }
@@ -121,25 +162,54 @@ export function validateLessonSemantics(
         message: `Reference "${step.nextStepId}" does not resolve to a timeline step.`,
       });
     }
+    if (step.terminal === true && step.nextStepId !== undefined) {
+      diagnostics.push({
+        code: "timeline.terminal-edge",
+        file,
+        path: `timeline[${stepIndex}].nextStepId`,
+        message: `Terminal timeline step "${step.id}" cannot continue.`,
+      });
+    }
   }
+  const successorIndex = (stepIndex: number): number | undefined => {
+    const step = source.timeline[stepIndex];
+    if (!step || step.terminal === true) return undefined;
+    if (step.nextStepId !== undefined) {
+      return stepIndexById.get(step.nextStepId);
+    }
+    return stepIndex + 1 < source.timeline.length ? stepIndex + 1 : undefined;
+  };
+  const visitState = new Array<number>(source.timeline.length).fill(0);
+  const visitForCycles = (stepIndex: number): void => {
+    visitState[stepIndex] = 1;
+    const nextIndex = successorIndex(stepIndex);
+    if (nextIndex !== undefined) {
+      if (visitState[nextIndex] === 1) {
+        const cycleStep = source.timeline[nextIndex];
+        if (cycleStep) {
+          diagnostics.push({
+            code: "timeline.cycle",
+            file,
+            path: `timeline[${stepIndex}].nextStepId`,
+            message: `Timeline step "${cycleStep.id}" creates a cycle.`,
+          });
+        }
+      } else if (visitState[nextIndex] === 0) {
+        visitForCycles(nextIndex);
+      }
+    }
+    visitState[stepIndex] = 2;
+  };
+  for (const stepIndex of source.timeline.keys()) {
+    if (visitState[stepIndex] === 0) visitForCycles(stepIndex);
+  }
+
   const visitedStepIndices = new Set<number>();
   let currentStepIndex: number | undefined = 0;
-  let previousStepIndex: number | undefined;
   let reachedTerminal = false;
 
   while (currentStepIndex !== undefined) {
-    if (visitedStepIndices.has(currentStepIndex)) {
-      const cycleStep = source.timeline[currentStepIndex];
-      if (cycleStep && previousStepIndex !== undefined) {
-        diagnostics.push({
-          code: "timeline.cycle",
-          file,
-          path: `timeline[${previousStepIndex}].nextStepId`,
-          message: `Timeline step "${cycleStep.id}" creates a cycle.`,
-        });
-      }
-      break;
-    }
+    if (visitedStepIndices.has(currentStepIndex)) break;
     visitedStepIndices.add(currentStepIndex);
     const step: LessonSourceV1["timeline"][number] | undefined =
       source.timeline[currentStepIndex];
@@ -148,13 +218,7 @@ export function validateLessonSemantics(
       reachedTerminal = true;
       break;
     }
-    previousStepIndex = currentStepIndex;
-    currentStepIndex =
-      step.nextStepId === undefined
-        ? currentStepIndex + 1 < source.timeline.length
-          ? currentStepIndex + 1
-          : undefined
-        : stepIndexById.get(step.nextStepId);
+    currentStepIndex = successorIndex(currentStepIndex);
   }
 
   if (!reachedTerminal) {

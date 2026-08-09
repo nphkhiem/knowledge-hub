@@ -21,6 +21,25 @@ test("rejects an unsupported schema version with a stable diagnostic", () => {
   });
 });
 
+test("requires the lesson id to match its canonical domain and slug", () => {
+  const result = validateLessonSource(
+    { ...validTwoPointersSource, id: "dsa.wrong-slug" },
+    "lesson.yaml",
+  );
+
+  expect(result).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "identity.mismatch",
+        file: "lesson.yaml",
+        path: "id",
+        message: 'Lesson id must equal "dsa.two-pointers".',
+      },
+    ],
+  });
+});
+
 test("rejects an executable action with a stable diagnostic", () => {
   const result = validateLessonSource(
     {
@@ -286,42 +305,88 @@ test("returns independent diagnostics in stable file-path-code order", () => {
   }
 });
 
-test("accepts the exact ten V1 action contracts", () => {
+test.each([
+  ["array", { id: "array", kind: "array", label: "Values", values: [1] }],
+  [
+    "pointer",
+    {
+      id: "pointer",
+      kind: "pointer",
+      label: "Left",
+      targetObjectId: "array",
+      index: 0,
+    },
+  ],
+  ["label", { id: "label", kind: "label", text: "Target" }],
+  [
+    "comparison",
+    {
+      id: "comparison",
+      kind: "comparison",
+      arrayObjectId: "array",
+      leftPointerId: "pointer",
+      rightPointerId: "pointer",
+      target: 1,
+    },
+  ],
+  ["result", { id: "result", kind: "result", status: "pending" }],
+] as const)("accepts the %s primitive contract", (_kind, primitive) => {
+  const result = validateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: { target: 1, objects: [primitive] },
+    },
+    "lesson.yaml",
+  );
+
+  expect(result.ok).toBe(true);
+});
+
+test.each([
+  ["show", { type: "show", objectId: "values" }],
+  ["hide", { type: "hide", objectId: "values" }],
+  [
+    "set",
+    {
+      type: "set",
+      objectId: "pair-result",
+      property: "status",
+      value: "found",
+    },
+  ],
+  ["move", { type: "move", objectId: "left-pointer", toIndex: 1 }],
+  [
+    "highlight",
+    {
+      type: "highlight",
+      objectId: "values",
+      indices: [0, 1],
+      tone: "compare",
+    },
+  ],
+  ["compare", { type: "compare", objectId: "pair-comparison" }],
+  [
+    "connect",
+    {
+      type: "connect",
+      objectId: "values",
+      fromObjectId: "left-pointer",
+      toObjectId: "pair-result",
+    },
+  ],
+  ["disconnect", { type: "disconnect", objectId: "values" }],
+  ["enqueue", { type: "enqueue", objectId: "values", value: 21 }],
+  ["dequeue", { type: "dequeue", objectId: "values" }],
+] as const)("accepts the %s action contract", (_type, action) => {
   const result = validateLessonSource(
     {
       ...validTwoPointersSource,
       timeline: [
         {
-          id: "all-actions",
-          narration: "Exercise the complete declarative action vocabulary.",
+          id: "valid-action",
+          narration: "Exercise one declarative action contract.",
           terminal: true,
-          actions: [
-            { type: "show", objectId: "values" },
-            { type: "hide", objectId: "values" },
-            {
-              type: "set",
-              objectId: "pair-result",
-              property: "status",
-              value: "found",
-            },
-            { type: "move", objectId: "left-pointer", toIndex: 1 },
-            {
-              type: "highlight",
-              objectId: "values",
-              indices: [0, 1],
-              tone: "compare",
-            },
-            { type: "compare", objectId: "pair-comparison" },
-            {
-              type: "connect",
-              objectId: "values",
-              fromObjectId: "left-pointer",
-              toObjectId: "pair-result",
-            },
-            { type: "disconnect", objectId: "values" },
-            { type: "enqueue", objectId: "values", value: 21 },
-            { type: "dequeue", objectId: "values" },
-          ],
+          actions: [action],
         },
       ],
     },

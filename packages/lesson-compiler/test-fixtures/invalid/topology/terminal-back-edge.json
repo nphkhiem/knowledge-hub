@@ -1,0 +1,8 @@
+{
+  "replacements": [
+    {
+      "before": "    terminal: true",
+      "after": "    nextStepId: \"compare-ends\"\n    terminal: true"
+    }
+  ]
+}

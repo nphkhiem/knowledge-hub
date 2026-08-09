@@ -1,0 +1,16 @@
+{
+  "replacements": [
+    {
+      "before": "    narration: \"Compare 1 and 15. Their sum is 16, which is greater than the target 15.\"",
+      "after": "    narration: \"Compare 1 and 15. Their sum is 16, which is greater than the target 15.\"\n    terminal: true"
+    },
+    {
+      "before": "    narration: \"Move the right pointer left because the current sum is too large.\"",
+      "after": "    narration: \"Move the right pointer left because the current sum is too large.\"\n    nextStepId: \"compare-one-eleven\""
+    },
+    {
+      "before": "    narration: \"Compare 1 and 11. Their sum is 12, which is less than the target.\"",
+      "after": "    narration: \"Compare 1 and 11. Their sum is 12, which is less than the target.\"\n    nextStepId: \"move-right\""
+    }
+  ]
+}

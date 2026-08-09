@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { migrateLessonSource } from "@knowledge-hub/lesson-schema";
+import { basename, dirname, join } from "node:path";
+import {
+  migrateLessonSource,
+  type LessonDiagnostic,
+} from "@knowledge-hub/lesson-schema";
 import { parseRestrictedYaml } from "./parseYaml.js";
 import {
   compileMarkdown,
@@ -35,6 +38,84 @@ async function readSourceFile(
   }
 }
 
+interface DeclaredContentSources {
+  readonly quickUnderstanding: string;
+  readonly realWorldApplications: string;
+  readonly deepDive?: string;
+}
+
+async function readDeclaredContentSources(
+  directory: string,
+  content: {
+    readonly quickUnderstanding: string;
+    readonly realWorldApplications: string;
+    readonly deepDive?: string | undefined;
+  },
+): Promise<DeclaredContentSources> {
+  const declarations = [
+    {
+      key: "quickUnderstanding" as const,
+      filename: content.quickUnderstanding,
+      path: "content.quickUnderstanding",
+    },
+    {
+      key: "realWorldApplications" as const,
+      filename: content.realWorldApplications,
+      path: "content.realWorldApplications",
+    },
+    ...(content.deepDive
+      ? [
+          {
+            key: "deepDive" as const,
+            filename: content.deepDive,
+            path: "content.deepDive",
+          },
+        ]
+      : []),
+  ];
+  const results = await Promise.all(
+    declarations.map(async ({ filename, key, path }) => {
+      const file = join(directory, filename);
+      try {
+        return { ok: true as const, key, source: await readFile(file, "utf8") };
+      } catch {
+        return {
+          ok: false as const,
+          diagnostic: {
+            code: "file.missing" as const,
+            file,
+            path,
+            message: "Required lesson file is missing or unreadable.",
+          } satisfies LessonDiagnostic,
+        };
+      }
+    }),
+  );
+  const diagnostics = results.flatMap((result) =>
+    result.ok ? [] : [result.diagnostic],
+  );
+  if (diagnostics.length > 0) throw new LessonPackageError(diagnostics);
+
+  let quickUnderstanding = "";
+  let realWorldApplications = "";
+  let deepDive: string | undefined;
+  for (const result of results) {
+    if (!result.ok) continue;
+    if (result.key === "quickUnderstanding") {
+      quickUnderstanding = result.source;
+    } else if (result.key === "realWorldApplications") {
+      realWorldApplications = result.source;
+    } else {
+      deepDive = result.source;
+    }
+  }
+  return {
+    quickUnderstanding,
+    realWorldApplications,
+    ...(deepDive === undefined ? {} : { deepDive }),
+  };
+}
+
 function parseLessonSource(source: string, file: string) {
   const parsed = parseRestrictedYaml(source, file);
   if (!parsed.ok) throw new LessonPackageError(parsed.diagnostics);
@@ -52,7 +133,34 @@ export async function loadLessonPackage(
     await readSourceFile(directory, "lesson.yaml", "$"),
     lessonFile,
   );
-  const semanticDiagnostics = validateLessonSemantics(source, lessonFile);
+  const packageSlug = basename(directory);
+  const packageDomain = basename(dirname(directory));
+  const identityDiagnostics = [
+    ...(source.domain === packageDomain
+      ? []
+      : [
+          {
+            code: "identity.directory-mismatch" as const,
+            file: lessonFile,
+            path: "domain",
+            message: `Lesson domain "${source.domain}" must match package directory "${packageDomain}".`,
+          },
+        ]),
+    ...(source.slug === packageSlug
+      ? []
+      : [
+          {
+            code: "identity.directory-mismatch" as const,
+            file: lessonFile,
+            path: "slug",
+            message: `Lesson slug "${source.slug}" must match package directory "${packageSlug}".`,
+          },
+        ]),
+  ];
+  const semanticDiagnostics = [
+    ...identityDiagnostics,
+    ...validateLessonSemantics(source, lessonFile),
+  ];
   if (semanticDiagnostics.length > 0) {
     throw new LessonPackageError(semanticDiagnostics);
   }
@@ -64,39 +172,27 @@ export async function loadLessonPackage(
     directory,
     source.content.realWorldApplications,
   );
-  const [quickUnderstandingSource, realWorldApplicationsSource] =
-    await Promise.all([
-      readSourceFile(
-        directory,
-        source.content.quickUnderstanding,
-        "content.quickUnderstanding",
-      ),
-      readSourceFile(
-        directory,
-        source.content.realWorldApplications,
-        "content.realWorldApplications",
-      ),
-    ]);
-  const deepDive = source.content.deepDive
-    ? await compileMarkdown(
-        await readSourceFile(
-          directory,
-          source.content.deepDive,
-          "content.deepDive",
-        ),
-        join(directory, source.content.deepDive),
-      )
-    : undefined;
+  const contentSources = await readDeclaredContentSources(
+    directory,
+    source.content,
+  );
+  const deepDive =
+    source.content.deepDive && contentSources.deepDive !== undefined
+      ? await compileMarkdown(
+          contentSources.deepDive,
+          join(directory, source.content.deepDive),
+        )
+      : undefined;
 
   return {
     ...source,
     content: {
       quickUnderstanding: await compileQuickUnderstanding(
-        quickUnderstandingSource,
+        contentSources.quickUnderstanding,
         quickUnderstandingFile,
       ),
       realWorldApplications: await compileRealWorldApplications(
-        realWorldApplicationsSource,
+        contentSources.realWorldApplications,
         realWorldApplicationsFile,
       ),
       ...(deepDive ? { deepDive } : {}),

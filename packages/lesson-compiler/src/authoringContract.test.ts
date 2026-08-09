@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -13,10 +13,61 @@ const canonicalLesson = fileURLToPath(
 );
 
 async function cloneCanonicalLesson(): Promise<string> {
-  const directory = await mkdtemp(join(tmpdir(), "knowledge-hub-compiler-"));
+  const temporaryRoot = await mkdtemp(
+    join(tmpdir(), "knowledge-hub-compiler-"),
+  );
+  const directory = join(temporaryRoot, "dsa", "two-pointers");
+  await mkdir(join(temporaryRoot, "dsa"), { recursive: true });
   await cp(canonicalLesson, directory, { recursive: true });
   return directory;
 }
+
+test("requires package directories to match the lesson domain and slug", async () => {
+  const directory = await cloneCanonicalLesson();
+  const mismatchedDirectory = join(directory, "..", "wrong-slug");
+
+  try {
+    await cp(directory, mismatchedDirectory, { recursive: true });
+    const compilation = compileLessonPackage(mismatchedDirectory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "identity.directory-mismatch",
+          file: join(mismatchedDirectory, "lesson.yaml"),
+          path: "slug",
+          message:
+            'Lesson slug "two-pointers" must match package directory "wrong-slug".',
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
+test("rejects a lesson id that differs from its canonical domain and slug", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await applyInvalidFixture(directory, "identity/mismatched-id.json");
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "identity.mismatch",
+          file: lessonFile,
+          path: "id",
+          message: 'Lesson id must equal "dsa.two-pointers".',
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
 
 async function replaceInLessonYaml(
   directory: string,
@@ -29,6 +80,29 @@ async function replaceInLessonYaml(
     throw new Error(`Expected lesson fixture text was not found: ${before}`);
   }
   await writeFile(file, source.replace(before, after), "utf8");
+}
+
+interface InvalidFixture {
+  readonly remove?: readonly string[];
+  readonly replacements: readonly {
+    readonly before: string;
+    readonly after: string;
+  }[];
+}
+
+async function applyInvalidFixture(
+  directory: string,
+  fixture: string,
+): Promise<void> {
+  const descriptor = JSON.parse(
+    await readFile(join(invalidFixtures, fixture), "utf8"),
+  ) as InvalidFixture;
+  for (const { after, before } of descriptor.replacements) {
+    await replaceInLessonYaml(directory, before, after);
+  }
+  await Promise.all(
+    (descriptor.remove ?? []).map((filename) => rm(join(directory, filename))),
+  );
 }
 
 function validApplication(title: string): string {
@@ -176,6 +250,33 @@ test("rejects an unused YAML tag directive", async () => {
   }
 });
 
+test("rejects an explicit YAML directive that redefines the core tag handle", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await writeFile(
+      lessonFile,
+      "%TAG !! tag:evil.example,2026:\n---\nschemaVersion: 1\n",
+      "utf8",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "yaml.directive",
+          file: lessonFile,
+          path: "$",
+          message: "YAML directives are not allowed.",
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
 test("rejects YAML parser errors without leaking parser prose", async () => {
   const directory = await cloneCanonicalLesson();
   const lessonFile = join(directory, "lesson.yaml");
@@ -196,6 +297,46 @@ test("rejects YAML parser errors without leaking parser prose", async () => {
     });
   } finally {
     await rm(directory, { force: true, recursive: true });
+  }
+});
+
+test("accepts quoted text together with plain JSON scalar values", async () => {
+  const lesson = await compileLessonPackage(canonicalLesson);
+
+  expect(lesson).toMatchObject({
+    schemaVersion: 1,
+    title: "Two Pointers",
+    durationMinutes: 4,
+    timeline: expect.arrayContaining([
+      expect.objectContaining({ terminal: true }),
+    ]),
+  });
+});
+
+test("rejects an unquoted plain text scalar with a stable diagnostic", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await replaceInLessonYaml(
+      directory,
+      'title: "Two Pointers"',
+      "title: Two Pointers",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "yaml.plain-string",
+          file: lessonFile,
+          path: "$",
+          message: "String values must be quoted in lesson YAML.",
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
 
@@ -231,26 +372,97 @@ test("rejects embedded HTML in lesson YAML", async () => {
   });
 });
 
-test("attributes a missing required content file to its public field", async () => {
+test("reports a missing lesson source file", async () => {
   const directory = await cloneCanonicalLesson();
-  const missingFile = join(directory, "quick-understanding.md");
+  const missingFile = join(directory, "lesson.yaml");
 
   try {
     await rm(missingFile);
     const compilation = compileLessonPackage(directory);
 
     await expect(compilation).rejects.toMatchObject({
-      diagnostics: expect.arrayContaining([
+      diagnostics: [
         {
           code: "file.missing",
           file: missingFile,
+          path: "$",
+          message: "Required lesson file is missing or unreadable.",
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
+test.each([
+  ["Quick Understanding", "quick-understanding.md", "quickUnderstanding"],
+  [
+    "Real-World Applications",
+    "real-world-applications.md",
+    "realWorldApplications",
+  ],
+  ["Deep Dive", "deep-dive.md", "deepDive"],
+] as const)(
+  "attributes a missing %s file to its public field",
+  async (_label, filename, field) => {
+    const directory = await cloneCanonicalLesson();
+    const missingFile = join(directory, filename);
+
+    try {
+      await rm(missingFile);
+      const compilation = compileLessonPackage(directory);
+
+      await expect(compilation).rejects.toMatchObject({
+        diagnostics: expect.arrayContaining([
+          {
+            code: "file.missing",
+            file: missingFile,
+            path: `content.${field}`,
+            message: "Required lesson file is missing or unreadable.",
+          },
+        ]),
+      });
+    } finally {
+      await rm(join(directory, "..", ".."), {
+        force: true,
+        recursive: true,
+      });
+    }
+  },
+);
+
+test("aggregates all missing declared content files in stable order", async () => {
+  const directory = await cloneCanonicalLesson();
+
+  try {
+    await applyInvalidFixture(directory, "missing-files/all-declared.json");
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "file.missing",
+          file: join(directory, "deep-dive.md"),
+          path: "content.deepDive",
+          message: "Required lesson file is missing or unreadable.",
+        },
+        {
+          code: "file.missing",
+          file: join(directory, "quick-understanding.md"),
           path: "content.quickUnderstanding",
           message: "Required lesson file is missing or unreadable.",
         },
-      ]),
+        {
+          code: "file.missing",
+          file: join(directory, "real-world-applications.md"),
+          path: "content.realWorldApplications",
+          message: "Required lesson file is missing or unreadable.",
+        },
+      ],
     });
   } finally {
-    await rm(directory, { force: true, recursive: true });
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
 
@@ -703,6 +915,30 @@ test("rejects a pointer that references a missing array", async () => {
   }
 });
 
+test("rejects a pointer target that resolves to the wrong primitive kind", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await applyInvalidFixture(directory, "reference/wrong-pointer-kind.json");
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "reference.wrong-kind",
+          file: lessonFile,
+          path: "scene.objects[1].targetObjectId",
+          message:
+            'Reference "target-label" must resolve to an array, but resolves to a label.',
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
 test("rejects a comparison that references a missing object", async () => {
   const directory = await cloneCanonicalLesson();
   const lessonFile = join(directory, "lesson.yaml");
@@ -730,6 +966,66 @@ test("rejects a comparison that references a missing object", async () => {
     await rm(directory, { force: true, recursive: true });
   }
 });
+
+test("rejects a comparison array reference with the wrong primitive kind", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await applyInvalidFixture(
+      directory,
+      "reference/wrong-comparison-array-kind.json",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "reference.wrong-kind",
+          file: lessonFile,
+          path: "scene.objects[4].arrayObjectId",
+          message:
+            'Reference "target-label" must resolve to an array, but resolves to a label.',
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
+test.each([
+  ["leftPointerId", 'leftPointerId: "left-pointer"'],
+  ["rightPointerId", 'rightPointerId: "right-pointer"'],
+] as const)(
+  "rejects a comparison %s reference with the wrong primitive kind",
+  async (property, before) => {
+    const directory = await cloneCanonicalLesson();
+    const lessonFile = join(directory, "lesson.yaml");
+
+    try {
+      await replaceInLessonYaml(directory, before, `${property}: "values"`);
+      const compilation = compileLessonPackage(directory);
+
+      await expect(compilation).rejects.toMatchObject({
+        diagnostics: expect.arrayContaining([
+          {
+            code: "reference.wrong-kind",
+            file: lessonFile,
+            path: `scene.objects[4].${property}`,
+            message:
+              'Reference "values" must resolve to a pointer, but resolves to an array.',
+          },
+        ]),
+      });
+    } finally {
+      await rm(join(directory, "..", ".."), {
+        force: true,
+        recursive: true,
+      });
+    }
+  },
+);
 
 test("rejects a Model Check answer that references a missing option", async () => {
   const directory = await cloneCanonicalLesson();
@@ -794,6 +1090,70 @@ test("rejects broken endpoint references in connect actions", async () => {
     });
   } finally {
     await rm(directory, { force: true, recursive: true });
+  }
+});
+
+test("rejects connect endpoints with the wrong primitive kind", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await applyInvalidFixture(
+      directory,
+      "reference/wrong-connect-endpoint-kind.json",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "reference.wrong-kind",
+          file: lessonFile,
+          path: "timeline[0].actions[0].fromObjectId",
+          message:
+            'Reference "pair-result" must resolve to a pointer, but resolves to a result.',
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
+test("requires connect actions to declare two distinct endpoints", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await replaceInLessonYaml(
+      directory,
+      [
+        '      - type: "highlight"',
+        '        objectId: "values"',
+        "        indices: [0, 5]",
+        '        tone: "compare"',
+      ].join("\n"),
+      [
+        '      - type: "connect"',
+        '        objectId: "values"',
+        '        fromObjectId: "left-pointer"',
+        '        toObjectId: "left-pointer"',
+      ].join("\n"),
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "reference.invalid",
+          file: lessonFile,
+          path: "timeline[0].actions[0].toObjectId",
+          message: "Connect actions require two distinct pointer endpoints.",
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
 
@@ -875,6 +1235,58 @@ test("rejects an unintended timeline cycle", async () => {
     });
   } finally {
     await rm(directory, { force: true, recursive: true });
+  }
+});
+
+test("rejects an outgoing edge declared on a terminal step", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await applyInvalidFixture(directory, "topology/terminal-back-edge.json");
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "timeline.terminal-edge",
+          file: lessonFile,
+          path: "timeline[7].nextStepId",
+          message: 'Terminal timeline step "pair-found" cannot continue.',
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
+test("detects cycles inside an unreachable timeline subgraph", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await applyInvalidFixture(directory, "topology/unreachable-cycle.json");
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "timeline.cycle",
+          file: lessonFile,
+          path: "timeline[2].nextStepId",
+          message: 'Timeline step "move-right" creates a cycle.',
+        },
+        {
+          code: "timeline.unreachable",
+          file: lessonFile,
+          path: "timeline[1].id",
+          message: 'Timeline step "move-right" is unreachable.',
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
 

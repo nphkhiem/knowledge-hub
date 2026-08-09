@@ -1,4 +1,8 @@
-export { getCompiledLesson, getCompiledLessons } from "./catalog.js";
+export {
+  compileLessonCatalog,
+  getCompiledLesson,
+  getCompiledLessons,
+} from "./catalog.js";
 export {
   compileLessonPackage,
   loadLessonPackage,

@@ -227,5 +227,20 @@ export function validateLessonSource(
     return { ok: false, diagnostics: sortDiagnostics(diagnostics) };
   }
 
+  const canonicalId = `${result.data.domain}.${result.data.slug}`;
+  if (result.data.id !== canonicalId) {
+    return {
+      ok: false,
+      diagnostics: [
+        {
+          code: "identity.mismatch",
+          file,
+          path: "id",
+          message: `Lesson id must equal "${canonicalId}".`,
+        },
+      ],
+    };
+  }
+
   return { ok: true, value: result.data };
 }

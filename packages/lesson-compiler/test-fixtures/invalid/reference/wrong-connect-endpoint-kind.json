@@ -1,0 +1,8 @@
+{
+  "replacements": [
+    {
+      "before": "      - type: \"highlight\"\n        objectId: \"values\"\n        indices: [0, 5]\n        tone: \"compare\"",
+      "after": "      - type: \"connect\"\n        objectId: \"values\"\n        fromObjectId: \"pair-result\"\n        toObjectId: \"right-pointer\""
+    }
+  ]
+}

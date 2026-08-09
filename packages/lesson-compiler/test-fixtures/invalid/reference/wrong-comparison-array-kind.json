@@ -1,0 +1,8 @@
+{
+  "replacements": [
+    {
+      "before": "arrayObjectId: \"values\"",
+      "after": "arrayObjectId: \"target-label\""
+    }
+  ]
+}
