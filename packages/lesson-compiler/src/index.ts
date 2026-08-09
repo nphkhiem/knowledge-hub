@@ -7,12 +7,20 @@ export {
   compileLessonPackage,
   loadLessonPackage,
 } from "./loadLessonPackage.js";
+export { compileLesson } from "./compileLesson.js";
 export {
   LessonPackageError,
+  type CompiledAccessibility,
+  type CompiledContent,
+  type CompiledEvidenceRecord,
+  type CompiledEvidenceSource,
   type CompiledLesson,
   type CompiledLessonContent,
   type CompiledMarkdown,
+  type CompiledModelCheck,
   type CompiledRealWorldApplication,
+  type CompiledSceneObject,
   type LessonPackageDiagnostic,
   type LoadedLessonPackage,
+  type SemanticSnapshot,
 } from "./types.js";

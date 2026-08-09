@@ -21,6 +21,7 @@ import {
   type CompiledLesson,
   type LoadedLessonPackage,
 } from "./types.js";
+import { compileLessonAtPath } from "./compileLesson.js";
 
 async function readSourceFile(
   canonicalDirectory: string,
@@ -242,20 +243,20 @@ export async function loadLessonPackage(
         )
       : undefined;
 
-  return {
-    ...source,
-    content: {
-      quickUnderstanding: await compileQuickUnderstanding(
-        contentSources.quickUnderstanding,
-        quickUnderstandingFile,
-      ),
-      realWorldApplications: await compileRealWorldApplications(
-        contentSources.realWorldApplications,
-        realWorldApplicationsFile,
-      ),
-      ...(deepDive ? { deepDive } : {}),
-    },
-  } satisfies CompiledLesson;
+  const content = {
+    quickUnderstanding: await compileQuickUnderstanding(
+      contentSources.quickUnderstanding,
+      quickUnderstandingFile,
+    ),
+    realWorldApplications: await compileRealWorldApplications(
+      contentSources.realWorldApplications,
+      realWorldApplicationsFile,
+    ),
+    ...(deepDive ? { deepDive } : {}),
+  };
+  const compiled = compileLessonAtPath(source, content, lessonFile);
+  if (!compiled.ok) throw new LessonPackageError(compiled.diagnostics);
+  return compiled.value;
 }
 
 export async function compileLessonPackage(

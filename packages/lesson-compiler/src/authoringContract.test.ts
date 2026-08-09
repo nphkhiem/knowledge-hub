@@ -325,7 +325,7 @@ test("accepts quoted text together with plain JSON scalar values", async () => {
     schemaVersion: 1,
     title: "Two Pointers",
     durationMinutes: 4,
-    timeline: expect.arrayContaining([
+    snapshots: expect.arrayContaining([
       expect.objectContaining({ terminal: true }),
     ]),
   });
@@ -1013,11 +1013,7 @@ test("rejects duplicate scene object identifiers", async () => {
   const lessonFile = join(directory, "lesson.yaml");
 
   try {
-    await replaceInLessonYaml(
-      directory,
-      'id: "right-pointer"',
-      'id: "left-pointer"',
-    );
+    await replaceInLessonYaml(directory, 'id: "right"', 'id: "left"');
     const compilation = compileLessonPackage(directory);
 
     await expect(compilation).rejects.toMatchObject({
@@ -1026,7 +1022,7 @@ test("rejects duplicate scene object identifiers", async () => {
           code: "identifier.duplicate",
           file: lessonFile,
           path: "scene.objects[2].id",
-          message: 'Identifier "left-pointer" is duplicated.',
+          message: 'Identifier "left" is duplicated.',
         },
       ]),
     });
@@ -1225,8 +1221,8 @@ test("rejects a comparison array reference with the wrong primitive kind", async
 });
 
 test.each([
-  ["leftPointerId", 'leftPointerId: "left-pointer"'],
-  ["rightPointerId", 'rightPointerId: "right-pointer"'],
+  ["leftPointerId", 'leftPointerId: "left"'],
+  ["rightPointerId", 'rightPointerId: "right"'],
 ] as const)(
   "rejects a comparison %s reference with the wrong primitive kind",
   async (property, before) => {

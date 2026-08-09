@@ -24,12 +24,12 @@ scene:
       kind: "array"
       label: "Sorted values"
       values: [1, 2, 4, 7, 11, 15]
-    - id: "left-pointer"
+    - id: "left"
       kind: "pointer"
       label: "Left"
       targetObjectId: "values"
       index: 0
-    - id: "right-pointer"
+    - id: "right"
       kind: "pointer"
       label: "Right"
       targetObjectId: "values"
@@ -40,8 +40,8 @@ scene:
     - id: "pair-comparison"
       kind: "comparison"
       arrayObjectId: "values"
-      leftPointerId: "left-pointer"
-      rightPointerId: "right-pointer"
+      leftPointerId: "left"
+      rightPointerId: "right"
       target: 15
     - id: "pair-result"
       kind: "result"
@@ -60,7 +60,7 @@ timeline:
     narration: "Move the right pointer left because the current sum is too large."
     actions:
       - type: "move"
-        objectId: "right-pointer"
+        objectId: "right"
         toIndex: 4
   - id: "compare-one-eleven"
     narration: "Compare 1 and 11. Their sum is 12, which is less than the target."
@@ -75,7 +75,7 @@ timeline:
     narration: "Move the left pointer right because the current sum is too small."
     actions:
       - type: "move"
-        objectId: "left-pointer"
+        objectId: "left"
         toIndex: 1
   - id: "compare-two-eleven"
     narration: "Compare 2 and 11. Their sum is 13, which is still less than the target."
@@ -90,7 +90,7 @@ timeline:
     narration: "Move the left pointer right again because the sum is still too small."
     actions:
       - type: "move"
-        objectId: "left-pointer"
+        objectId: "left"
         toIndex: 2
   - id: "compare-four-eleven"
     narration: "Compare 4 and 11. Their sum is 15, which matches the target."
