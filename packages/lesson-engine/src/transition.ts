@@ -83,6 +83,15 @@ function answer(
   });
 }
 
+function isResetAndPlaying(state: EngineState): boolean {
+  return (
+    state.stepIndex === 0 &&
+    state.status === "playing" &&
+    state.modelCheck.selectedOptionId === null &&
+    !state.modelCheck.explanationRevealed
+  );
+}
+
 export function transition(
   lesson: CompiledLesson,
   state: EngineState,
@@ -96,12 +105,14 @@ export function transition(
         ? state
         : withStatus(state, "playing");
     case "pause":
-      return withStatus(state, "paused");
+      return state.status === "completed" ? state : withStatus(state, "paused");
     case "restart":
-      return freezeEngineState({
-        ...createInitialEngineState(lesson),
-        status: "playing",
-      });
+      return isResetAndPlaying(state)
+        ? state
+        : freezeEngineState({
+            ...createInitialEngineState(lesson),
+            status: "playing",
+          });
     case "next":
       return next(lesson, state);
     case "previous":

@@ -122,6 +122,9 @@ importers:
         specifier: workspace:*
         version: link:../lesson-compiler
     devDependencies:
+      '@fast-check/vitest':
+        specifier: 0.4.1
+        version: 0.4.1(vitest@4.1.10)
       '@knowledge-hub/lesson-testing':
         specifier: workspace:*
         version: link:../lesson-testing
