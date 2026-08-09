@@ -1,5 +1,6 @@
 import type { CompiledSceneObject } from "@knowledge-hub/lesson-compiler";
 import { expect, test } from "vitest";
+import { findOutOfBoundsCoordinates } from "./markupBounds.js";
 
 /**
  * The behavior every maintainer-owned primitive must provide, expressed as
@@ -8,7 +9,7 @@ import { expect, test } from "vitest";
  * a trusted scene, the same scene at a narrow logical width, or a scene whose
  * author-controlled text is hostile.
  */
-export interface PrimitiveContract {
+export interface PrimitiveConformanceContract {
   readonly kind: CompiledSceneObject["kind"];
   readonly accepts: (object: CompiledSceneObject) => boolean;
   readonly renderInteractive: (object: CompiledSceneObject) => string;
@@ -22,35 +23,14 @@ export interface PrimitiveFixture {
   readonly object: CompiledSceneObject;
   readonly foreignObject: CompiledSceneObject;
   readonly untrustedText: string;
+  readonly escapedText: string;
+  /**
+   * Whether this primitive draws any author-controlled string of its own. When
+   * it does, the escaped form must appear; either way the raw form must not.
+   */
+  readonly emitsAuthorText: boolean;
   readonly logicalWidth: number;
   readonly logicalHeight: number;
-}
-
-const horizontalAttributePattern = /\b(?:x|x1|x2|cx)="(-?[\d.]+)"/g;
-const verticalAttributePattern = /\b(?:y|y1|y2|cy)="(-?[\d.]+)"/g;
-const pointsAttributePattern = /\bpoints="([^"]+)"/g;
-
-function attributeCoordinates(markup: string, pattern: RegExp): number[] {
-  return [...markup.matchAll(pattern)].map((match) => Number(match[1]));
-}
-
-function pointCoordinates(
-  markup: string,
-): Readonly<{ horizontal: readonly number[]; vertical: readonly number[] }> {
-  const horizontal: number[] = [];
-  const vertical: number[] = [];
-  for (const match of markup.matchAll(pointsAttributePattern)) {
-    for (const pair of (match[1] ?? "").trim().split(/\s+/)) {
-      const [x, y] = pair.split(",").map(Number);
-      if (x !== undefined && Number.isFinite(x)) horizontal.push(x);
-      if (y !== undefined && Number.isFinite(y)) vertical.push(y);
-    }
-  }
-  return { horizontal, vertical };
-}
-
-function outOfBounds(values: readonly number[], limit: number): number[] {
-  return values.filter((value) => value < 0 || value > limit);
 }
 
 /**
@@ -58,7 +38,7 @@ function outOfBounds(values: readonly number[], limit: number): number[] {
  * primitive from that primitive's test file.
  */
 export function runPrimitiveConformance(
-  contract: PrimitiveContract,
+  contract: PrimitiveConformanceContract,
   fixture: PrimitiveFixture,
 ): void {
   test("accepts only its own normalized scene objects", () => {
@@ -72,56 +52,61 @@ export function runPrimitiveConformance(
     const markup = contract.renderInteractive(fixture.object);
 
     expect({
-      group: markup.startsWith("<g "),
-      hook: markup.includes(`data-object-id="${fixture.object.id}"`),
-    }).toEqual({ group: true, hook: true });
+      markup,
+      opensAGroup: markup.startsWith("<g "),
+      objectHook: markup.includes(`data-object-id="${fixture.object.id}"`),
+    }).toEqual({
+      markup,
+      opensAGroup: true,
+      objectHook: true,
+    });
   });
 
   test("renders a static step without interactive hooks", () => {
     const markup = contract.renderStatic(fixture.object);
 
     expect({
-      group: markup.startsWith("<g "),
-      hook: markup.includes("data-object-id"),
-    }).toEqual({ group: true, hook: false });
+      markup,
+      objectHook: markup.includes("data-object-id"),
+      opensAGroup: markup.startsWith("<g "),
+    }).toEqual({
+      markup,
+      objectHook: false,
+      opensAGroup: true,
+    });
   });
 
   test("produces a plain-text semantic description", () => {
     const description = contract.describe(fixture.object);
 
     expect({
+      description,
       empty: description.trim().length === 0,
-      markup: /[<>]/.test(description),
-    }).toEqual({ empty: false, markup: false });
+      leaksMarkup: /[<>]/.test(description),
+    }).toEqual({ description, empty: false, leaksMarkup: false });
   });
 
   test("stays inside the logical viewBox at a narrow width", () => {
-    const markup = contract.renderNarrow(fixture.object);
-    const points = pointCoordinates(markup);
-
-    expect({
-      horizontal: outOfBounds(
-        [
-          ...attributeCoordinates(markup, horizontalAttributePattern),
-          ...points.horizontal,
-        ],
+    expect(
+      findOutOfBoundsCoordinates(
+        contract.renderNarrow(fixture.object),
         fixture.logicalWidth,
-      ),
-      vertical: outOfBounds(
-        [
-          ...attributeCoordinates(markup, verticalAttributePattern),
-          ...points.vertical,
-        ],
         fixture.logicalHeight,
       ),
-    }).toEqual({ horizontal: [], vertical: [] });
+    ).toEqual([]);
   });
 
-  test("never emits raw author-controlled text", () => {
+  test("escapes author-controlled text instead of emitting it raw", () => {
+    const markup = contract.renderUntrusted(fixture.object);
+
     expect({
-      interactive: contract
-        .renderUntrusted(fixture.object)
-        .includes(fixture.untrustedText),
-    }).toEqual({ interactive: false });
+      escaped: markup.includes(fixture.escapedText),
+      markup,
+      raw: markup.includes(fixture.untrustedText),
+    }).toEqual({
+      escaped: fixture.emitsAuthorText,
+      markup,
+      raw: false,
+    });
   });
 }

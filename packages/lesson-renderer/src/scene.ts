@@ -2,70 +2,26 @@ import type {
   CompiledSceneObject,
   SemanticSnapshot,
 } from "@knowledge-hub/lesson-compiler";
-import type {
-  ArrayGeometry,
-  PrimitivePresentation,
-  PrimitiveRenderContext,
-} from "./types.js";
-
-export const LOGICAL_WIDTH = 960;
-export const LOGICAL_HEIGHT = 420;
-export const ARRAY_TOP = 160;
-export const ARRAY_HEIGHT = 96;
-export const ARRAY_BOTTOM = ARRAY_TOP + ARRAY_HEIGHT;
-
-const HORIZONTAL_PADDING = 60;
-const MIN_CELL_WIDTH = 72;
-const MAX_CELL_WIDTH = 140;
 
 type ArrayObject = Extract<CompiledSceneObject, { kind: "array" }>;
 type PointerObject = Extract<CompiledSceneObject, { kind: "pointer" }>;
 type ComparisonObject = Extract<CompiledSceneObject, { kind: "comparison" }>;
 
-/**
- * Cells share the available width. They stay within a legible range while the
- * item count allows it, and shrink below it rather than leave the viewBox.
- */
-export function computeArrayGeometry(cellCount: number): ArrayGeometry {
-  const available = LOGICAL_WIDTH - HORIZONTAL_PADDING * 2;
-  const fitted = cellCount > 0 ? available / cellCount : available;
-  const cellWidth =
-    fitted < MIN_CELL_WIDTH ? fitted : Math.min(MAX_CELL_WIDTH, fitted);
-
-  return {
-    cellCount,
-    cellWidth,
-    height: ARRAY_HEIGHT,
-    left: (LOGICAL_WIDTH - cellWidth * cellCount) / 2,
-    top: ARRAY_TOP,
-  };
-}
-
-export function cellCenter(geometry: ArrayGeometry, index: number): number {
-  const clamped = Math.max(0, Math.min(index, geometry.cellCount - 1));
-  return geometry.left + (clamped + 0.5) * geometry.cellWidth;
-}
-
-export function createRenderContext(
-  snapshot: SemanticSnapshot,
-  presentation: PrimitivePresentation,
-): PrimitiveRenderContext {
-  const values = findArrayObject(snapshot);
-
-  return {
-    geometry: computeArrayGeometry(values?.values.length ?? 0),
-    presentation,
-    snapshot,
-  };
-}
-
 export function findArrayObject(
   snapshot: SemanticSnapshot,
-  objectId?: string,
 ): ArrayObject | undefined {
   for (const object of snapshot.objects) {
-    if (object.kind !== "array") continue;
-    if (objectId === undefined || object.id === objectId) return object;
+    if (object.kind === "array") return object;
+  }
+  return undefined;
+}
+
+export function findArrayObjectById(
+  snapshot: SemanticSnapshot,
+  objectId: string,
+): ArrayObject | undefined {
+  for (const object of snapshot.objects) {
+    if (object.kind === "array" && object.id === objectId) return object;
   }
   return undefined;
 }
@@ -89,19 +45,25 @@ export function findComparisonObject(
   return undefined;
 }
 
-/** The index a pointer currently addresses, preferring the snapshot record. */
+/**
+ * The index a pointer addresses, held inside its own array so the marker and
+ * the label it carries can never disagree.
+ */
 export function pointerIndex(
   snapshot: SemanticSnapshot,
   pointer: PointerObject,
 ): number {
-  return snapshot.pointers[pointer.id] ?? pointer.index;
+  const requested = snapshot.pointers[pointer.id] ?? pointer.index;
+  const values = findArrayObjectById(snapshot, pointer.targetObjectId);
+  if (values === undefined || values.values.length === 0) return requested;
+  return Math.max(0, Math.min(requested, values.values.length - 1));
 }
 
 export function pointerValue(
   snapshot: SemanticSnapshot,
   pointer: PointerObject,
 ): number | undefined {
-  const values = findArrayObject(snapshot, pointer.targetObjectId);
+  const values = findArrayObjectById(snapshot, pointer.targetObjectId);
   return values?.values[pointerIndex(snapshot, pointer)];
 }
 

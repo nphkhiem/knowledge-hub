@@ -1,50 +1,32 @@
-import type { CompiledSceneObject } from "@knowledge-hub/lesson-compiler";
-import {
-  asSafeMarkup,
-  escapeText,
-  formatCoordinate,
-  renderGroup,
-} from "../escapeMarkup.js";
-import { LOGICAL_WIDTH, ordinalAmongKind } from "../scene.js";
-import type {
-  PrimitiveContract,
-  PrimitiveRenderContext,
-  SafeMarkup,
-} from "../types.js";
+import { definePrimitive } from "../definePrimitive.js";
+import { escapeText, formatCoordinate } from "../escapeMarkup.js";
+import { LOGICAL_WIDTH, clampTextEnd } from "../geometry.js";
+import { renderGroup } from "../renderGroup.js";
+import { ordinalAmongKind } from "../scene.js";
 
 const RIGHT_MARGIN = 60;
 const FIRST_BASELINE = 48;
 const LINE_HEIGHT = 30;
+const FONT_SIZE = 18;
 
-function accepts(object: CompiledSceneObject): boolean {
-  return object.kind === "label";
-}
+export const labelPrimitive = definePrimitive("label", {
+  describe: (object) => object.text,
 
-function describe(object: CompiledSceneObject): string {
-  return object.kind === "label" ? object.text : "";
-}
+  render: (object, context) => {
+    const baseline =
+      FIRST_BASELINE + ordinalAmongKind(context.snapshot, object) * LINE_HEIGHT;
+    const x = clampTextEnd(
+      LOGICAL_WIDTH - RIGHT_MARGIN,
+      object.text,
+      FONT_SIZE,
+    );
 
-function render(
-  object: CompiledSceneObject,
-  context: PrimitiveRenderContext,
-): SafeMarkup {
-  if (object.kind !== "label" || !object.visible) return asSafeMarkup("");
-
-  const baseline =
-    FIRST_BASELINE + ordinalAmongKind(context.snapshot, object) * LINE_HEIGHT;
-
-  return renderGroup(object, context, "lesson-label", object.text, [
-    [
-      `<text x="${formatCoordinate(LOGICAL_WIDTH - RIGHT_MARGIN)}" y="${baseline}"`,
-      ` text-anchor="end" font-size="18" fill="var(--color-visual-object-text)">`,
-      `${escapeText(object.text)}</text>`,
-    ].join(""),
-  ]);
-}
-
-export const labelPrimitive: PrimitiveContract = {
-  accepts,
-  describe,
-  kind: "label",
-  render,
-};
+    return renderGroup(object, context, "lesson-label", object.text, [
+      [
+        `<text x="${formatCoordinate(x)}" y="${baseline}" text-anchor="end"`,
+        ` font-size="${FONT_SIZE}" fill="var(--color-visual-object-text)">`,
+        `${escapeText(object.text)}</text>`,
+      ].join(""),
+    ]);
+  },
+});

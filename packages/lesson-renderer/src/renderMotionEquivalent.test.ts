@@ -38,11 +38,15 @@ test("turns every compiled snapshot into one ordered, numbered step", () => {
 test("keeps each step's description aligned with its own snapshot", () => {
   const steps = renderMotionEquivalent(compiledTwoPointersLesson);
 
-  expect(steps.map((step) => step.description)).toEqual(
-    compiledTwoPointersLesson.snapshots.map(
-      (snapshot) => renderSnapshot(snapshot).description,
-    ),
-  );
+  expect([
+    steps[0]?.description,
+    steps[1]?.description,
+    steps[8]?.description,
+  ]).toEqual([
+    "The left pointer starts at value 1 and the right pointer starts at value 15. The target is 15.",
+    "Compare 1 at the left pointer with 15 at the right pointer. Their sum is 16, greater than the target 15.",
+    "Compare 4 at the left pointer with 11 at the right pointer. Their sum is 15, equal to the target 15. The pair at indices 2 and 4 sums to the target.",
+  ]);
 });
 
 test("renders static steps without the interactive object hooks", () => {

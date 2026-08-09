@@ -1,5 +1,8 @@
 import type { SemanticSnapshot } from "@knowledge-hub/lesson-compiler";
-import { compiledTwoPointersLesson } from "@knowledge-hub/lesson-testing";
+import {
+  compiledTwoPointersLesson,
+  findOutOfBoundsCoordinates,
+} from "@knowledge-hub/lesson-testing";
 import { expect, test } from "vitest";
 import { renderSnapshot } from "./index.js";
 
@@ -130,19 +133,32 @@ test("marks highlighted cells with a stroke weight rather than color alone", () 
   }).toEqual({ cellCount: 6, emphasizedCount: 2 });
 });
 
-test("keeps every drawn coordinate inside the logical viewBox for a long array", () => {
+test("keeps every shape and label inside the logical viewBox for a long array", () => {
   const values = Array.from({ length: 40 }, (_, index) => index + 1);
   const snapshot = snapshotAt(1);
   const objects = snapshot.objects.map((object) =>
     object.kind === "array" ? { ...object, values } : object,
   );
-  const markup = renderSnapshot({ ...snapshot, objects }).markup;
-  const horizontal = [...markup.matchAll(/\b(?:x|x1|x2|cx)="(-?[\d.]+)"/g)].map(
-    (match) => Number(match[1]),
-  );
+  const rendered = renderSnapshot({ ...snapshot, objects });
 
-  expect({
-    count: horizontal.length > 0,
-    outside: horizontal.filter((value) => value < 0 || value > 960),
-  }).toEqual({ count: true, outside: [] });
+  expect(
+    findOutOfBoundsCoordinates(
+      rendered.markup,
+      rendered.logicalWidth,
+      rendered.logicalHeight,
+    ),
+  ).toEqual([]);
+});
+
+test("keeps every shape and label inside the logical viewBox for every snapshot", () => {
+  const offenders = compiledTwoPointersLesson.snapshots.flatMap((snapshot) => {
+    const rendered = renderSnapshot(snapshot);
+    return findOutOfBoundsCoordinates(
+      rendered.markup,
+      rendered.logicalWidth,
+      rendered.logicalHeight,
+    ).map((offender) => `${snapshot.stepId}: ${offender}`);
+  });
+
+  expect(offenders).toEqual([]);
 });

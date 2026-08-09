@@ -17,7 +17,7 @@ test("reduces identifiers to characters that are safe in a fragment target", () 
   expect({
     hostile: escapeId('a" onmouseover="x'),
     spaced: escapeId("move right"),
-    unicode: escapeId("étape-1"),
+    unicode: escapeId("\u00e9tape-1"),
   }).toEqual({
     hostile: "a-onmouseover-x",
     spaced: "move-right",

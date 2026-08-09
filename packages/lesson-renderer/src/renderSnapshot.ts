@@ -4,12 +4,16 @@ import type {
 } from "@knowledge-hub/lesson-compiler";
 import { describeSnapshot } from "./describeSnapshot.js";
 import { asSafeMarkup, escapeId, escapeText } from "./escapeMarkup.js";
+import {
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
+  createRenderContext,
+} from "./geometry.js";
 import { arrayPrimitive } from "./primitives/array.js";
 import { comparisonPrimitive } from "./primitives/comparison.js";
 import { labelPrimitive } from "./primitives/label.js";
 import { pointerPrimitive } from "./primitives/pointer.js";
 import { resultPrimitive } from "./primitives/result.js";
-import { LOGICAL_HEIGHT, LOGICAL_WIDTH, createRenderContext } from "./scene.js";
 import type {
   PrimitiveContract,
   PrimitivePresentation,
