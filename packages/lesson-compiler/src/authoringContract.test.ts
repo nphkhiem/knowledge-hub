@@ -1031,6 +1031,80 @@ test("rejects duplicate scene object identifiers", async () => {
   }
 });
 
+test("rejects an initial pointer at the target array length", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await replaceInLessonYaml(directory, "index: 5", "index: 6");
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "reference.invalid",
+          file: lessonFile,
+          path: "scene.objects[2].index",
+          message:
+            'Pointer "right" index 6 is outside target array "values" (length 6).',
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
+test("rejects a negative initial pointer index", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await replaceInLessonYaml(directory, "index: 0", "index: -1");
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "schema.invalid",
+          file: lessonFile,
+          path: "scene.objects[1].index",
+          message: "The value does not satisfy the V1 lesson contract.",
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
+test("rejects an authored result that starts not-found", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await replaceInLessonYaml(
+      directory,
+      'status: "pending"',
+      'status: "not-found"',
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "schema.invalid",
+          file: lessonFile,
+          path: "scene.objects[5].status",
+          message: "The value does not satisfy the V1 lesson contract.",
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
 test("rejects duplicate timeline step identifiers", async () => {
   const directory = await cloneCanonicalLesson();
   const lessonFile = join(directory, "lesson.yaml");

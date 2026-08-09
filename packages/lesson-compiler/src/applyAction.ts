@@ -223,6 +223,14 @@ export function applyAction(
             `${context.path}.value`,
           );
         }
+        if (indices[0] === indices[1]) {
+          return failure(
+            context,
+            `A found result requires two distinct pointer indices.`,
+            "reference.invalid",
+            `${context.path}.value`,
+          );
+        }
         result = { kind: "found", indices };
       } else {
         result = status === "not-found" ? { kind: "not-found" } : undefined;

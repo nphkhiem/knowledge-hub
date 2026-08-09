@@ -208,6 +208,93 @@ test("keeps all five primitive contracts closed", () => {
   }
 });
 
+test("rejects a negative initial pointer index", () => {
+  const [arrayObject, pointerObject, ...remainingObjects] =
+    validTwoPointersSource.scene.objects;
+  const result = validateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        ...validTwoPointersSource.scene,
+        objects: [
+          arrayObject,
+          { ...pointerObject, index: -1 },
+          ...remainingObjects,
+        ],
+      },
+    },
+    "lesson.yaml",
+  );
+
+  expect(result).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "schema.invalid",
+        file: "lesson.yaml",
+        path: "scene.objects[1].index",
+        message: "The value does not satisfy the V1 lesson contract.",
+      },
+    ],
+  });
+});
+
+test("rejects an authored result that starts found", () => {
+  const result = validateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        ...validTwoPointersSource.scene,
+        objects: validTwoPointersSource.scene.objects.map((object) =>
+          object.kind === "result" ? { ...object, status: "found" } : object,
+        ),
+      },
+    },
+    "lesson.yaml",
+  );
+
+  expect(result).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "schema.invalid",
+        file: "lesson.yaml",
+        path: "scene.objects[4].status",
+        message: "The value does not satisfy the V1 lesson contract.",
+      },
+    ],
+  });
+});
+
+test("rejects an authored result that starts not-found", () => {
+  const result = validateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        ...validTwoPointersSource.scene,
+        objects: validTwoPointersSource.scene.objects.map((object) =>
+          object.kind === "result"
+            ? { ...object, status: "not-found" }
+            : object,
+        ),
+      },
+    },
+    "lesson.yaml",
+  );
+
+  expect(result).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "schema.invalid",
+        file: "lesson.yaml",
+        path: "scene.objects[4].status",
+        message: "The value does not satisfy the V1 lesson contract.",
+      },
+    ],
+  });
+});
+
 test("validates the complete Model Check contract", () => {
   const result = validateLessonSource(
     {

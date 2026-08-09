@@ -42,7 +42,7 @@ export const comparisonPrimitiveSchema = z.strictObject({
 export const resultPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
   kind: z.literal("result"),
-  status: z.enum(["pending", "found", "not-found"]),
+  status: z.literal("pending"),
 });
 
 export const primitiveSchema = z.discriminatedUnion("kind", [

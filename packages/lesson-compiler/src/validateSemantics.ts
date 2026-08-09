@@ -48,6 +48,13 @@ export function validateLessonSemantics(
           path: `scene.objects[${objectIndex}].targetObjectId`,
           message: `Reference "${object.targetObjectId}" must resolve to an array, but resolves to ${primitiveWithArticle(target.kind)}.`,
         });
+      } else if (object.index >= target.values.length) {
+        diagnostics.push({
+          code: "reference.invalid",
+          file,
+          path: `scene.objects[${objectIndex}].index`,
+          message: `Pointer "${object.id}" index ${object.index} is outside target array "${target.id}" (length ${target.values.length}).`,
+        });
       }
     }
     if (object.kind === "comparison") {

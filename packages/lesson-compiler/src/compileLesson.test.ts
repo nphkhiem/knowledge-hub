@@ -618,3 +618,125 @@ test("diagnoses a found result after a pointer moves away from equality", () => 
     ],
   });
 });
+
+test("diagnoses an initial pointer at the target array length", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const rightPointer = source.scene.objects[1];
+  if (rightPointer?.kind !== "pointer") {
+    throw new Error(
+      "Expected the compiler fixture to contain a right pointer.",
+    );
+  }
+  const compiled = compileLesson(
+    {
+      ...source,
+      scene: {
+        ...source.scene,
+        objects: [
+          source.scene.objects[0]!,
+          { ...rightPointer, index: 6 },
+          ...source.scene.objects.slice(2),
+        ],
+      },
+    },
+    compiledContent,
+  );
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.invalid",
+        file: "lesson.yaml",
+        path: "scene.objects[1].index",
+        message:
+          'Pointer "right-pointer" index 6 is outside target array "values" (length 6).',
+      },
+    ],
+  });
+});
+
+test("diagnoses a found result using the same array index twice", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const migrated = migrateLessonSource(
+    {
+      ...source,
+      scene: {
+        ...source.scene,
+        target: 22,
+        objects: source.scene.objects.map((object) => {
+          if (object.kind === "pointer") return { ...object, index: 4 };
+          if (object.kind === "comparison") return { ...object, target: 22 };
+          return object;
+        }),
+      },
+      timeline: [
+        {
+          id: "compare-same-index",
+          narration: "Compare the same index through both pointers.",
+          actions: [{ type: "compare", objectId: "pair-comparison" }],
+        },
+        {
+          id: "invalid-found-result",
+          narration: "Try to publish one index as a pair.",
+          terminal: true,
+          actions: [
+            {
+              type: "set",
+              objectId: "pair-result",
+              property: "status",
+              value: "found",
+            },
+          ],
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error(
+      "Expected the same-index fixture to be valid authoring data.",
+    );
+  }
+
+  const compiled = compileLesson(migrated.value, compiledContent);
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.invalid",
+        file: "lesson.yaml",
+        path: "timeline[1].actions[0].value",
+        message: "A found result requires two distinct pointer indices.",
+      },
+    ],
+  });
+});
+
+test("rejects an authored found result at the direct compiler boundary", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const authoredFound = {
+    ...source,
+    scene: {
+      ...source.scene,
+      objects: source.scene.objects.map((object) =>
+        object.kind === "result" ? { ...object, status: "found" } : object,
+      ),
+    },
+  } as unknown as LessonSourceV1;
+
+  const compiled = compileLesson(authoredFound, compiledContent);
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "schema.invalid",
+        file: "lesson.yaml",
+        path: "scene.objects[5].status",
+        message: "The value does not satisfy the V1 lesson contract.",
+      },
+    ],
+  });
+});
