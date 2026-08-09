@@ -152,7 +152,12 @@ export const accessibilitySchema = z.strictObject({
 const evidenceSourceSchema = z
   .strictObject({
     title: z.string().min(1),
-    url: z.url().optional(),
+    url: z
+      .url()
+      .refine((url) => ["http:", "https:"].includes(new URL(url).protocol), {
+        message: "Evidence URLs must use HTTP or HTTPS.",
+      })
+      .optional(),
     citation: z.string().min(1).optional(),
     publisher: z.string().min(1),
     accessedOn: z.iso.date(),

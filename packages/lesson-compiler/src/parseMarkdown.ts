@@ -4,7 +4,6 @@ import rehypeStringify from "rehype-stringify";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
-import { visit } from "unist-util-visit";
 import {
   LessonPackageError,
   type CompiledMarkdown,
@@ -17,6 +16,29 @@ const markdownProcessor = unified()
   .use(remarkRehype)
   .use(rehypeSanitize)
   .use(rehypeStringify);
+
+function meaningfulVisibleText(node: unknown): string {
+  if (typeof node !== "object" || node === null) return "";
+  const candidate = node as {
+    readonly alt?: unknown;
+    readonly children?: unknown;
+    readonly type?: unknown;
+    readonly value?: unknown;
+  };
+  if (candidate.type === "html") return "";
+  if (
+    ["code", "inlineCode", "text"].includes(String(candidate.type)) &&
+    typeof candidate.value === "string"
+  ) {
+    return candidate.value;
+  }
+  if (candidate.type === "image" && typeof candidate.alt === "string") {
+    return candidate.alt;
+  }
+  return Array.isArray(candidate.children)
+    ? candidate.children.map(meaningfulVisibleText).join(" ")
+    : "";
+}
 
 export async function compileMarkdown(
   source: string,
@@ -42,11 +64,13 @@ export async function compileQuickUnderstanding(
   file: string,
 ): Promise<CompiledMarkdown> {
   const tree = markdownParser.parse(source);
-  const headings: Array<{ readonly depth: number; readonly title: string }> =
-    [];
-  visit(tree, "heading", (heading) => {
-    headings.push({ depth: heading.depth, title: toString(heading) });
-  });
+  const topLevelHeadings = tree.children.flatMap((node, index) =>
+    node.type === "heading" ? [{ heading: node, index }] : [],
+  );
+  const headings = topLevelHeadings.map(({ heading }) => ({
+    depth: heading.depth,
+    title: toString(heading),
+  }));
   const expected = [
     { depth: 2, title: "Recognition signals" },
     { depth: 2, title: "When it fits" },
@@ -65,16 +89,14 @@ export async function compileQuickUnderstanding(
     ]);
   }
 
-  const headingIndices = tree.children.flatMap((node, index) =>
-    node.type === "heading" ? [index] : [],
-  );
+  const headingIndices = topLevelHeadings.map(({ index }) => index);
   const sectionPaths = ["recognition-signals", "when-it-fits", "limitation"];
   for (const [sectionIndex, headingIndex] of headingIndices.entries()) {
     const nextHeadingIndex =
       headingIndices[sectionIndex + 1] ?? tree.children.length;
     const containsProse = tree.children
       .slice(headingIndex + 1, nextHeadingIndex)
-      .some((node) => toString(node).trim().length > 0);
+      .some((node) => meaningfulVisibleText(node).trim().length > 0);
     if (!containsProse) {
       throw new LessonPackageError([
         {
@@ -139,7 +161,7 @@ export async function compileRealWorldApplications(
     firstApplicationHeadingIndex === undefined ||
     tree.children
       .slice(0, firstApplicationHeadingIndex)
-      .some((node) => toString(node).trim().length > 0)
+      .some((node) => meaningfulVisibleText(node).trim().length > 0)
   ) {
     throw new LessonPackageError([
       {
@@ -196,7 +218,7 @@ export async function compileRealWorldApplications(
         sectionHeadingIndices[sectionIndex + 1] ?? bodyNodes.length;
       const containsProse = bodyNodes
         .slice(sectionHeadingIndex + 1, nextSectionHeadingIndex)
-        .some((node) => toString(node).trim().length > 0);
+        .some((node) => meaningfulVisibleText(node).trim().length > 0);
       if (!containsProse) {
         throw new LessonPackageError([
           {

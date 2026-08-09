@@ -4,6 +4,8 @@ export {
   type LessonSourceV1,
 } from "./v1.js";
 export {
+  compareCodeUnits,
+  sortDiagnostics,
   type DiagnosticCode,
   type LessonDiagnostic,
   type ValidationResult,

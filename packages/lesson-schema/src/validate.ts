@@ -136,7 +136,7 @@ export function validateLessonSource(
       diagnostics: sortDiagnostics(vocabularyDiagnostics),
     };
   }
-  if (!("modelCheck" in input)) {
+  if (!("modelCheck" in input) || input.modelCheck === undefined) {
     return {
       ok: false,
       diagnostics: [
@@ -194,6 +194,16 @@ export function validateLessonSource(
           issue.path[0] === "evidence" &&
           issue.path[1] === "sources"
         ) {
+          if (issue.path.at(-1) === "url") {
+            return [
+              {
+                code: "evidence.source-scheme" as const,
+                file,
+                path: toPath(issue.path),
+                message: "Evidence URLs must use HTTP or HTTPS.",
+              },
+            ];
+          }
           return [
             {
               code: "evidence.source-locator" as const,

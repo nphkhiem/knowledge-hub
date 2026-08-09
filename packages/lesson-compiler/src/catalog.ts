@@ -1,5 +1,6 @@
-import { access, readdir } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { access, readdir, realpath } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { compareCodeUnits } from "@knowledge-hub/lesson-schema";
 import { compileLessonPackage } from "./loadLessonPackage.js";
 import { LessonPackageError, type CompiledLesson } from "./types.js";
 
@@ -25,7 +26,7 @@ async function childDirectories(directory: string): Promise<readonly string[]> {
   return entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => join(directory, entry.name))
-    .sort((left, right) => left.localeCompare(right));
+    .sort(compareCodeUnits);
 }
 
 export async function getCompiledLessons(): Promise<readonly CompiledLesson[]> {
@@ -43,48 +44,90 @@ export async function getCompiledLessons(): Promise<readonly CompiledLesson[]> {
 export async function compileLessonCatalog(
   lessonDirectories: readonly string[],
 ): Promise<readonly CompiledLesson[]> {
-  const entries = await Promise.all(
-    lessonDirectories.map(async (directory) => ({
-      directory,
-      lesson: await compileLessonPackage(directory),
-    })),
+  const packageResults = await Promise.all(
+    lessonDirectories.map(async (inputDirectory) => {
+      let directory: string;
+      try {
+        directory = await realpath(inputDirectory);
+      } catch {
+        return {
+          ok: false as const,
+          diagnostics: [
+            {
+              code: "file.missing" as const,
+              file: resolve(inputDirectory, "lesson.yaml"),
+              path: "$",
+              message: "Required lesson file is missing or unreadable.",
+            },
+          ],
+        };
+      }
+      try {
+        return {
+          ok: true as const,
+          entry: {
+            directory,
+            lesson: await compileLessonPackage(directory),
+          },
+        };
+      } catch (error) {
+        if (error instanceof LessonPackageError) {
+          return {
+            ok: false as const,
+            diagnostics: error.diagnostics,
+          };
+        }
+        throw error;
+      }
+    }),
   );
-  const ids = new Set<string>();
-  const collectionOrders = new Set<string>();
-  const routes = new Set<string>();
-  const diagnostics = entries.flatMap(({ directory, lesson }) => {
-    const entryDiagnostics = [];
-    const route = `${lesson.domain}/${lesson.slug}`;
-    const collectionOrder = `${lesson.collection}/${lesson.order}`;
-    if (ids.has(lesson.id)) {
-      entryDiagnostics.push({
+  const packageDiagnostics = packageResults.flatMap((result) =>
+    result.ok ? [] : result.diagnostics,
+  );
+  const entries = packageResults
+    .flatMap((result) => (result.ok ? [result.entry] : []))
+    .sort((left, right) => compareCodeUnits(left.directory, right.directory));
+  const duplicateGroups = <T>(
+    keyOf: (entry: (typeof entries)[number]) => T,
+  ) => {
+    const groups = new Map<T, (typeof entries)[number][]>();
+    for (const entry of entries) {
+      const key = keyOf(entry);
+      groups.set(key, [...(groups.get(key) ?? []), entry]);
+    }
+    return [...groups.entries()].filter(([, group]) => group.length > 1);
+  };
+  const catalogDiagnostics = [
+    ...duplicateGroups(({ lesson }) => lesson.id).flatMap(([id, group]) =>
+      group.map(({ directory }) => ({
         code: "catalog.duplicate-id" as const,
         file: join(directory, "lesson.yaml"),
         path: "id",
-        message: `Lesson id "${lesson.id}" is duplicated in the catalog.`,
-      });
-    }
-    if (routes.has(route)) {
-      entryDiagnostics.push({
+        message: `Lesson id "${id}" is duplicated in the catalog.`,
+      })),
+    ),
+    ...duplicateGroups(
+      ({ lesson }) => `${lesson.domain}/${lesson.slug}`,
+    ).flatMap(([route, group]) =>
+      group.map(({ directory }) => ({
         code: "catalog.duplicate-route" as const,
         file: join(directory, "lesson.yaml"),
         path: "slug",
         message: `Lesson route "${route}" is duplicated in the catalog.`,
-      });
-    }
-    if (collectionOrders.has(collectionOrder)) {
-      entryDiagnostics.push({
+      })),
+    ),
+    ...duplicateGroups(
+      ({ lesson }) => `${lesson.collection}/${lesson.order}`,
+    ).flatMap(([, group]) =>
+      group.map(({ directory, lesson }) => ({
         code: "catalog.duplicate-order" as const,
         file: join(directory, "lesson.yaml"),
         path: "order",
         message: `Order ${lesson.order} is duplicated in collection "${lesson.collection}".`,
-      });
-    }
-    ids.add(lesson.id);
-    collectionOrders.add(collectionOrder);
-    routes.add(route);
-    return entryDiagnostics;
-  });
+      })),
+    ),
+  ];
+  const diagnostics = [...packageDiagnostics, ...catalogDiagnostics];
   if (diagnostics.length > 0) throw new LessonPackageError(diagnostics);
 
   return entries

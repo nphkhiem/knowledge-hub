@@ -87,6 +87,25 @@ test("requires one Model Check", () => {
   }
 });
 
+test("treats an explicitly undefined Model Check as missing", () => {
+  const result = validateLessonSource(
+    { ...validTwoPointersSource, modelCheck: undefined },
+    "lesson.yaml",
+  );
+
+  expect(result).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "model-check.required",
+        file: "lesson.yaml",
+        path: "modelCheck",
+        message: "Every lesson requires one Model Check.",
+      },
+    ],
+  });
+});
+
 test("requires at least one evidence source", () => {
   const result = validateLessonSource(
     {
@@ -261,6 +280,63 @@ test("requires an evidence URL or publication citation", () => {
     });
   }
 });
+
+test.each([
+  ["executable", "javascript:alert(1)"],
+  ["embedded data", "data:text/html,unsafe"],
+  ["local file", "file:///etc/passwd"],
+] as const)("rejects %s evidence URL schemes", (_label, url) => {
+  const result = validateLessonSource(
+    {
+      ...validTwoPointersSource,
+      evidence: {
+        ...validTwoPointersSource.evidence,
+        sources: [
+          {
+            ...validTwoPointersSource.evidence.sources[0],
+            url,
+          },
+        ],
+      },
+    },
+    "lesson.yaml",
+  );
+
+  expect(result).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "evidence.source-scheme",
+        file: "lesson.yaml",
+        path: "evidence.sources[0].url",
+        message: "Evidence URLs must use HTTP or HTTPS.",
+      },
+    ],
+  });
+});
+
+test.each(["https://example.com/source", "http://example.com/source"])(
+  "accepts an HTTP evidence URL: %s",
+  (url) => {
+    const result = validateLessonSource(
+      {
+        ...validTwoPointersSource,
+        evidence: {
+          ...validTwoPointersSource.evidence,
+          sources: [
+            {
+              ...validTwoPointersSource.evidence.sources[0],
+              url,
+            },
+          ],
+        },
+      },
+      "lesson.yaml",
+    );
+
+    expect(result.ok).toBe(true);
+  },
+);
 
 test("keeps unsupported versions behind the migration result boundary", () => {
   expect(migrateLessonSource({ schemaVersion: 2 }, "future.yaml")).toEqual({

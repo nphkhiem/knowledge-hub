@@ -1,9 +1,14 @@
-import { readFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { lstat, readFile, realpath } from "node:fs/promises";
 import {
-  migrateLessonSource,
-  type LessonDiagnostic,
-} from "@knowledge-hub/lesson-schema";
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
+import { migrateLessonSource } from "@knowledge-hub/lesson-schema";
 import { parseRestrictedYaml } from "./parseYaml.js";
 import {
   compileMarkdown,
@@ -18,20 +23,67 @@ import {
 } from "./types.js";
 
 async function readSourceFile(
-  directory: string,
+  canonicalDirectory: string,
+  displayDirectory: string,
   filename: string,
   path: string,
 ): Promise<string> {
-  const file = join(directory, filename);
+  const file = join(displayDirectory, filename);
+  const canonicalFile = resolve(canonicalDirectory, filename);
 
   try {
-    return await readFile(file, "utf8");
-  } catch {
+    const fileStats = await lstat(canonicalFile);
+    if (fileStats.isSymbolicLink() || !fileStats.isFile()) {
+      throw new LessonPackageError([
+        {
+          code: "file.unsafe",
+          file,
+          path,
+          message:
+            "Lesson files must be regular, non-symbolic files inside the package.",
+        },
+      ]);
+    }
+    const resolvedFile = await realpath(canonicalFile);
+    const relativePath = relative(canonicalDirectory, resolvedFile);
+    const outsidePackage =
+      relativePath === ".." ||
+      relativePath.startsWith(`..${sep}`) ||
+      isAbsolute(relativePath);
+    if (outsidePackage) {
+      throw new LessonPackageError([
+        {
+          code: "file.unsafe",
+          file,
+          path,
+          message:
+            "Lesson files must be regular, non-symbolic files inside the package.",
+        },
+      ]);
+    }
+    return await readFile(resolvedFile, "utf8");
+  } catch (error) {
+    if (error instanceof LessonPackageError) throw error;
     throw new LessonPackageError([
       {
         code: "file.missing",
         file,
         path,
+        message: "Required lesson file is missing or unreadable.",
+      },
+    ]);
+  }
+}
+
+async function canonicalizePackageRoot(directory: string): Promise<string> {
+  try {
+    return await realpath(directory);
+  } catch {
+    throw new LessonPackageError([
+      {
+        code: "file.missing",
+        file: join(directory, "lesson.yaml"),
+        path: "$",
         message: "Required lesson file is missing or unreadable.",
       },
     ]);
@@ -45,7 +97,8 @@ interface DeclaredContentSources {
 }
 
 async function readDeclaredContentSources(
-  directory: string,
+  canonicalDirectory: string,
+  displayDirectory: string,
   content: {
     readonly quickUnderstanding: string;
     readonly realWorldApplications: string;
@@ -75,24 +128,27 @@ async function readDeclaredContentSources(
   ];
   const results = await Promise.all(
     declarations.map(async ({ filename, key, path }) => {
-      const file = join(directory, filename);
       try {
-        return { ok: true as const, key, source: await readFile(file, "utf8") };
-      } catch {
         return {
-          ok: false as const,
-          diagnostic: {
-            code: "file.missing" as const,
-            file,
+          ok: true as const,
+          key,
+          source: await readSourceFile(
+            canonicalDirectory,
+            displayDirectory,
+            filename,
             path,
-            message: "Required lesson file is missing or unreadable.",
-          } satisfies LessonDiagnostic,
+          ),
         };
+      } catch (error) {
+        if (error instanceof LessonPackageError) {
+          return { ok: false as const, diagnostics: error.diagnostics };
+        }
+        throw error;
       }
     }),
   );
   const diagnostics = results.flatMap((result) =>
-    result.ok ? [] : [result.diagnostic],
+    result.ok ? [] : result.diagnostics,
   );
   if (diagnostics.length > 0) throw new LessonPackageError(diagnostics);
 
@@ -128,13 +184,14 @@ function parseLessonSource(source: string, file: string) {
 export async function loadLessonPackage(
   directory: string,
 ): Promise<LoadedLessonPackage> {
+  const canonicalDirectory = await canonicalizePackageRoot(directory);
   const lessonFile = join(directory, "lesson.yaml");
   const source = parseLessonSource(
-    await readSourceFile(directory, "lesson.yaml", "$"),
+    await readSourceFile(canonicalDirectory, directory, "lesson.yaml", "$"),
     lessonFile,
   );
-  const packageSlug = basename(directory);
-  const packageDomain = basename(dirname(directory));
+  const packageSlug = basename(canonicalDirectory);
+  const packageDomain = basename(dirname(canonicalDirectory));
   const identityDiagnostics = [
     ...(source.domain === packageDomain
       ? []
@@ -173,6 +230,7 @@ export async function loadLessonPackage(
     source.content.realWorldApplications,
   );
   const contentSources = await readDeclaredContentSources(
+    canonicalDirectory,
     directory,
     source.content,
   );

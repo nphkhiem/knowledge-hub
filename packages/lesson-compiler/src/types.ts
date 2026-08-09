@@ -1,6 +1,7 @@
-import type {
-  LessonDiagnostic,
-  LessonSourceV1,
+import {
+  sortDiagnostics,
+  type LessonDiagnostic,
+  type LessonSourceV1,
 } from "@knowledge-hub/lesson-schema";
 
 export interface CompiledMarkdown {
@@ -30,11 +31,7 @@ export class LessonPackageError extends Error {
   readonly diagnostics: readonly LessonPackageDiagnostic[];
 
   constructor(diagnostics: readonly LessonPackageDiagnostic[]) {
-    const sortedDiagnostics = [...diagnostics].sort((left, right) =>
-      `${left.file}\0${left.path}\0${left.code}`.localeCompare(
-        `${right.file}\0${right.path}\0${right.code}`,
-      ),
-    );
+    const sortedDiagnostics = sortDiagnostics(diagnostics);
     super(
       sortedDiagnostics
         .map(

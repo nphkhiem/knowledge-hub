@@ -179,29 +179,29 @@ export function validateLessonSemantics(
     }
     return stepIndex + 1 < source.timeline.length ? stepIndex + 1 : undefined;
   };
-  const visitState = new Array<number>(source.timeline.length).fill(0);
-  const visitForCycles = (stepIndex: number): void => {
-    visitState[stepIndex] = 1;
-    const nextIndex = successorIndex(stepIndex);
-    if (nextIndex !== undefined) {
-      if (visitState[nextIndex] === 1) {
-        const cycleStep = source.timeline[nextIndex];
-        if (cycleStep) {
-          diagnostics.push({
-            code: "timeline.cycle",
-            file,
-            path: `timeline[${stepIndex}].nextStepId`,
-            message: `Timeline step "${cycleStep.id}" creates a cycle.`,
-          });
-        }
-      } else if (visitState[nextIndex] === 0) {
-        visitForCycles(nextIndex);
+  const visitState = new Uint8Array(source.timeline.length);
+  for (const startIndex of source.timeline.keys()) {
+    if (visitState[startIndex] !== 0) continue;
+    const currentPath: number[] = [];
+    let currentIndex: number | undefined = startIndex;
+    while (currentIndex !== undefined && visitState[currentIndex] === 0) {
+      visitState[currentIndex] = 1;
+      currentPath.push(currentIndex);
+      currentIndex = successorIndex(currentIndex);
+    }
+    if (currentIndex !== undefined && visitState[currentIndex] === 1) {
+      const contributorIndex = currentPath.at(-1);
+      const cycleStep = source.timeline[currentIndex];
+      if (contributorIndex !== undefined && cycleStep) {
+        diagnostics.push({
+          code: "timeline.cycle",
+          file,
+          path: `timeline[${contributorIndex}].nextStepId`,
+          message: `Timeline step "${cycleStep.id}" creates a cycle.`,
+        });
       }
     }
-    visitState[stepIndex] = 2;
-  };
-  for (const stepIndex of source.timeline.keys()) {
-    if (visitState[stepIndex] === 0) visitForCycles(stepIndex);
+    for (const visitedIndex of currentPath) visitState[visitedIndex] = 2;
   }
 
   const visitedStepIndices = new Set<number>();

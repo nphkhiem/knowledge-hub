@@ -1,8 +1,16 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { compileLessonPackage, LessonPackageError } from "./index.js";
 
 const invalidFixtures = fileURLToPath(
@@ -11,11 +19,21 @@ const invalidFixtures = fileURLToPath(
 const canonicalLesson = fileURLToPath(
   new URL("../../../lessons/dsa/two-pointers/", import.meta.url),
 );
+const temporaryRoots = new Set<string>();
+
+afterEach(async () => {
+  const roots = [...temporaryRoots];
+  temporaryRoots.clear();
+  await Promise.all(
+    roots.map((root) => rm(root, { force: true, recursive: true })),
+  );
+});
 
 async function cloneCanonicalLesson(): Promise<string> {
   const temporaryRoot = await mkdtemp(
     join(tmpdir(), "knowledge-hub-compiler-"),
   );
+  temporaryRoots.add(temporaryRoot);
   const directory = join(temporaryRoot, "dsa", "two-pointers");
   await mkdir(join(temporaryRoot, "dsa"), { recursive: true });
   await cp(canonicalLesson, directory, { recursive: true });
@@ -466,6 +484,70 @@ test("aggregates all missing declared content files in stable order", async () =
   }
 });
 
+test("rejects a declared Markdown file that is a symbolic link", async () => {
+  const directory = await cloneCanonicalLesson();
+  const packageRoot = join(directory, "..", "..");
+  const deepDiveFile = join(directory, "deep-dive.md");
+  const externalFile = join(packageRoot, "external-deep-dive.md");
+
+  try {
+    await writeFile(
+      externalFile,
+      "External content must not be read.\n",
+      "utf8",
+    );
+    await rm(deepDiveFile);
+    await symlink(externalFile, deepDiveFile);
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "file.unsafe",
+          file: deepDiveFile,
+          path: "content.deepDive",
+          message:
+            "Lesson files must be regular, non-symbolic files inside the package.",
+        },
+      ],
+    });
+  } finally {
+    await rm(packageRoot, { force: true, recursive: true });
+  }
+});
+
+test("rejects a lesson source file that is a symbolic link", async () => {
+  const directory = await cloneCanonicalLesson();
+  const packageRoot = join(directory, "..", "..");
+  const lessonFile = join(directory, "lesson.yaml");
+  const externalFile = join(packageRoot, "external-lesson.yaml");
+
+  try {
+    await writeFile(
+      externalFile,
+      "title: External content must not be parsed.\n",
+      "utf8",
+    );
+    await rm(lessonFile);
+    await symlink(externalFile, lessonFile);
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "file.unsafe",
+          file: lessonFile,
+          path: "$",
+          message:
+            "Lesson files must be regular, non-symbolic files inside the package.",
+        },
+      ],
+    });
+  } finally {
+    await rm(packageRoot, { force: true, recursive: true });
+  }
+});
+
 test("requires the exact Quick Understanding heading structure", async () => {
   const directory = await cloneCanonicalLesson();
   const quickUnderstandingFile = join(directory, "quick-understanding.md");
@@ -491,6 +573,46 @@ test("requires the exact Quick Understanding heading structure", async () => {
     });
   } finally {
     await rm(directory, { force: true, recursive: true });
+  }
+});
+
+test("does not accept nested blockquote headings as Quick Understanding sections", async () => {
+  const directory = await cloneCanonicalLesson();
+  const quickUnderstandingFile = join(directory, "quick-understanding.md");
+
+  try {
+    await writeFile(
+      quickUnderstandingFile,
+      [
+        "> ## Recognition signals",
+        ">",
+        "> Nested recognition prose.",
+        ">",
+        "> ## When it fits",
+        ">",
+        "> Nested fit prose.",
+        ">",
+        "> ## Limitation",
+        ">",
+        "> Nested limitation prose.",
+      ].join("\n"),
+      "utf8",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "markdown.quick-understanding-structure",
+          file: quickUnderstandingFile,
+          path: "content.quickUnderstanding",
+          message:
+            "Quick Understanding requires level-two headings: Recognition signals, When it fits, Limitation.",
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
 
@@ -529,6 +651,45 @@ test("requires prose in every Quick Understanding section", async () => {
     });
   } finally {
     await rm(directory, { force: true, recursive: true });
+  }
+});
+
+test("does not count HTML-only Quick Understanding bodies as prose", async () => {
+  const directory = await cloneCanonicalLesson();
+  const quickUnderstandingFile = join(directory, "quick-understanding.md");
+
+  try {
+    await writeFile(
+      quickUnderstandingFile,
+      [
+        "## Recognition signals",
+        "",
+        "<script>sanitized text must not count</script>",
+        "",
+        "## When it fits",
+        "",
+        "Visible fit prose.",
+        "",
+        "## Limitation",
+        "",
+        "Visible limitation prose.",
+      ].join("\n"),
+      "utf8",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "markdown.quick-understanding-content",
+          file: quickUnderstandingFile,
+          path: "content.quickUnderstanding.recognition-signals",
+          message: "Each Quick Understanding section requires prose.",
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
 
@@ -610,6 +771,45 @@ test("requires the exact Real-World Application section structure", async () => 
   }
 });
 
+test("does not accept nested blockquote headings as application sections", async () => {
+  const directory = await cloneCanonicalLesson();
+  const applicationsFile = join(directory, "real-world-applications.md");
+
+  try {
+    await writeFile(
+      applicationsFile,
+      [
+        "## Nested application",
+        "",
+        "> ### Situation",
+        "> Nested situation prose.",
+        "> ### Why it fits",
+        "> Nested fit prose.",
+        "> ### Application",
+        "> Nested application prose.",
+        "> ### Constraint",
+        "> Nested constraint prose.",
+      ].join("\n"),
+      "utf8",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "markdown.application-structure",
+          file: applicationsFile,
+          path: "content.realWorldApplications[0]",
+          message:
+            "Each Real-World Application requires Situation, Why it fits, Application, and Constraint level-three sections.",
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
 test("rejects content before the first Real-World Application", async () => {
   const directory = await cloneCanonicalLesson();
   const applicationsFile = join(directory, "real-world-applications.md");
@@ -665,6 +865,36 @@ test("requires prose in every Real-World Application section", async () => {
     });
   } finally {
     await rm(directory, { force: true, recursive: true });
+  }
+});
+
+test("does not count HTML-only application section bodies as prose", async () => {
+  const directory = await cloneCanonicalLesson();
+  const applicationsFile = join(directory, "real-world-applications.md");
+
+  try {
+    await writeFile(
+      applicationsFile,
+      validApplication("HTML-only situation").replace(
+        "A concrete production situation.",
+        "<script>sanitized text must not count</script>",
+      ),
+      "utf8",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "markdown.application-content",
+          file: applicationsFile,
+          path: "content.realWorldApplications[0].situation",
+          message: "Each Real-World Application section requires prose.",
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
 
@@ -1289,6 +1519,48 @@ test("detects cycles inside an unreachable timeline subgraph", async () => {
     await rm(join(directory, "..", ".."), { force: true, recursive: true });
   }
 });
+
+test("reports a deterministic cycle diagnostic for a 20,000-step timeline", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+  const stepCount = 20_000;
+
+  try {
+    const source = await readFile(lessonFile, "utf8");
+    const timeline = Array.from({ length: stepCount }, (_, index) =>
+      [
+        `  - id: "step-${index}"`,
+        `    narration: "Explain step ${index}."`,
+        "    actions:",
+        '      - type: "show"',
+        '        objectId: "values"',
+        ...(index === stepCount - 1 ? ['    nextStepId: "step-0"'] : []),
+      ].join("\n"),
+    ).join("\n");
+    await writeFile(
+      lessonFile,
+      source.replace(
+        /timeline:\n[\s\S]*?\nmodelCheck:/u,
+        `timeline:\n${timeline}\nmodelCheck:`,
+      ),
+      "utf8",
+    );
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([
+        {
+          code: "timeline.cycle",
+          file: lessonFile,
+          path: "timeline[19999].nextStepId",
+          message: 'Timeline step "step-0" creates a cycle.',
+        },
+      ]),
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+}, 20_000);
 
 test("rejects a timeline edge that references a missing step", async () => {
   const directory = await cloneCanonicalLesson();
