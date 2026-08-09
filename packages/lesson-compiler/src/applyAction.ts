@@ -24,6 +24,13 @@ export interface CompileContext {
   readonly path: string;
 }
 
+interface CurrentV1Comparison {
+  readonly actual: number;
+  readonly leftIndex: number;
+  readonly rightIndex: number;
+  readonly target: number;
+}
+
 function failure<T = MutableSemanticState>(
   context: CompileContext,
   message: string,
@@ -58,6 +65,64 @@ function replaceObject(
   object: CompiledSceneObject,
 ): void {
   state.objectsById.set(object.id, object);
+}
+
+function resolveCurrentV1Comparison(
+  state: MutableSemanticState,
+  context: CompileContext,
+): ValidationResult<CurrentV1Comparison> {
+  const comparisons = state.objectOrder.flatMap((id) => {
+    const object = state.objectsById.get(id);
+    return object?.kind === "comparison" ? [object] : [];
+  });
+  if (comparisons.length !== 1) {
+    return failure<CurrentV1Comparison>(
+      context,
+      `A result action requires exactly one V1 comparison object; found ${comparisons.length}.`,
+      "reference.invalid",
+      `${context.path}.objectId`,
+    );
+  }
+  const comparison = comparisons[0]!;
+  const array = state.objectsById.get(comparison.arrayObjectId);
+  const leftPointer = state.objectsById.get(comparison.leftPointerId);
+  const rightPointer = state.objectsById.get(comparison.rightPointerId);
+  if (
+    !array ||
+    array.kind !== "array" ||
+    !leftPointer ||
+    leftPointer.kind !== "pointer" ||
+    !rightPointer ||
+    rightPointer.kind !== "pointer" ||
+    leftPointer.targetObjectId !== array.id ||
+    rightPointer.targetObjectId !== array.id
+  ) {
+    return failure<CurrentV1Comparison>(
+      context,
+      `Comparison "${comparison.id}" requires two pointers targeting array "${comparison.arrayObjectId}".`,
+      "reference.invalid",
+      `${context.path}.objectId`,
+    );
+  }
+  const leftValue = array.values[leftPointer.index];
+  const rightValue = array.values[rightPointer.index];
+  if (leftValue === undefined || rightValue === undefined) {
+    return failure<CurrentV1Comparison>(
+      context,
+      `Comparison "${comparison.id}" references an out-of-bounds pointer.`,
+      "reference.invalid",
+      `${context.path}.objectId`,
+    );
+  }
+  return {
+    ok: true,
+    value: {
+      actual: leftValue + rightValue,
+      leftIndex: leftPointer.index,
+      rightIndex: rightPointer.index,
+      target: comparison.target,
+    },
+  };
 }
 
 export function applyAction(
@@ -196,6 +261,11 @@ export function applyAction(
         );
       }
       const status = action.value as "pending" | "found" | "not-found";
+      const currentComparison =
+        status === "pending"
+          ? undefined
+          : resolveCurrentV1Comparison(state, context);
+      if (currentComparison && !currentComparison.ok) return currentComparison;
       let result: SemanticSnapshot["result"];
       if (status === "found") {
         const indices = state.comparisonIndices;
@@ -232,8 +302,28 @@ export function applyAction(
           );
         }
         result = { kind: "found", indices };
+      } else if (status === "not-found" && currentComparison?.ok) {
+        const { actual, leftIndex, rightIndex, target } =
+          currentComparison.value;
+        if (leftIndex !== rightIndex && actual === target) {
+          return failure(
+            context,
+            `A not-found result cannot discard a current distinct equal pair.`,
+            "reference.invalid",
+            `${context.path}.value`,
+          );
+        }
+        if (leftIndex < rightIndex) {
+          return failure(
+            context,
+            `A not-found result requires exhausted or crossed pointers (left >= right).`,
+            "reference.invalid",
+            `${context.path}.value`,
+          );
+        }
+        result = { kind: "not-found" };
       } else {
-        result = status === "not-found" ? { kind: "not-found" } : undefined;
+        result = undefined;
       }
       replaceObject(state, { ...object, status });
       state.result = result;

@@ -48,10 +48,24 @@ function sourceWithPointersInReverseOrder(): LessonSourceV1 {
       },
       timeline: [
         {
-          ...validTwoPointersSource.timeline[0],
+          id: "exhaust-left",
+          narration: "Move the left pointer to the right edge.",
+          actions: [{ type: "move", objectId: "left-pointer", toIndex: 5 }],
+        },
+        {
+          id: "cross-right",
+          narration: "Move the right pointer across the left pointer.",
+          actions: [{ type: "move", objectId: "right-pointer", toIndex: 4 }],
+        },
+        {
+          id: "publish-not-found",
+          narration: "Publish not-found after exhausting the search.",
+          terminal: true,
           actions: [
             {
-              ...validTwoPointersSource.timeline[0].actions[0],
+              type: "set",
+              objectId: "pair-result",
+              property: "status",
               value: "not-found",
             },
           ],
@@ -266,7 +280,7 @@ test("diagnoses a result property outside the set allowlist", () => {
       type: "set",
       objectId: "pair-result",
       property: "label",
-      value: "Found",
+      value: "found",
     }),
     compiledContent,
   );
@@ -739,4 +753,273 @@ test("rejects an authored found result at the direct compiler boundary", () => {
       },
     ],
   });
+});
+
+test("rejects the synthetic initial snapshot id in authored steps", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const firstStep = source.timeline[0];
+  if (!firstStep) throw new Error("Expected a compiler fixture timeline.");
+
+  const compiled = compileLesson(
+    {
+      ...source,
+      timeline: [{ ...firstStep, id: "initial", terminal: true }],
+    },
+    compiledContent,
+  );
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.invalid",
+        file: "lesson.yaml",
+        path: "timeline[0].id",
+        message:
+          'Timeline step id "initial" is reserved for the synthetic initial snapshot.',
+      },
+    ],
+  });
+});
+
+test("rejects not-found for a current distinct equal pair", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const migrated = migrateLessonSource(
+    {
+      ...source,
+      scene: {
+        ...source.scene,
+        objects: source.scene.objects.map((object) => {
+          if (object.id === "left-pointer") return { ...object, index: 2 };
+          if (object.id === "right-pointer") return { ...object, index: 4 };
+          return object;
+        }),
+      },
+      timeline: [
+        {
+          id: "compare-equal-pair",
+          narration: "Compare the current distinct equal pair.",
+          actions: [{ type: "compare", objectId: "pair-comparison" }],
+        },
+        {
+          id: "invalid-not-found",
+          narration: "Try to publish not-found for the equal pair.",
+          terminal: true,
+          actions: [
+            {
+              type: "set",
+              objectId: "pair-result",
+              property: "status",
+              value: "not-found",
+            },
+          ],
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error(
+      "Expected the equal-pair fixture to be valid authoring data.",
+    );
+  }
+
+  const compiled = compileLesson(migrated.value, compiledContent);
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.invalid",
+        file: "lesson.yaml",
+        path: "timeline[1].actions[0].value",
+        message:
+          "A not-found result cannot discard a current distinct equal pair.",
+      },
+    ],
+  });
+});
+
+test("rejects not-found before pointers are exhausted", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const migrated = migrateLessonSource(
+    {
+      ...source,
+      timeline: [
+        {
+          id: "immediate-not-found",
+          narration: "Try to publish not-found before exhausting the search.",
+          terminal: true,
+          actions: [
+            {
+              type: "set",
+              objectId: "pair-result",
+              property: "status",
+              value: "not-found",
+            },
+          ],
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the before-exhaustion fixture to be valid.");
+  }
+
+  const compiled = compileLesson(migrated.value, compiledContent);
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.invalid",
+        file: "lesson.yaml",
+        path: "timeline[0].actions[0].value",
+        message:
+          "A not-found result requires exhausted or crossed pointers (left >= right).",
+      },
+    ],
+  });
+});
+
+test("publishes not-found after pointers cross without an equal pair", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const migrated = migrateLessonSource(
+    {
+      ...source,
+      timeline: [
+        {
+          id: "exhaust-left",
+          narration: "Move the left pointer to the right edge.",
+          actions: [{ type: "move", objectId: "left-pointer", toIndex: 5 }],
+        },
+        {
+          id: "cross-right",
+          narration: "Move the right pointer across the left pointer.",
+          actions: [{ type: "move", objectId: "right-pointer", toIndex: 4 }],
+        },
+        {
+          id: "publish-not-found",
+          narration: "Publish not-found after exhausting the search.",
+          terminal: true,
+          actions: [
+            {
+              type: "set",
+              objectId: "pair-result",
+              property: "status",
+              value: "not-found",
+            },
+          ],
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the crossed-pointer fixture to be valid.");
+  }
+
+  const compiled = compileLesson(migrated.value, compiledContent);
+
+  expect(compiled.ok).toBe(true);
+  if (!compiled.ok) return;
+  expect(compiled.value.snapshots.at(-1)).toMatchObject({
+    pointers: { "left-pointer": 5, "right-pointer": 4 },
+    result: { kind: "not-found" },
+    terminal: true,
+  });
+});
+
+test("rejects ambiguous result association for multiple comparisons", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const migrated = migrateLessonSource(
+    {
+      ...source,
+      scene: {
+        ...source.scene,
+        objects: [
+          ...source.scene.objects,
+          {
+            id: "other-comparison",
+            kind: "comparison",
+            arrayObjectId: "values",
+            leftPointerId: "left-pointer",
+            rightPointerId: "right-pointer",
+            target: 15,
+          },
+        ],
+      },
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the ambiguous-result fixture to be valid.");
+  }
+
+  const compiled = compileLesson(migrated.value, compiledContent);
+
+  expect(compiled).toEqual({
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.invalid",
+        file: "lesson.yaml",
+        path: "timeline[2].actions[0].objectId",
+        message:
+          "A result action requires exactly one V1 comparison object; found 2.",
+      },
+    ],
+  });
+});
+
+test("aggregates independent action diagnostics in canonical path order", () => {
+  const source = sourceWithPointersInReverseOrder();
+  const timeline = [
+    {
+      id: "invalid-actions",
+      narration: "Exercise independent incompatible actions.",
+      terminal: true as const,
+      actions: [
+        { type: "move" as const, objectId: "values", toIndex: 1 },
+        {
+          type: "highlight" as const,
+          objectId: "left-pointer",
+          indices: [0],
+          tone: "compare" as const,
+        },
+      ],
+    },
+  ];
+  const forward = compileLesson({ ...source, timeline }, compiledContent);
+  const reversed = compileLesson(
+    {
+      ...source,
+      scene: { ...source.scene, objects: [...source.scene.objects].reverse() },
+      timeline,
+    },
+    compiledContent,
+  );
+  const expected = {
+    ok: false,
+    diagnostics: [
+      {
+        code: "reference.wrong-kind",
+        file: "lesson.yaml",
+        path: "timeline[0].actions[0].objectId",
+        message:
+          'Action "move" requires a pointer, but "values" resolves to an array.',
+      },
+      {
+        code: "reference.wrong-kind",
+        file: "lesson.yaml",
+        path: "timeline[0].actions[1].objectId",
+        message:
+          'Action "highlight" requires an array, but "left-pointer" resolves to a pointer.',
+      },
+    ],
+  };
+
+  expect(forward).toEqual(expected);
+  expect(reversed).toEqual(expected);
 });

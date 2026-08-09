@@ -85,6 +85,15 @@ export function validateLessonSemantics(
   }
 
   for (const [stepIndex, step] of source.timeline.entries()) {
+    if (step.id === "initial") {
+      diagnostics.push({
+        code: "reference.invalid",
+        file,
+        path: `timeline[${stepIndex}].id`,
+        message:
+          'Timeline step id "initial" is reserved for the synthetic initial snapshot.',
+      });
+    }
     if (stepIds.has(step.id)) {
       diagnostics.push({
         code: "identifier.duplicate",

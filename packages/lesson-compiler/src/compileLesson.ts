@@ -12,6 +12,7 @@ import type {
   CompiledSceneObject,
   SemanticSnapshot,
 } from "./types.js";
+import { validateStaticActions } from "./preflightActions.js";
 import { validateLessonSemantics } from "./validateSemantics.js";
 
 function sortedEntries<T>(record: Readonly<Record<string, T>>): [string, T][] {
@@ -149,7 +150,10 @@ export function compileLessonAtPath(
 ): ValidationResult<CompiledLesson> {
   const validated = validateLessonSource(source, file);
   if (!validated.ok) return validated;
-  const diagnostics = validateLessonSemantics(validated.value, file);
+  const diagnostics = [
+    ...validateLessonSemantics(validated.value, file),
+    ...validateStaticActions(validated.value, file),
+  ];
   if (diagnostics.length > 0) {
     return { ok: false, diagnostics: sortDiagnostics(diagnostics) };
   }

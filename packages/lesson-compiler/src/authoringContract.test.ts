@@ -1132,6 +1132,30 @@ test("rejects duplicate timeline step identifiers", async () => {
   }
 });
 
+test("rejects the synthetic initial snapshot id in authored steps", async () => {
+  const directory = await cloneCanonicalLesson();
+  const lessonFile = join(directory, "lesson.yaml");
+
+  try {
+    await replaceInLessonYaml(directory, 'id: "compare-ends"', 'id: "initial"');
+    const compilation = compileLessonPackage(directory);
+
+    await expect(compilation).rejects.toMatchObject({
+      diagnostics: [
+        {
+          code: "reference.invalid",
+          file: lessonFile,
+          path: "timeline[0].id",
+          message:
+            'Timeline step id "initial" is reserved for the synthetic initial snapshot.',
+        },
+      ],
+    });
+  } finally {
+    await rm(join(directory, "..", ".."), { force: true, recursive: true });
+  }
+});
+
 test("rejects duplicate Model Check option identifiers", async () => {
   const directory = await cloneCanonicalLesson();
   const lessonFile = join(directory, "lesson.yaml");

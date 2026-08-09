@@ -9,15 +9,48 @@ import {
 } from "./index.js";
 
 function validSourceForCompilation() {
+  const [values, leftPointer, label, comparison, result] =
+    validTwoPointersSource.scene.objects;
   const migrated = migrateLessonSource(
     {
       ...validTwoPointersSource,
+      scene: {
+        ...validTwoPointersSource.scene,
+        objects: [
+          values,
+          {
+            id: "right-pointer",
+            kind: "pointer",
+            label: "Right",
+            targetObjectId: "values",
+            index: 5,
+          },
+          leftPointer,
+          label,
+          { ...comparison, rightPointerId: "right-pointer" },
+          result,
+        ],
+      },
       timeline: [
         {
-          ...validTwoPointersSource.timeline[0],
+          id: "exhaust-left",
+          narration: "Move the left pointer to the right edge.",
+          actions: [{ type: "move", objectId: "left-pointer", toIndex: 5 }],
+        },
+        {
+          id: "cross-right",
+          narration: "Move the right pointer across the left pointer.",
+          actions: [{ type: "move", objectId: "right-pointer", toIndex: 4 }],
+        },
+        {
+          id: "publish-not-found",
+          narration: "Publish not-found after exhausting the search.",
+          terminal: true,
           actions: [
             {
-              ...validTwoPointersSource.timeline[0].actions[0],
+              type: "set",
+              objectId: "pair-result",
+              property: "status",
               value: "not-found",
             },
           ],
