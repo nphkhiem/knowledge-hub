@@ -1,0 +1,38 @@
+{
+  "name": "knowledge-hub",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @knowledge-hub/site build",
+    "check": "pnpm format:check && pnpm lint && pnpm spell && pnpm typecheck",
+    "format": "prettier --write \"{apps,packages,lessons,tests}/**/*.{astro,css,json,md,mjs,ts,yaml,yml}\" \"*.{json,mjs,ts,yaml,yml}\"",
+    "format:check": "prettier --check \"{apps,packages,lessons,tests}/**/*.{astro,css,json,md,mjs,ts,yaml,yml}\" \"*.{json,mjs,ts,yaml,yml}\"",
+    "lint": "eslint apps packages lessons tests *.mjs *.ts --no-error-on-unmatched-pattern --max-warnings 0",
+    "spell": "cspell --no-progress \"{apps,packages,lessons,tests}/**/*.{astro,css,json,md,mjs,ts,yaml,yml}\"",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:visual": "playwright test tests/visual",
+    "verify": "pnpm check && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
+    "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "cspell": "10.0.1",
+    "eslint": "10.8.1",
+    "eslint-plugin-astro": "3.1.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.6",
+    "prettier-plugin-astro": "0.14.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.66.0",
+    "vitest": "4.1.10"
+  }
+}

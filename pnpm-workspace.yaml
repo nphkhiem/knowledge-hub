@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+peerDependencyRules:
+  allowedVersions:
+    eslint-plugin-jsx-a11y>eslint: "10"
+  ignoreMissing:
+    - "@emnapi/core"
+    - "@emnapi/runtime"
+
+allowBuilds:
+  esbuild: true

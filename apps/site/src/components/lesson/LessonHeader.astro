@@ -1,0 +1,56 @@
+---
+import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+
+interface Props {
+  lesson: CompiledLesson;
+}
+
+const { lesson } = Astro.props;
+const domainLabels: Record<CompiledLesson["domain"], string> = {
+  dsa: "DSA",
+  networking: "Networking",
+  "system-design": "System Design",
+};
+const domainLabel = domainLabels[lesson.domain];
+---
+
+<header class="lesson-header page-width">
+  <div class="lesson-meta">
+    <span>{domainLabel}</span>
+    <span aria-hidden="true">·</span>
+    <span>{lesson.durationMinutes} minute visual lesson</span>
+  </div>
+  <h1>{lesson.title}</h1>
+  <p>{lesson.objective}</p>
+</header>
+
+<style>
+  .lesson-header {
+    max-width: var(--max-width-wide);
+    padding-block: var(--space-8) var(--section-space);
+  }
+
+  .lesson-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-block-end: var(--space-6);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 14ch;
+    font-size: var(--font-size-4xl);
+  }
+
+  p {
+    max-width: var(--max-width-annotation);
+    margin-block: var(--space-7) 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+</style>

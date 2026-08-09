@@ -1,0 +1,63 @@
+---
+import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+import LessonHeader from "../../../components/lesson/LessonHeader.astro";
+import LessonSection from "../../../components/lesson/LessonSection.astro";
+import FocusedLessonLayout from "../../../layouts/FocusedLessonLayout.astro";
+import { getCompiledLessons } from "../../../lib/lessonCatalog";
+
+interface Props {
+  lesson: CompiledLesson;
+}
+
+export async function getStaticPaths() {
+  return (await getCompiledLessons()).map((lesson) => ({
+    params: { domain: lesson.domain, slug: lesson.slug },
+    props: { lesson },
+  }));
+}
+
+const { lesson } = Astro.props;
+---
+
+<FocusedLessonLayout
+  title={`${lesson.title} | Knowledge Hub`}
+  description={lesson.objective}
+>
+  <LessonHeader lesson={lesson} />
+  <LessonSection id="quick-understanding" title="Quick Understanding">
+    <div class="prose" set:html={lesson.content.quickUnderstanding.html} />
+  </LessonSection>
+  <LessonSection id="real-world-applications" title="Real-World Applications">
+    <div class="applications">
+      {
+        lesson.content.realWorldApplications.map((application) => (
+          <article aria-labelledby={`${application.id}-title`}>
+            <h3 id={`${application.id}-title`}>{application.title}</h3>
+            <div class="prose" set:html={application.html} />
+          </article>
+        ))
+      }
+    </div>
+  </LessonSection>
+</FocusedLessonLayout>
+
+<style>
+  .applications {
+    display: grid;
+    gap: var(--space-9);
+  }
+
+  article {
+    padding: var(--space-7);
+    border: var(--border-width-thin) solid var(--color-border-secondary);
+    border-left: var(--border-width-strong) solid var(--color-constraint-rule);
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  article > h3 {
+    margin-block-end: var(--space-6);
+    font-size: var(--font-size-xl);
+  }
+</style>

@@ -1,0 +1,56 @@
+---
+interface Props {
+  id: string;
+  title: string;
+}
+
+const { id, title } = Astro.props;
+const titleId = `${id}-title`;
+---
+
+<section class="lesson-section page-width" id={id} aria-labelledby={titleId}>
+  <div class="section-heading">
+    <span aria-hidden="true" class="section-rule"></span>
+    <h2 id={titleId}>{title}</h2>
+  </div>
+  <div class="section-content">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .lesson-section {
+    display: grid;
+    max-width: var(--max-width-wide);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-7);
+    padding-block: var(--section-space);
+    border-top: var(--border-width-thin) solid var(--color-border-secondary);
+  }
+
+  .section-heading {
+    display: grid;
+    align-content: start;
+    gap: var(--space-5);
+  }
+
+  .section-rule {
+    width: 2.5rem;
+    border-top: var(--border-width-strong) solid var(--color-annotation-rule);
+  }
+
+  h2 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .section-content {
+    min-width: 0;
+  }
+
+  @media (min-width: 48rem) {
+    .lesson-section {
+      grid-template-columns: minmax(12rem, 0.38fr) minmax(0, 1fr);
+      gap: var(--space-9);
+    }
+  }
+</style>

@@ -1,0 +1,27 @@
+{
+  "name": "@knowledge-hub/lesson-compiler",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@knowledge-hub/lesson-schema": "workspace:*",
+    "mdast-util-to-string": "4.0.0",
+    "rehype-sanitize": "6.0.0",
+    "rehype-stringify": "10.0.1",
+    "remark-parse": "11.0.0",
+    "remark-rehype": "11.1.2",
+    "unified": "11.0.5",
+    "unist-util-visit": "5.1.0",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@fast-check/vitest": "0.4.1",
+    "fast-check": "4.9.0"
+  }
+}

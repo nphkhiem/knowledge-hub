@@ -1,0 +1,225 @@
+/**
+ * Knowledge Hub — Technical Field Guide tokens
+ *
+ * Philosophy: calm technical clarity through warm editorial surfaces,
+ * precise annotation, natural material warmth, and deliberate motion.
+ *
+ * Theme policy: forced light. Dark-mode tokens are intentionally omitted
+ * because the approved product contract prohibits theme switching and
+ * operating-system theme detection.
+ *
+ * Font assets are not loaded here. Implementation should self-host subsetted
+ * WOFF2 files for Lora, Work Sans, and Roboto Mono and retain
+ * the system fallbacks declared below.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Color — surfaces */
+  --color-bg-primary: #f3f3e8;
+  --color-bg-secondary: #fcfdf6;
+  --color-bg-tertiary: #e7eadf;
+  --color-bg-emphasis: #dde1d4;
+  --color-bg-inverse: #26302c;
+  --color-surface-overlay: rgb(38 48 44 / 56%);
+
+  /* Color — text */
+  --color-text-primary: #26302c;
+  --color-text-secondary: #53605a;
+  --color-text-tertiary: #64706a;
+  --color-text-disabled: #7d8983;
+  --color-text-inverse: #fcfdf6;
+  --color-text-link: #345a86;
+  --color-text-link-hover: #294a70;
+
+  /* Color — borders and focus */
+  --color-border-primary: #7d8983;
+  --color-border-secondary: #c5cec7;
+  --color-border-subtle: #d7ddd6;
+  --color-border-focus: #345a86;
+
+  /* Color — actions and instructional roles */
+  --color-accent-primary: #345a86;
+  --color-accent-primary-hover: #294a70;
+  --color-accent-primary-active: #213b5c;
+  --color-accent-primary-soft: #dfe8f2;
+  --color-accent-secondary: #2d6254;
+  --color-accent-secondary-hover: #244f45;
+  --color-accent-secondary-soft: #dfece5;
+  --color-accent-warm: #835c18;
+  --color-accent-warm-soft: #f0e4ca;
+
+  /* Color — status */
+  --color-status-success: #2d6254;
+  --color-status-success-bg: #dfece5;
+  --color-status-warning: #835c18;
+  --color-status-warning-bg: #f0e4ca;
+  --color-status-error: #963d35;
+  --color-status-error-bg: #f3dedb;
+  --color-status-info: #345a86;
+  --color-status-info-bg: #dfe8f2;
+
+  /* Color — Visual Brief semantics */
+  --color-visual-bg: #fcfdf6;
+  --color-visual-grid: #d7ddd6;
+  --color-visual-object-fill: #f3f3e8;
+  --color-visual-object-stroke: #7d8983;
+  --color-visual-object-text: #26302c;
+  --color-visual-active-fill: #dfe8f2;
+  --color-visual-active-stroke: #345a86;
+  --color-visual-active-text: #294a70;
+  --color-visual-compare-fill: #f0e4ca;
+  --color-visual-compare-stroke: #835c18;
+  --color-visual-success-fill: #dfece5;
+  --color-visual-success-stroke: #2d6254;
+  --color-visual-error-fill: #f3dedb;
+  --color-visual-error-stroke: #963d35;
+  --color-visual-muted-fill: #e7eadf;
+  --color-visual-muted-stroke: #7d8983;
+  --color-annotation-rule: #2d6254;
+  --color-constraint-rule: #835c18;
+
+  /* Color — code */
+  --color-code-bg: #e7eadf;
+  --color-code-text: #26302c;
+  --color-code-keyword: #345a86;
+  --color-code-string: #2d6254;
+  --color-code-number: #835c18;
+  --color-code-comment: #64706a;
+
+  /* Typography — families */
+  --font-family-display:
+    Lora, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino,
+    Georgia, serif;
+  --font-family-body:
+    "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-mono:
+    "Roboto Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  /* Typography — fluid type ramp */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1.125rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 1.875rem;
+  --font-size-3xl: clamp(2.125rem, 1.75rem + 1.7vw, 3.25rem);
+  --font-size-4xl: clamp(2.75rem, 2rem + 3.4vw, 4.75rem);
+
+  /* Typography — weight, leading, and tracking */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.08;
+  --line-height-heading: 1.2;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.75;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.085em;
+
+  /* Spacing — 8px editorial rhythm with small alignment steps */
+  --space-0: 0;
+  --space-1: 0.125rem;
+  --space-2: 0.25rem;
+  --space-3: 0.375rem;
+  --space-4: 0.5rem;
+  --space-5: 0.75rem;
+  --space-6: 1rem;
+  --space-7: 1.5rem;
+  --space-8: 2rem;
+  --space-9: 3rem;
+  --space-10: 4rem;
+  --space-11: 6rem;
+  --space-12: 8rem;
+
+  /* Layout — widths and measures */
+  --max-width-reading: 68ch;
+  --max-width-annotation: 46ch;
+  --max-width-content: 48rem;
+  --max-width-visual: 64rem;
+  --max-width-wide: 72rem;
+  --max-width-page: 80rem;
+  --page-gutter: clamp(1rem, 0.55rem + 2vw, 2rem);
+  --section-space: clamp(3rem, 2.2rem + 3vw, 6rem);
+  --header-height: 3.5rem;
+  --utility-rail-width: 3rem;
+
+  /* Layout — reference breakpoints */
+  --breakpoint-sm: 30rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  /* Shape */
+  --border-width-thin: 1px;
+  --border-width-strong: 2px;
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.375rem;
+  --border-radius-lg: 0.625rem;
+  --border-radius-full: 999px;
+
+  /* Elevation — intentionally quiet */
+  --shadow-sm: 0 1px 2px rgb(38 48 44 / 8%);
+  --shadow-md: 0 9px 24px rgb(38 48 44 / 9%);
+  --shadow-lg: 0 18px 48px rgb(38 48 44 / 13%);
+  --shadow-focus: 0 0 0 3px #f3f3e8, 0 0 0 5px #345a86;
+
+  /* Controls */
+  --control-height-sm: 2.25rem;
+  --control-height-md: 2.75rem;
+  --control-height-lg: 3.25rem;
+  --control-target-min: 2.75rem;
+  --control-padding-inline: 1rem;
+  --control-gap: 0.5rem;
+
+  /* Visual Brief geometry */
+  --visual-min-height: 18rem;
+  --visual-ideal-height: 52vw;
+  --visual-max-height: 34rem;
+  --visual-object-stroke-width: 1.5px;
+  --visual-active-stroke-width: 2px;
+  --visual-label-min-size: 0.875rem;
+  --visual-annotation-gap: 0.75rem;
+
+  /* Motion — semantic and non-decorative */
+  --duration-instant: 50ms;
+  --duration-fast: 120ms;
+  --duration-normal: 220ms;
+  --duration-slow: 360ms;
+  --duration-semantic-step: 520ms;
+  --duration-outcome-hold: 1400ms;
+  --duration-loop-reset: 280ms;
+  --easing-default: cubic-bezier(0.2, 0, 0, 1);
+  --easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --easing-linear: linear;
+  --motion-distance-sm: 0.25rem;
+  --motion-distance-md: 0.75rem;
+
+  /* Layering */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-overlay: 30;
+  --z-dialog: 40;
+  --z-notice: 50;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-semantic-step: 0ms;
+    --duration-outcome-hold: 0ms;
+    --duration-loop-reset: 0ms;
+    --motion-distance-sm: 0;
+    --motion-distance-md: 0;
+  }
+}
