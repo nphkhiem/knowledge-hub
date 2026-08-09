@@ -9,19 +9,21 @@
     "Fontsource",
     "frontmatter",
     "jsdom",
+    "labelledby",
     "Leiserson",
     "Lora",
     "nphkhiem",
     "pnpm",
+    "rehype",
+    "remark",
     "Rivest",
     "Roboto",
     "subsetted",
-    "rehype",
-    "remark",
     "unified",
     "Vitest",
     "WCAG",
     "wght",
-    "worktree"
+    "worktree",
+    "étape"
   ]
 }

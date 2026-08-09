@@ -132,6 +132,16 @@ importers:
         specifier: 4.9.0
         version: 4.9.0
 
+  packages/lesson-renderer:
+    dependencies:
+      '@knowledge-hub/lesson-compiler':
+        specifier: workspace:*
+        version: link:../lesson-compiler
+    devDependencies:
+      '@knowledge-hub/lesson-testing':
+        specifier: workspace:*
+        version: link:../lesson-testing
+
   packages/lesson-schema:
     dependencies:
       zod:
