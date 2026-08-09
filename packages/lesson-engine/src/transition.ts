@@ -23,9 +23,8 @@ function next(lesson: CompiledLesson, state: EngineState): EngineState {
   if (state.stepIndex >= lastStepIndex) return state;
 
   const stepIndex = state.stepIndex + 1;
-  const status = lesson.snapshots[stepIndex]?.terminal
-    ? "completed"
-    : state.status;
+  const status =
+    lesson.snapshots[stepIndex]?.terminal === true ? "completed" : state.status;
   return freezeEngineState({ ...state, status, stepIndex });
 }
 
@@ -50,11 +49,12 @@ function seek(
   const stepIndex = Math.max(0, Math.min(requestedStepIndex, lastStepIndex));
   if (stepIndex === state.stepIndex) return state;
 
-  const status = lesson.snapshots[stepIndex]?.terminal
-    ? "completed"
-    : state.status === "completed"
-      ? "paused"
-      : state.status;
+  const status =
+    lesson.snapshots[stepIndex]?.terminal === true
+      ? "completed"
+      : state.status === "completed"
+        ? "paused"
+        : state.status;
   return freezeEngineState({ ...state, status, stepIndex });
 }
 

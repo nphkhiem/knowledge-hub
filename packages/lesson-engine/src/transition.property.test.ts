@@ -119,16 +119,35 @@ function isCoherentFrozenState(state: EngineState): boolean {
   );
 }
 
-function preservesEveryInputState(commands: readonly EngineCommand[]): boolean {
+function findIncoherentState(
+  commands: readonly EngineCommand[],
+): EngineState | null {
+  return (
+    replayStates(commands).find((state) => !isCoherentFrozenState(state)) ??
+    null
+  );
+}
+
+interface MutatedInput {
+  readonly command: EngineCommand;
+  readonly expected: EngineState;
+  readonly mutated: EngineState;
+}
+
+function findMutatedInput(
+  commands: readonly EngineCommand[],
+): MutatedInput | null {
   let state = createInitialEngineState(compiledTwoPointersLesson);
 
   for (const command of commands) {
     const input = structuredClone(state);
-    const before = structuredClone(input);
+    const expected = structuredClone(input);
     state = transition(compiledTwoPointersLesson, input, command);
-    if (JSON.stringify(input) !== JSON.stringify(before)) return false;
+    if (JSON.stringify(input) !== JSON.stringify(expected)) {
+      return { command, expected, mutated: input };
+    }
   }
-  return true;
+  return null;
 }
 
 test.prop(
@@ -333,14 +352,18 @@ test.prop([commandSequenceArbitrary], { seed: 40_304_002 })(
 test.prop([commandSequenceArbitrary], { seed: 40_304_003 })(
   "keeps arbitrary command sequences within one coherent lesson",
   (commands) => {
-    expect(replayStates(commands).every(isCoherentFrozenState)).toBe(true);
+    expect({ incoherentState: findIncoherentState(commands) }).toEqual({
+      incoherentState: null,
+    });
   },
 );
 
 test.prop([commandSequenceArbitrary], { seed: 40_304_004 })(
   "does not mutate any input state across arbitrary command sequences",
   (commands) => {
-    expect(preservesEveryInputState(commands)).toBe(true);
+    expect({ mutatedInput: findMutatedInput(commands) }).toEqual({
+      mutatedInput: null,
+    });
   },
 );
 
@@ -354,25 +377,25 @@ test.prop([longMixedCommandSequenceArbitrary], {
     const secondReplay = replay(commands);
 
     expect({
-      coherentAndFrozen: replayStates(commands).every(isCoherentFrozenState),
       deterministic:
         JSON.stringify(firstReplay) === JSON.stringify(secondReplay),
+      incoherentState: findIncoherentState(commands),
       includesEveryCommand: new Set(commands.map((command) => command.type))
         .size,
-      inputsPreserved: preservesEveryInputState(commands),
       lengthInRange: commands.length >= 150 && commands.length <= 200,
+      mutatedInput: findMutatedInput(commands),
     }).toEqual({
-      coherentAndFrozen: true,
       deterministic: true,
+      incoherentState: null,
       includesEveryCommand: 7,
-      inputsPreserved: true,
       lengthInRange: true,
+      mutatedInput: null,
     });
   },
 );
 
 test.prop([runtimeCommandArbitrary], { seed: 40_304_015 })(
-  "returns a defined state for every runtime command probe",
+  "answers every runtime command probe with a coherent frozen state",
   (runtimeCommand) => {
     const result = transition(
       compiledTwoPointersLesson,
@@ -380,7 +403,9 @@ test.prop([runtimeCommandArbitrary], { seed: 40_304_015 })(
       probeEngineCommand(runtimeCommand),
     );
 
-    expect(result).toBeDefined();
+    expect({
+      incoherentResult: isCoherentFrozenState(result) ? null : result,
+    }).toEqual({ incoherentResult: null });
   },
 );
 
@@ -403,6 +428,27 @@ test.prop(
     expect(
       transition(compiledTwoPointersLesson, state, { type: "previous" }),
     ).toBe(state);
+  },
+);
+
+test.prop([fc.option(knownOptionIdArbitrary, { nil: null }), fc.boolean()], {
+  seed: 40_304_017,
+})(
+  "next at the terminal snapshot returns every valid state unchanged",
+  (selectedOptionId, revealExplanation) => {
+    const state: EngineState = Object.freeze({
+      lessonId: compiledTwoPointersLesson.id,
+      stepIndex: compiledTwoPointersLesson.snapshots.length - 1,
+      status: "completed",
+      modelCheck: Object.freeze({
+        selectedOptionId,
+        explanationRevealed: selectedOptionId !== null && revealExplanation,
+      }),
+    });
+
+    expect(transition(compiledTwoPointersLesson, state, { type: "next" })).toBe(
+      state,
+    );
   },
 );
 
@@ -472,27 +518,21 @@ test.prop([unknownOptionIdArbitrary, fc.boolean()], { seed: 40_304_008 })(
 test.prop([commandSequenceArbitrary], { seed: 40_304_009 })(
   "restart canonicalizes every generated state and is idempotent",
   (commands) => {
-    const state = replay(commands);
-    const alreadyReset =
-      state.stepIndex === 0 &&
-      state.status === "playing" &&
-      state.modelCheck.selectedOptionId === null &&
-      !state.modelCheck.explanationRevealed;
-
-    const restarted = transition(compiledTwoPointersLesson, state, {
+    const restarted = transition(compiledTwoPointersLesson, replay(commands), {
+      type: "restart",
+    });
+    const restartedAgain = transition(compiledTwoPointersLesson, restarted, {
       type: "restart",
     });
 
     expect({
       deeplyFrozen:
         Object.isFrozen(restarted) && Object.isFrozen(restarted.modelCheck),
-      referenceIsCorrect: alreadyReset
-        ? restarted === state
-        : restarted !== state,
+      idempotentByReference: restartedAgain === restarted,
       state: restarted,
     }).toEqual({
       deeplyFrozen: true,
-      referenceIsCorrect: true,
+      idempotentByReference: true,
       state: {
         lessonId: compiledTwoPointersLesson.id,
         stepIndex: 0,
