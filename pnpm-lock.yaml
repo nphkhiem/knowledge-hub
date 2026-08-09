@@ -143,6 +143,9 @@ importers:
       '@knowledge-hub/lesson-compiler':
         specifier: workspace:*
         version: link:../lesson-compiler
+      '@knowledge-hub/lesson-schema':
+        specifier: workspace:*
+        version: link:../lesson-schema
 
 packages:
 

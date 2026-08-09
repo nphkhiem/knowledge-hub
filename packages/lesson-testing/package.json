@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@knowledge-hub/lesson-compiler": "workspace:*"
+    "@knowledge-hub/lesson-compiler": "workspace:*",
+    "@knowledge-hub/lesson-schema": "workspace:*"
   }
 }
