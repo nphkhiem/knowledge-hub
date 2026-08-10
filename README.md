@@ -112,4 +112,4 @@ Factual corrections, accessibility problems, and bugs are welcome now. [CONTRIBU
 
 The plan is to dual license: Apache-2.0 for the software, tooling, and tests, and CC BY 4.0 for the educational content, meaning lesson text, narration, questions, and original diagrams.
 
-The path by path mapping and the full license texts are in [LICENSE.md](LICENSE.md) and [`LICENSES/`](LICENSES/).
+The path by path mapping and the full license texts are in [LICENSE.md](LICENSE.md) and [`LICENSES/`](LICENSES/). Fonts and build dependencies are attributed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
