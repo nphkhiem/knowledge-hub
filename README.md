@@ -13,13 +13,14 @@ Every lesson here follows one rule: immediate insight, optional depth. You shoul
 Lessons are always laid out in the same order, so you learn the shape once:
 
 1. A short looping animation showing the concept work from its starting point to a result.
-2. **Quick Understanding**: how to recognize the pattern, when it fits, and one honest limitation.
-3. **Real-World Applications**: concrete situations from actual software work, not restated toy examples.
-4. An optional **Model Check**: one question, no score, no streak, with the explanation right there.
-5. An optional **Deep Dive** for implementation detail and interview preparation.
-6. An **Evidence Record** naming the sources behind the lesson and the date they were checked.
+2. A numbered, static **step by step** version of the same sequence.
+3. **Quick Understanding**: how to recognize the pattern, when it fits, and one honest limitation.
+4. An optional **Deep Dive** for implementation detail, including the concept written out in Python, TypeScript, Java, C++, and Go.
+5. **Real-World Applications**: concrete situations from actual software work, not restated toy examples.
 
-The animation is never the only route to the information. Every lesson also has a numbered, static, step by step version that carries the same meaning, and a written description for screen readers. All three are generated from the same lesson file, so they cannot drift apart.
+The animation is never the only route to the information. The step by step version carries the same meaning without motion, and a written description carries it to screen readers. All three are generated from the same lesson file, so they cannot drift apart.
+
+Every lesson also records the sources behind it, with the date they were checked, and validation refuses to build a lesson that has none. That record is held in the lesson source rather than printed on the page.
 
 ## Project status
 
@@ -31,15 +32,14 @@ What works today:
 - A compiler that turns a lesson directory into a fixed, normalized sequence of semantic states.
 - A deterministic playback engine with no dependency on a browser.
 - A renderer that turns any state into semantic SVG, static markup, and a plain text description.
-- A static site with a working lesson route.
-- 221 tests, plus one command that runs formatting, linting, spell checking, type checking, tests, and the production build together.
+- A static site with a working lesson route: the looping animation, the static step sequence, the reading sections, and code samples in five languages.
+- 278 unit tests, executable examples in five languages, and 24 browser tests covering the journey, reduced motion, accessibility, and performance budgets. One command runs all of it.
 
 What is not here yet:
 
-- **The animation is not on the page.** The renderer is built and tested, but nothing in the site uses it yet, so the lesson page is currently text only. This is the next thing being worked on.
-- No Model Check, bookmarks, or progress tracking.
+- Only one lesson exists. Fourteen more are planned for the first collection.
 - No search, no browsing, and no learning path pages.
-- No continuous integration and no deployment.
+- No deployment yet, so there is still no public site to visit.
 
 If you arrived expecting something finished, this is not it yet.
 
@@ -67,7 +67,7 @@ At build time the lesson is checked, then compiled into a sequence of semantic s
 | `packages/lesson-testing` | Shared fixtures and the suite every visual primitive must pass. |
 | `apps/site` | The static site: routing, layout, and page composition. |
 
-There are no accounts and no backend. Lessons are public, and anything the site remembers about your progress stays in your own browser.
+There are no accounts and no backend, and the site remembers nothing about you: no progress, no bookmarks, no analytics. Lessons are public and every page is the same for everyone.
 
 ## Accessibility
 
