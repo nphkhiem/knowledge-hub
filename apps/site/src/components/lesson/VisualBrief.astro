@@ -19,8 +19,14 @@ const opening = renderSnapshot(first);
   <div class="stage" data-snapshot-host set:html={opening.markup} />
   <figcaption>
     <p class="narration" data-narration aria-live="off">{first.narration}</p>
-    <button class="control" type="button" data-visual-brief-control hidden>
-      Restart animation
+    <button
+      class="control"
+      type="button"
+      aria-label="Resume animation"
+      data-visual-brief-control
+      hidden
+    >
+      Resume
     </button>
   </figcaption>
   <script

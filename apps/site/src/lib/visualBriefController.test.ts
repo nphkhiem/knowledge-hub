@@ -144,10 +144,10 @@ function mount(
   return fixture;
 }
 
-test("loops only while visible and exposes Stop then Restart", () => {
+test("loops only while visible and toggles between Pause and Resume", () => {
   const fixture = mount({ reducedMotion: false, visible: true });
 
-  expect(fixture.control()).toHaveTextContent("Stop animation");
+  expect(fixture.control()).toHaveTextContent("Pause");
 
   fixture.clock.advanceBy(SEMANTIC_STEP_MS);
   expect(fixture.currentStep()).toBe(1);
@@ -161,13 +161,55 @@ test("loops only while visible and exposes Stop then Restart", () => {
   expect(fixture.currentStep()).toBe(2);
 
   fixture.control().click();
-  expect(fixture.control()).toHaveTextContent("Restart animation");
+  expect(fixture.control()).toHaveTextContent("Resume");
 
   fixture.control().click();
   expect({
     label: fixture.control().textContent?.trim(),
     step: fixture.currentStep(),
-  }).toEqual({ label: "Stop animation", step: 0 });
+  }).toEqual({ label: "Pause", step: 2 });
+});
+
+test("resuming continues from the paused step instead of starting over", () => {
+  const fixture = mount({ reducedMotion: false, visible: true });
+  fixture.clock.advanceBy(SEMANTIC_STEP_MS * 3);
+
+  fixture.control().click();
+  const whilePaused = fixture.currentStep();
+
+  fixture.control().click();
+  const onResume = fixture.currentStep();
+
+  fixture.clock.advanceBy(SEMANTIC_STEP_MS);
+
+  expect({ afterResume: fixture.currentStep(), onResume, whilePaused }).toEqual(
+    {
+      afterResume: 4,
+      onResume: 3,
+      whilePaused: 3,
+    },
+  );
+});
+
+test("names the control for assistive technology without shouting it visually", () => {
+  const fixture = mount({ reducedMotion: false, visible: true });
+  const playing = {
+    label: fixture.control().textContent?.trim(),
+    name: fixture.control().getAttribute("aria-label"),
+  };
+
+  fixture.control().click();
+
+  expect({
+    paused: {
+      label: fixture.control().textContent?.trim(),
+      name: fixture.control().getAttribute("aria-label"),
+    },
+    playing,
+  }).toEqual({
+    paused: { label: "Resume", name: "Resume animation" },
+    playing: { label: "Pause", name: "Pause animation" },
+  });
 });
 
 test("advances one semantic step at a time and never sooner", () => {
@@ -259,25 +301,25 @@ test("does not start automatically under reduced motion", () => {
     label: fixture.control().textContent?.trim(),
     pending: fixture.clock.pendingTimers(),
     step: fixture.currentStep(),
-  }).toEqual({ label: "Restart animation", pending: 0, step: 0 });
+  }).toEqual({ label: "Resume", pending: 0, step: 0 });
 });
 
-test("stopping keeps the snapshot on screen and clears the timer", () => {
+test("pausing keeps the snapshot on screen and clears the timer", () => {
   const fixture = mount({ reducedMotion: false, visible: true });
   fixture.clock.advanceBy(SEMANTIC_STEP_MS * 2);
-  const beforeStop = fixture.currentStep();
+  const beforePause = fixture.currentStep();
 
   fixture.control().click();
   fixture.clock.advanceBy(10_000);
 
   expect({
-    afterStop: fixture.currentStep(),
-    beforeStop,
+    afterPause: fixture.currentStep(),
+    beforePause,
     narrationKept: fixture.narration().length > 0,
     pending: fixture.clock.pendingTimers(),
   }).toEqual({
-    afterStop: 2,
-    beforeStop: 2,
+    afterPause: 2,
+    beforePause: 2,
     narrationKept: true,
     pending: 0,
   });

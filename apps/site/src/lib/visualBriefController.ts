@@ -10,8 +10,12 @@ const SEMANTIC_STEP_MS = 520;
 const OUTCOME_HOLD_MS = 1400;
 const LOOP_RESET_MS = 280;
 
-const STOP_LABEL = "Stop animation";
-const RESTART_LABEL = "Restart animation";
+/**
+ * The visible label stays short. The accessible name adds what is being paused,
+ * and contains the visible text so it satisfies WCAG 2.5.3 Label in Name.
+ */
+const PAUSED_STATE = { label: "Resume", name: "Resume animation" } as const;
+const PLAYING_STATE = { label: "Pause", name: "Pause animation" } as const;
 
 /**
  * Every source of time and visibility the loop depends on, injected so the
@@ -36,8 +40,8 @@ export interface VisualBriefEnvironment {
 }
 
 export interface VisualBriefHandle {
-  stop(): void;
-  restart(): void;
+  pause(): void;
+  resume(): void;
   destroy(): void;
 }
 
@@ -82,8 +86,8 @@ export function mountVisualBrief(
   const lastStepIndex = lesson.snapshots.length - 1;
 
   let state: EngineState = createInitialEngineState(lesson);
-  /** Reduced motion means the learner never asked for movement, so it starts stopped. */
-  let stopped = environment.prefersReducedMotion();
+  /** Reduced motion means the learner never asked for movement, so it starts paused. */
+  let paused = environment.prefersReducedMotion();
   let visible = false;
   let documentHidden = false;
   let timerId: number | undefined;
@@ -110,7 +114,9 @@ export function mountVisualBrief(
    */
   function setControlLabel(): void {
     if (!(control instanceof HTMLElement)) return;
-    control.textContent = stopped ? RESTART_LABEL : STOP_LABEL;
+    const { label, name } = paused ? PAUSED_STATE : PLAYING_STATE;
+    control.textContent = label;
+    control.setAttribute("aria-label", name);
     control.hidden = false;
   }
 
@@ -124,7 +130,7 @@ export function mountVisualBrief(
   /** One timer at a time, and only while the loop should actually be running. */
   function schedule(): void {
     clearPendingStep();
-    if (stopped || !visible || documentHidden) return;
+    if (paused || !visible || documentHidden) return;
 
     const atTerminal = state.stepIndex >= lastStepIndex;
     const delayMs = atTerminal ? OUTCOME_HOLD_MS : SEMANTIC_STEP_MS;
@@ -145,16 +151,17 @@ export function mountVisualBrief(
     }, delayMs);
   }
 
-  function stop(): void {
-    if (stopped) return;
-    stopped = true;
+  function pause(): void {
+    if (paused) return;
+    paused = true;
     clearPendingStep();
     setControlLabel();
   }
 
-  function restart(): void {
-    stopped = false;
-    apply({ type: "restart" });
+  /** Resuming continues from the snapshot on screen; it does not start over. */
+  function resume(): void {
+    if (!paused) return;
+    paused = false;
     setControlLabel();
     schedule();
   }
@@ -170,13 +177,13 @@ export function mountVisualBrief(
   });
 
   function onControlClick(): void {
-    if (stopped) restart();
-    else stop();
+    if (paused) resume();
+    else pause();
   }
 
   control?.addEventListener("click", onControlClick);
 
-  if (!stopped) apply({ type: "play" });
+  if (!paused) apply({ type: "play" });
   paint();
   setControlLabel();
   schedule();
@@ -188,7 +195,7 @@ export function mountVisualBrief(
       releaseVisibility();
       releaseDocument();
     },
-    restart,
-    stop,
+    pause,
+    resume,
   };
 }
