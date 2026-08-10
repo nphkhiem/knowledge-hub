@@ -1,4 +1,5 @@
 ---
+import { ROUTES, href } from "../lib/routes";
 import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
@@ -8,8 +9,8 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     <h1>Page not found</h1>
     <p>The page may have moved or may not exist yet.</p>
     <nav aria-label="Recovery links">
-      <a href="/">Go to Home</a>
-      <a href="/lessons/dsa/two-pointers/">Open Two Pointers</a>
+      <a href={href(ROUTES.home)}>Go to Home</a>
+      <a href={href(ROUTES.twoPointers)}>Open Two Pointers</a>
     </nav>
   </main>
 </SiteLayout>

@@ -39,7 +39,7 @@ What is not here yet:
 
 - Only one lesson exists. Fourteen more are planned for the first collection.
 - No search, no browsing, and no learning path pages.
-- No deployment yet, so there is still no public site to visit.
+- Deployment is newly wired, so the published site is only just appearing.
 
 If you arrived expecting something finished, this is not it yet.
 

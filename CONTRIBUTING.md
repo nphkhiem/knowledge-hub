@@ -106,6 +106,15 @@ which gate broke rather than reporting one opaque red cross:
 `pnpm verify` runs the same commands locally, so a green run before you push
 usually means a green run on the pull request.
 
+Nothing deploys from a pull request. A squash merge to `main` builds the site,
+publishes it to GitHub Pages, and then smoke tests the published URL.
+
+One local wrinkle: on macOS `astro preview` puts itself in the background, so the
+first browser test run after stopping the preview server can fail with
+"Process from config.webServer exited early". Run it again and it will reuse the
+server that the first attempt left behind. On Linux, including CI, the server
+stays in the foreground and this does not happen.
+
 ## Quality bar for a lesson
 
 Every published lesson must satisfy all of the following. This is the checklist a

@@ -1,6 +1,10 @@
+---
+import { ROUTES, href } from "../../lib/routes";
+---
+
 <header class="global-header">
   <div class="page-width header-inner">
-    <a class="brand" href="/" aria-label="Knowledge Hub home">
+    <a class="brand" href={href(ROUTES.home)} aria-label="Knowledge Hub home">
       <span aria-hidden="true" class="brand-mark">KH</span>
       <span>Knowledge Hub</span>
     </a>
