@@ -19,6 +19,8 @@ const opening = renderSnapshot(first);
   <div class="stage" data-snapshot-host set:html={opening.markup} />
   <figcaption>
     <p class="narration" data-narration aria-live="off">{first.narration}</p>
+    <p class="notice" data-motion-notice hidden></p>
+    <p class="notice" data-visual-notice role="note" hidden></p>
     <button
       class="control"
       type="button"
@@ -38,16 +40,10 @@ const opening = renderSnapshot(first);
 </figure>
 
 <script>
-  import { mountVisualBrief } from "../../lib/visualBriefController";
+  import { bootstrapVisualBrief } from "../../lib/bootstrapVisualBrief";
 
   for (const root of document.querySelectorAll("[data-visual-brief]")) {
-    const data = root.querySelector("[data-compiled-lesson]");
-    if (!(root instanceof HTMLElement) || data === null) continue;
-    try {
-      mountVisualBrief(root, JSON.parse(data.textContent ?? ""));
-    } catch {
-      /* The prerendered figure and the step sequence already carry the lesson. */
-    }
+    if (root instanceof HTMLElement) bootstrapVisualBrief(root);
   }
 </script>
 
@@ -74,6 +70,14 @@ const opening = renderSnapshot(first);
     display: grid;
     gap: var(--space-5);
     justify-items: start;
+  }
+
+  .notice {
+    padding: var(--space-4) var(--space-5);
+    border-left: var(--border-width-strong) solid var(--color-annotation-rule);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
   }
 
   .narration {

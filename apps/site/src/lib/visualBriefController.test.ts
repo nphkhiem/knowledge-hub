@@ -21,6 +21,7 @@ interface Fixture {
   };
   readonly setVisible: (visible: boolean) => void;
   readonly setDocumentHidden: (hidden: boolean) => void;
+  readonly setReducedMotion: (reduced: boolean) => void;
   readonly observerCount: () => number;
   readonly control: () => HTMLButtonElement;
   readonly currentStep: () => number;
@@ -37,6 +38,7 @@ function createVisualBriefFixture(
   const root = document.createElement("div");
   root.innerHTML = [
     "<div data-snapshot-host></div>",
+    "<p data-motion-notice hidden></p>",
     '<p data-narration aria-live="off"></p>',
     '<button type="button" data-visual-brief-control hidden></button>',
   ].join("");
@@ -47,6 +49,7 @@ function createVisualBriefFixture(
   const timers = new Map<number, { at: number; callback: () => void }>();
   let visibilityCallback: ((visible: boolean) => void) | undefined;
   let documentCallback: ((hidden: boolean) => void) | undefined;
+  let reducedMotionCallback: ((reduced: boolean) => void) | undefined;
   let liveObservers = 0;
 
   const environment: VisualBriefEnvironment = {
@@ -72,7 +75,16 @@ function createVisualBriefFixture(
         liveObservers -= 1;
       };
     },
-    prefersReducedMotion: () => options.reducedMotion,
+    observeReducedMotion: (callback) => {
+      reducedMotionCallback = callback;
+      liveObservers += 1;
+      /** The contract requires the current state at subscribe time. */
+      callback(options.reducedMotion);
+      return () => {
+        reducedMotionCallback = undefined;
+        liveObservers -= 1;
+      };
+    },
     setTimer: (callback, delayMs) => {
       const timerId = nextTimerId;
       nextTimerId += 1;
@@ -116,6 +128,7 @@ function createVisualBriefFixture(
     observerCount: () => liveObservers,
     root,
     setDocumentHidden: (hidden) => documentCallback?.(hidden),
+    setReducedMotion: (reduced) => reducedMotionCallback?.(reduced),
     setVisible: (visible) => visibilityCallback?.(visible),
   };
 }
@@ -298,10 +311,10 @@ test("does not start automatically under reduced motion", () => {
   fixture.clock.advanceBy(10_000);
 
   expect({
-    label: fixture.control().textContent?.trim(),
+    controlHidden: fixture.control().hidden,
     pending: fixture.clock.pendingTimers(),
     step: fixture.currentStep(),
-  }).toEqual({ label: "Resume", pending: 0, step: 0 });
+  }).toEqual({ controlHidden: true, pending: 0, step: 0 });
 });
 
 test("pausing keeps the snapshot on screen and clears the timer", () => {
@@ -404,7 +417,7 @@ test("releases every observer and timer on destroy", () => {
     beforeDestroy,
     observersAfter: fixture.observerCount(),
     timersAfter: fixture.clock.pendingTimers(),
-  }).toEqual({ beforeDestroy: 2, observersAfter: 0, timersAfter: 0 });
+  }).toEqual({ beforeDestroy: 3, observersAfter: 0, timersAfter: 0 });
 });
 
 test("replaces the figure with the snapshot the engine reports", () => {
@@ -434,4 +447,75 @@ test("the browser environment reports document visibility at subscribe time", ()
   hidden.mockRestore();
 
   expect(seen).toEqual([true]);
+});
+
+test("turning reduced motion on holds the opening state and removes the control", () => {
+  const fixture = mount({ reducedMotion: false, visible: true });
+  fixture.clock.advanceBy(SEMANTIC_STEP_MS * 3);
+  const whileAnimating = fixture.currentStep();
+
+  fixture.setReducedMotion(true);
+  fixture.clock.advanceBy(10_000);
+
+  expect({
+    controlHidden: fixture.control().hidden,
+    notice: fixture.root
+      .querySelector("[data-motion-notice]")
+      ?.textContent?.trim(),
+    pending: fixture.clock.pendingTimers(),
+    state: fixture.root.dataset.visualState,
+    step: fixture.currentStep(),
+    whileAnimating,
+  }).toEqual({
+    controlHidden: true,
+    notice:
+      "Animation is off because your device requests reduced motion. Follow the step-by-step view below.",
+    pending: 0,
+    state: "reduced-motion",
+    step: 0,
+    whileAnimating: 3,
+  });
+});
+
+test("turning reduced motion off begins a fresh pass rather than resuming", () => {
+  const fixture = mount({ reducedMotion: true, visible: true });
+  fixture.clock.advanceBy(5_000);
+
+  fixture.setReducedMotion(false);
+  const onRestore = fixture.currentStep();
+  fixture.clock.advanceBy(SEMANTIC_STEP_MS);
+
+  expect({
+    afterRestore: fixture.currentStep(),
+    controlHidden: fixture.control().hidden,
+    label: fixture.control().textContent?.trim(),
+    noticeHidden: fixture.root.querySelector<HTMLElement>(
+      "[data-motion-notice]",
+    )?.hidden,
+    onRestore,
+    state: fixture.root.dataset.visualState,
+  }).toEqual({
+    afterRestore: 1,
+    controlHidden: false,
+    label: "Pause",
+    noticeHidden: true,
+    onRestore: 0,
+    state: "animated",
+  });
+});
+
+test("describes the figure by its narration without moving focus", () => {
+  const activeBefore = document.activeElement;
+  const fixture = mount({ reducedMotion: false, visible: true });
+  const describedBy = fixture.root.getAttribute("aria-describedby");
+
+  expect({
+    focusUnmoved: document.activeElement === activeBefore,
+    liveRegions: fixture.root.querySelectorAll(
+      '[aria-live="polite"], [aria-live="assertive"]',
+    ).length,
+    pointsAtNarration:
+      describedBy !== null &&
+      fixture.root.querySelector("[data-narration]")?.id === describedBy,
+  }).toEqual({ focusUnmoved: true, liveRegions: 0, pointsAtNarration: true });
 });

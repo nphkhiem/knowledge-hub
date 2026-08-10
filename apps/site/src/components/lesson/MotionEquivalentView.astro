@@ -13,7 +13,7 @@ const labelId = "motion-equivalent-label";
 
 <div class="motion-equivalent">
   <p class="label" id={labelId}>{lesson.accessibility.motionEquivalentLabel}</p>
-  <ol aria-labelledby={labelId}>
+  <ol aria-labelledby={labelId} data-motion-equivalent>
     {
       steps.map((step) => (
         <li>
