@@ -17,6 +17,10 @@ const RESTART_LABEL = "Restart animation";
  * Every source of time and visibility the loop depends on, injected so the
  * schedule can be driven deterministically in tests. The controller requests
  * semantic transitions only; it cannot invent or alter snapshot meaning.
+ *
+ * Both observers must report the current state once at subscribe time and then
+ * on every change. A page can load in a background tab, so waiting for the
+ * first change event would leave the controller believing it is visible.
  */
 export interface VisualBriefEnvironment {
   readonly setTimer: (callback: () => void, delayMs: number) => number;
@@ -47,6 +51,7 @@ export function createBrowserEnvironment(): VisualBriefEnvironment {
         callback(document.hidden);
       };
       document.addEventListener("visibilitychange", listener);
+      callback(document.hidden);
       return () => {
         document.removeEventListener("visibilitychange", listener);
       };
@@ -99,9 +104,14 @@ export function mountVisualBrief(
     root.dataset.stepIndex = String(state.stepIndex);
   }
 
+  /**
+   * The control is prerendered hidden, because without this script it cannot do
+   * anything. Mounting is what makes it real, so mounting is what reveals it.
+   */
   function setControlLabel(): void {
-    if (control === null) return;
+    if (!(control instanceof HTMLElement)) return;
     control.textContent = stopped ? RESTART_LABEL : STOP_LABEL;
+    control.hidden = false;
   }
 
   function apply(command: Parameters<typeof transition>[2]): void {

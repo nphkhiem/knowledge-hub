@@ -3,6 +3,7 @@ import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
 import LessonHeader from "../../../components/lesson/LessonHeader.astro";
 import LessonSection from "../../../components/lesson/LessonSection.astro";
 import MotionEquivalentView from "../../../components/lesson/MotionEquivalentView.astro";
+import VisualBrief from "../../../components/lesson/VisualBrief.astro";
 import FocusedLessonLayout from "../../../layouts/FocusedLessonLayout.astro";
 import { getCompiledLessons } from "../../../lib/lessonCatalog";
 
@@ -25,6 +26,9 @@ const { lesson } = Astro.props;
   description={lesson.objective}
 >
   <LessonHeader lesson={lesson} />
+  <LessonSection id="see-it-work" title="See it work">
+    <VisualBrief lesson={lesson} />
+  </LessonSection>
   <LessonSection id="step-by-step" title="Step by step">
     <MotionEquivalentView lesson={lesson} />
   </LessonSection>

@@ -1,6 +1,7 @@
 import { compiledTwoPointersLesson } from "@knowledge-hub/lesson-testing";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import {
+  createBrowserEnvironment,
   mountVisualBrief,
   type VisualBriefEnvironment,
   type VisualBriefHandle,
@@ -27,13 +28,17 @@ interface Fixture {
 }
 
 function createVisualBriefFixture(
-  options: Readonly<{ visible: boolean; reducedMotion: boolean }>,
+  options: Readonly<{
+    visible: boolean;
+    reducedMotion: boolean;
+    documentHidden?: boolean;
+  }>,
 ): Fixture {
   const root = document.createElement("div");
   root.innerHTML = [
     "<div data-snapshot-host></div>",
     '<p data-narration aria-live="off"></p>',
-    '<button type="button" data-visual-brief-control></button>',
+    '<button type="button" data-visual-brief-control hidden></button>',
   ].join("");
   document.body.append(root);
 
@@ -51,6 +56,8 @@ function createVisualBriefFixture(
     observeDocumentVisibility: (callback) => {
       documentCallback = callback;
       liveObservers += 1;
+      /** The contract requires the current state at subscribe time. */
+      callback(options.documentHidden === true);
       return () => {
         documentCallback = undefined;
         liveObservers -= 1;
@@ -122,7 +129,11 @@ afterEach(() => {
 });
 
 function mount(
-  options: Readonly<{ visible: boolean; reducedMotion: boolean }>,
+  options: Readonly<{
+    visible: boolean;
+    reducedMotion: boolean;
+    documentHidden?: boolean;
+  }>,
 ): Fixture {
   const fixture = createVisualBriefFixture(options);
   mounted = mountVisualBrief(
@@ -287,6 +298,47 @@ test("narrates without ever announcing through a live region", () => {
   }).toEqual({ ariaLive: "off", hasText: true, liveRegions: 0 });
 });
 
+test("reveals the control only once it can actually do something", () => {
+  const fixture = createVisualBriefFixture({
+    reducedMotion: false,
+    visible: true,
+  });
+  const beforeMount = fixture.control().hidden;
+
+  mounted = mountVisualBrief(
+    fixture.root,
+    compiledTwoPointersLesson,
+    fixture.environment,
+  );
+
+  expect({ afterMount: fixture.control().hidden, beforeMount }).toEqual({
+    afterMount: false,
+    beforeMount: true,
+  });
+});
+
+test("never starts when the page loads in a hidden tab", () => {
+  const fixture = mount({
+    documentHidden: true,
+    reducedMotion: false,
+    visible: true,
+  });
+
+  fixture.clock.advanceBy(10_000);
+  const whileHidden = {
+    pending: fixture.clock.pendingTimers(),
+    step: fixture.currentStep(),
+  };
+
+  fixture.setDocumentHidden(false);
+  fixture.clock.advanceBy(SEMANTIC_STEP_MS);
+
+  expect({ afterShown: fixture.currentStep(), whileHidden }).toEqual({
+    afterShown: 1,
+    whileHidden: { pending: 0, step: 0 },
+  });
+});
+
 test("renders no player chrome", () => {
   const fixture = mount({ reducedMotion: false, visible: true });
 
@@ -325,4 +377,19 @@ test("replaces the figure with the snapshot the engine reports", () => {
     ).startsWith("Compare 1 at the left pointer"),
     figures: host?.querySelectorAll("svg").length,
   }).toEqual({ describesStep: true, figures: 1 });
+});
+
+test("the browser environment reports document visibility at subscribe time", () => {
+  const seen: boolean[] = [];
+  const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+
+  const release = createBrowserEnvironment().observeDocumentVisibility(
+    (isHidden) => {
+      seen.push(isHidden);
+    },
+  );
+  release();
+  hidden.mockRestore();
+
+  expect(seen).toEqual([true]);
 });
