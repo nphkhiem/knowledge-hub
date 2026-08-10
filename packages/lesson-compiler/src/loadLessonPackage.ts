@@ -8,7 +8,10 @@ import {
   resolve,
   sep,
 } from "node:path";
-import { migrateLessonSource } from "@knowledge-hub/lesson-schema";
+import {
+  migrateLessonSource,
+  type ExampleLanguage,
+} from "@knowledge-hub/lesson-schema";
 import { parseRestrictedYaml } from "./parseYaml.js";
 import {
   compileMarkdown,
@@ -95,6 +98,38 @@ interface DeclaredContentSources {
   readonly quickUnderstanding: string;
   readonly realWorldApplications: string;
   readonly deepDive?: string;
+}
+
+interface DeclaredExampleSource {
+  readonly language: ExampleLanguage;
+  readonly file: string;
+  readonly code: string;
+}
+
+/**
+ * Reads each declared implementation. The code lives in its own file so lesson
+ * YAML never carries program text and the strict parser rules stay unchanged.
+ */
+async function readDeclaredExamples(
+  canonicalDirectory: string,
+  displayDirectory: string,
+  examples: readonly {
+    readonly language: ExampleLanguage;
+    readonly file: string;
+  }[],
+): Promise<readonly DeclaredExampleSource[]> {
+  return Promise.all(
+    examples.map(async ({ file, language }, index) => ({
+      code: await readSourceFile(
+        canonicalDirectory,
+        displayDirectory,
+        file,
+        `content.examples[${index}].file`,
+      ),
+      file,
+      language,
+    })),
+  );
 }
 
 async function readDeclaredContentSources(
@@ -243,6 +278,15 @@ export async function loadLessonPackage(
         )
       : undefined;
 
+  const examples =
+    source.content.examples === undefined
+      ? undefined
+      : await readDeclaredExamples(
+          canonicalDirectory,
+          directory,
+          source.content.examples,
+        );
+
   const content = {
     quickUnderstanding: await compileQuickUnderstanding(
       contentSources.quickUnderstanding,
@@ -253,6 +297,7 @@ export async function loadLessonPackage(
       realWorldApplicationsFile,
     ),
     ...(deepDive ? { deepDive } : {}),
+    ...(examples ? { examples } : {}),
   };
   const compiled = compileLessonAtPath(source, content, lessonFile);
   if (!compiled.ok) throw new LessonPackageError(compiled.diagnostics);

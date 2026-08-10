@@ -1,6 +1,8 @@
 export {
+  EXAMPLE_LANGUAGES,
   domainIdSchema,
   lessonSourceV1Schema,
+  type ExampleLanguage,
   type LessonSourceV1,
 } from "./v1.js";
 export {

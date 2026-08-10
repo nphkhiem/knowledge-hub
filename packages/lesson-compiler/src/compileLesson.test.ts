@@ -1114,3 +1114,31 @@ test("scopes highlights and comparisons to the step that sets them", async () =>
     { stepId: "pair-found", highlights: { values: [2, 4] }, comparedSum: null },
   ]);
 });
+
+test("compiles each declared implementation with its own source text", async () => {
+  const lesson = await compileLessonPackage(twoPointersDirectory);
+  const examples = lesson.content.examples ?? [];
+
+  expect(
+    examples.map(({ code, file, language }) => ({
+      declaresFunction: code.includes("find_pair_with_sum")
+        ? "python-name"
+        : code.includes("findPairWithSum")
+          ? "typescript-name"
+          : "missing",
+      file,
+      language,
+    })),
+  ).toEqual([
+    {
+      declaresFunction: "python-name",
+      file: "examples/find_pair_with_sum.py",
+      language: "python",
+    },
+    {
+      declaresFunction: "typescript-name",
+      file: "examples/find-pair-with-sum.ts",
+      language: "typescript",
+    },
+  ]);
+});

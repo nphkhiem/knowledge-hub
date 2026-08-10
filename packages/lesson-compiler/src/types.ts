@@ -1,5 +1,6 @@
 import {
   sortDiagnostics,
+  type ExampleLanguage,
   type LessonDiagnostic,
 } from "@knowledge-hub/lesson-schema";
 import type { ResultStatus } from "./resultStatus.js";
@@ -13,10 +14,18 @@ export interface CompiledRealWorldApplication extends CompiledMarkdown {
   readonly title: string;
 }
 
+/** One published implementation of the lesson's concept. */
+export interface CompiledExample {
+  readonly language: ExampleLanguage;
+  readonly file: string;
+  readonly code: string;
+}
+
 export interface CompiledLessonContent {
   readonly quickUnderstanding: CompiledMarkdown;
   readonly realWorldApplications: readonly CompiledRealWorldApplication[];
   readonly deepDive?: CompiledMarkdown;
+  readonly examples?: readonly CompiledExample[];
 }
 
 export type CompiledContent = CompiledLessonContent;

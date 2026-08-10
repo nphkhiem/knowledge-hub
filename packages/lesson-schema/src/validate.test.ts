@@ -558,3 +558,51 @@ test.each([
 
   expect(result.ok).toBe(true);
 });
+
+test("rejects example declarations that would publish untestable code", () => {
+  const withExamples = (
+    examples: readonly Record<string, string>[],
+  ): unknown => ({
+    ...validTwoPointersSource,
+    content: { ...validTwoPointersSource.content, examples },
+  });
+
+  const outcomes = {
+    duplicateLanguage: validateLessonSource(
+      withExamples([
+        { language: "python", file: "examples/a.py" },
+        { language: "python", file: "examples/b.py" },
+      ]),
+      "lesson.yaml",
+    ).ok,
+    mismatchedExtension: validateLessonSource(
+      withExamples([{ language: "python", file: "examples/a.ts" }]),
+      "lesson.yaml",
+    ).ok,
+    outsideExamplesDirectory: validateLessonSource(
+      withExamples([{ language: "python", file: "src/a.py" }]),
+      "lesson.yaml",
+    ).ok,
+    testFileDeclared: validateLessonSource(
+      withExamples([{ language: "python", file: "examples/test_a.py" }]),
+      "lesson.yaml",
+    ).ok,
+    unsupportedLanguage: validateLessonSource(
+      withExamples([{ language: "rust", file: "examples/a.rs" }]),
+      "lesson.yaml",
+    ).ok,
+    valid: validateLessonSource(
+      withExamples([{ language: "python", file: "examples/a.py" }]),
+      "lesson.yaml",
+    ).ok,
+  };
+
+  expect(outcomes).toEqual({
+    duplicateLanguage: false,
+    mismatchedExtension: false,
+    outsideExamplesDirectory: false,
+    testFileDeclared: false,
+    unsupportedLanguage: false,
+    valid: true,
+  });
+});

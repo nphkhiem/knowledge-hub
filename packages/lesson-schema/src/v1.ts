@@ -174,6 +174,55 @@ export const evidenceSchema = z.strictObject({
   sources: z.array(evidenceSourceSchema).min(1),
 });
 
+/**
+ * Languages a lesson may publish an implementation in. A language belongs here
+ * only once the test suite can execute it, because an untested sample must not
+ * ship. See docs/adr/0004.
+ */
+export const EXAMPLE_LANGUAGES = ["python", "typescript"] as const;
+
+export type ExampleLanguage = (typeof EXAMPLE_LANGUAGES)[number];
+
+const exampleFileExtensions: Readonly<Record<ExampleLanguage, string>> = {
+  python: ".py",
+  typescript: ".ts",
+};
+
+export const exampleSchema = z.strictObject({
+  language: z.enum(EXAMPLE_LANGUAGES),
+  file: z
+    .string()
+    .regex(
+      /^examples\/[A-Za-z0-9][A-Za-z0-9_-]*\.(py|ts)$/,
+      "An example file must sit directly in examples/ and end in .py or .ts.",
+    ),
+});
+
+export const examplesSchema = z
+  .array(exampleSchema)
+  .min(1)
+  .max(EXAMPLE_LANGUAGES.length)
+  .refine(
+    (examples) =>
+      new Set(examples.map(({ language }) => language)).size ===
+      examples.length,
+    { message: "Each language may declare at most one example." },
+  )
+  .refine(
+    (examples) =>
+      examples.every(({ file, language }) =>
+        file.endsWith(exampleFileExtensions[language]),
+      ),
+    { message: "An example file extension must match its declared language." },
+  )
+  .refine(
+    (examples) =>
+      examples.every(
+        ({ file }) => !file.includes("/test_") && !file.endsWith(".test.ts"),
+      ),
+    { message: "Declare the implementation, not its test file." },
+  );
+
 export const lessonSourceV1Schema = z.strictObject({
   schemaVersion: z.literal(1),
   id: z.string().regex(/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
@@ -191,6 +240,7 @@ export const lessonSourceV1Schema = z.strictObject({
     quickUnderstanding: z.literal("quick-understanding.md"),
     realWorldApplications: z.literal("real-world-applications.md"),
     deepDive: z.literal("deep-dive.md").optional(),
+    examples: examplesSchema.optional(),
   }),
   scene: sceneSchema,
   timeline: z.array(timelineStepSchema).min(1),

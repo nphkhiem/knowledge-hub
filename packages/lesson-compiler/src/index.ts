@@ -14,6 +14,7 @@ export {
   type CompiledContent,
   type CompiledEvidenceRecord,
   type CompiledEvidenceSource,
+  type CompiledExample,
   type CompiledLesson,
   type CompiledLessonContent,
   type CompiledMarkdown,
