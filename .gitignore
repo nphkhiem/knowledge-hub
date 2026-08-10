@@ -7,6 +7,10 @@ dist/
 .astro/
 *.tsbuildinfo
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 # Test output
 coverage/
 playwright-report/

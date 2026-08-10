@@ -13,11 +13,12 @@
     "format:check": "prettier --check \"{apps,packages,lessons,tests}/**/*.{astro,css,json,md,mjs,ts,yaml,yml}\" \"*.{json,mjs,ts,yaml,yml}\"",
     "lint": "eslint apps packages lessons tests *.mjs *.ts --no-error-on-unmatched-pattern --max-warnings 0",
     "spell": "cspell --no-progress \"{apps,packages,lessons,tests}/**/*.{astro,css,json,md,mjs,ts,yaml,yml}\"",
-    "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:examples": "for dir in lessons/*/*/examples; do [ -d \"$dir\" ] || continue; python3 -m unittest discover -s \"$dir\" -t \"$dir\" -p 'test_*.py' || exit 1; done",
     "test:visual": "playwright test tests/visual",
-    "verify": "pnpm check && pnpm test && pnpm build"
+    "typecheck": "pnpm -r typecheck",
+    "verify": "pnpm check && pnpm test && pnpm test:examples && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
