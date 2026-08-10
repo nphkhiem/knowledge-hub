@@ -1,0 +1,66 @@
+---
+import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+import DeepDive from "../../../components/lesson/DeepDive.astro";
+import LessonHeader from "../../../components/lesson/LessonHeader.astro";
+import LessonSection from "../../../components/lesson/LessonSection.astro";
+import RealWorldApplications from "../../../components/lesson/RealWorldApplications.astro";
+import PreviousNextLessons from "../../../components/lesson/PreviousNextLessons.astro";
+import MotionEquivalentView from "../../../components/lesson/MotionEquivalentView.astro";
+import VisualBrief from "../../../components/lesson/VisualBrief.astro";
+import FocusedLessonLayout from "../../../layouts/FocusedLessonLayout.astro";
+import { getCompiledLessons } from "../../../lib/lessonCatalog";
+
+interface Props {
+  lesson: CompiledLesson;
+}
+
+export async function getStaticPaths() {
+  return (await getCompiledLessons()).map((lesson) => ({
+    params: { domain: lesson.domain, slug: lesson.slug },
+    props: { lesson },
+  }));
+}
+
+const { lesson } = Astro.props;
+---
+
+<FocusedLessonLayout
+  title={`${lesson.title} | Knowledge Hub`}
+  description={lesson.objective}
+>
+  <LessonHeader lesson={lesson} />
+  <LessonSection id="see-it-work" title="See it work">
+    <VisualBrief lesson={lesson} />
+  </LessonSection>
+  <LessonSection id="step-by-step" title="Step by step">
+    <MotionEquivalentView lesson={lesson} />
+  </LessonSection>
+  <LessonSection id="quick-understanding" title="Quick Understanding">
+    <div class="prose" set:html={lesson.content.quickUnderstanding.html} />
+  </LessonSection>
+  <LessonSection id="going-deeper" title="Going deeper">
+    <DeepDive lesson={lesson} />
+  </LessonSection>
+  <LessonSection id="real-world-applications" title="Real-World Applications">
+    <RealWorldApplications lesson={lesson} />
+  </LessonSection>
+  <div class="neighbors-band page-width">
+    <PreviousNextLessons />
+  </div>
+</FocusedLessonLayout>
+
+<script>
+  import { mountPager } from "../../../lib/pager";
+
+  for (const root of document.querySelectorAll("[data-pager]")) {
+    if (root instanceof HTMLElement) mountPager(root);
+  }
+</script>
+
+<style>
+  .neighbors-band {
+    max-width: var(--max-width-wide);
+    padding-block: var(--section-space);
+    border-top: var(--border-width-thin) solid var(--color-border-secondary);
+  }
+</style>

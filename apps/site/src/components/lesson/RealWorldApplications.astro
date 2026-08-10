@@ -1,0 +1,62 @@
+---
+import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+
+interface Props {
+  lesson: CompiledLesson;
+}
+
+const { lesson } = Astro.props;
+const applications = lesson.content.realWorldApplications;
+---
+
+<div
+  class="applications"
+  data-pager
+  data-pager-noun="Application"
+  data-pager-group-label="Choose an application"
+>
+  <div
+    class="pager-track"
+    tabindex="0"
+    role="group"
+    aria-label="Real-world applications, scrollable"
+  >
+    {
+      applications.map((application) => (
+        <article
+          data-pager-item
+          id={application.id}
+          aria-labelledby={`${application.id}-title`}
+        >
+          <h3 id={`${application.id}-title`}>{application.title}</h3>
+          <div class="prose" set:html={application.html} />
+        </article>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .applications {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  article {
+    padding: var(--space-7);
+    border: var(--border-width-thin) solid var(--color-border-secondary);
+    border-left: var(--border-width-strong) solid var(--color-constraint-rule);
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /**
+   * The prose inside opens with a small uppercase label whose own top margin is
+   * zeroed as a first child, so this margin is the whole gap under the title.
+   */
+  article > h3 {
+    margin-block-end: var(--space-7);
+    font-size: var(--font-size-xl);
+  }
+</style>

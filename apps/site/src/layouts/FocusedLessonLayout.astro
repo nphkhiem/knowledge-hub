@@ -1,0 +1,22 @@
+---
+import SiteLayout from "./SiteLayout.astro";
+
+interface Props {
+  description?: string;
+  title: string;
+}
+
+const { description, title } = Astro.props;
+---
+
+<SiteLayout title={title} {...description ? { description } : {}}>
+  <main id="main-content" class="lesson-main" tabindex="-1">
+    <slot />
+  </main>
+</SiteLayout>
+
+<style>
+  .lesson-main {
+    padding-block: var(--space-9) 0;
+  }
+</style>

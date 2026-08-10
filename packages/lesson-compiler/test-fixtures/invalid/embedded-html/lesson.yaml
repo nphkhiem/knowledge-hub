@@ -1,0 +1,5 @@
+schemaVersion: 1
+title: "<script>alert('unsafe')</script>"
+modelCheck: {}
+evidence:
+  sources: [{}]

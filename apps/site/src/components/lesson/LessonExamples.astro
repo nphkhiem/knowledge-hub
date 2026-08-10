@@ -1,0 +1,164 @@
+---
+import type { CompiledExample } from "@knowledge-hub/lesson-compiler";
+import { renderCodeBlock } from "../../lib/codeBlock";
+
+interface Props {
+  examples: readonly CompiledExample[];
+}
+
+const languageLabels: Readonly<Record<CompiledExample["language"], string>> = {
+  cpp: "C++",
+  go: "Go",
+  java: "Java",
+  python: "Python",
+  typescript: "TypeScript",
+};
+
+const { examples } = Astro.props;
+---
+
+<div class="lesson-examples" data-lesson-examples>
+  {
+    examples.map((example) => (
+      <section
+        data-example-panel
+        data-language={example.language}
+        data-language-label={languageLabels[example.language]}
+      >
+        <h4 data-example-heading>{languageLabels[example.language]}</h4>
+        <div class="code-frame">
+          <span class="code-language" aria-hidden="true">
+            {languageLabels[example.language]}
+          </span>
+          <pre set:html={renderCodeBlock(example.code, example.language)} />
+        </div>
+      </section>
+    ))
+  }
+</div>
+
+<script>
+  import { mountExampleTabs } from "../../lib/exampleTabs";
+
+  for (const root of document.querySelectorAll("[data-lesson-examples]")) {
+    if (root instanceof HTMLElement) mountExampleTabs(root);
+  }
+</script>
+
+<style>
+  .lesson-examples {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  h4 {
+    margin-block-end: var(--space-4);
+    font-size: var(--font-size-md);
+  }
+
+  pre {
+    overflow-x: auto;
+    margin: 0;
+    padding: var(--space-8) var(--space-6) var(--space-6);
+    border: var(--border-width-thin) solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background: var(--color-code-bg);
+    color: var(--color-code-text);
+  }
+</style>
+
+<style is:global>
+  /**
+   * Global, deliberately: Astro's scoped styles only reach elements the
+   * compiler sees in this file's own template. The tab controls below are
+   * built by exampleTabs.ts at runtime (document.createElement), and the
+   * token spans inside `pre` come from `renderCodeBlock`'s `set:html`
+   * output, so neither ever receives the scoping attribute a normal
+   * `<style>` block relies on. Both class vocabularies (`example-*`,
+   * `tok-*`) are specific to this component and used nowhere else, so
+   * going unscoped here carries no real collision risk.
+   */
+  /**
+   * Tabs share one baseline and mark the selected language with a thick accent
+   * underline. The underline is a position and thickness change, not only a
+   * color change, and the label weight shifts with it, so the selected tab is
+   * still identifiable without color perception.
+   */
+  .example-tablist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    border-bottom: var(--border-width-thin) solid var(--color-border-secondary);
+  }
+
+  .example-tab {
+    min-height: var(--control-target-min);
+    padding-inline: var(--space-2);
+    border: 0;
+    border-bottom: var(--space-2) solid transparent;
+    margin-bottom: calc(var(--border-width-thin) * -1);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+  }
+
+  /**
+   * The unselected state above is deliberately a quiet outline: the selected
+   * state below needs to read as obviously different at a glance, not just on
+   * close inspection, so it swaps to a solid inverse fill rather than a
+   * subtle border/background shift between two similarly light tones.
+   */
+  .example-tab[aria-selected="true"] {
+    border-bottom-color: var(--color-accent-primary);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .example-tab:focus-visible {
+    outline: var(--border-width-strong) solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  .code-frame {
+    position: relative;
+  }
+
+  /** Names the language beside the code itself, not only above the block. */
+  .code-language {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-5);
+    /* Tertiary ink measured 4.24:1 against the code background; secondary is 5.40:1. */
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-wide);
+    pointer-events: none;
+  }
+
+  .lesson-examples code {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+    white-space: pre;
+  }
+
+  .tok-keyword {
+    color: var(--color-code-keyword);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .tok-string {
+    color: var(--color-code-string);
+  }
+
+  .tok-number {
+    color: var(--color-code-number);
+  }
+
+  .tok-comment {
+    color: var(--color-code-comment);
+    font-style: italic;
+  }
+</style>

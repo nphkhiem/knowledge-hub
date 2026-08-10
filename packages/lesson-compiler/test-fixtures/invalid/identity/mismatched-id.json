@@ -1,0 +1,8 @@
+{
+  "replacements": [
+    {
+      "before": "id: \"dsa.two-pointers\"",
+      "after": "id: \"dsa.wrong-slug\""
+    }
+  ]
+}

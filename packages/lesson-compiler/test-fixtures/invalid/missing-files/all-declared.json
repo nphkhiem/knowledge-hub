@@ -1,0 +1,8 @@
+{
+  "replacements": [],
+  "remove": [
+    "deep-dive.md",
+    "quick-understanding.md",
+    "real-world-applications.md"
+  ]
+}

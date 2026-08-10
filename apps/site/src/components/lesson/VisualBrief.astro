@@ -1,0 +1,114 @@
+---
+import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+import { renderSnapshot } from "@knowledge-hub/lesson-renderer";
+import { serializeForHtml } from "../../lib/serializeForHtml";
+
+interface Props {
+  lesson: CompiledLesson;
+}
+
+const { lesson } = Astro.props;
+const first = lesson.snapshots[0];
+if (first === undefined) {
+  throw new Error(`Lesson "${lesson.id}" compiled without any snapshot.`);
+}
+const opening = renderSnapshot(first);
+---
+
+<figure class="visual-brief" data-visual-brief data-step-index="0">
+  <div class="stage" data-snapshot-host set:html={opening.markup} />
+  <figcaption>
+    <p class="narration" data-narration aria-live="off">{first.narration}</p>
+    <p class="notice" data-motion-notice hidden></p>
+    <p class="notice" data-visual-notice role="note" hidden></p>
+    <button
+      class="control"
+      type="button"
+      aria-label="Resume animation"
+      data-visual-brief-control
+      hidden
+    >
+      Resume
+    </button>
+  </figcaption>
+  <script
+    type="application/json"
+    data-compiled-lesson
+    is:inline
+    set:html={serializeForHtml(lesson)}
+  />
+</figure>
+
+<script>
+  import { bootstrapVisualBrief } from "../../lib/bootstrapVisualBrief";
+
+  for (const root of document.querySelectorAll("[data-visual-brief]")) {
+    if (root instanceof HTMLElement) bootstrapVisualBrief(root);
+  }
+</script>
+
+<style>
+  .visual-brief {
+    display: grid;
+    margin: 0;
+    gap: var(--space-5);
+  }
+
+  /**
+   * The figure's own coordinates leave room above and beside its contents, but
+   * the result chip sits close to the bottom of the viewBox, so the stage adds
+   * the breathing room underneath rather than the drawing being redrawn.
+   */
+  .stage {
+    padding-block-end: var(--space-5);
+    border: var(--border-width-thin) solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-visual-bg);
+  }
+
+  .stage :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  figcaption {
+    display: grid;
+    gap: var(--space-5);
+    justify-items: start;
+  }
+
+  .notice {
+    padding: var(--space-4) var(--space-5);
+    border-left: var(--border-width-strong) solid var(--color-annotation-rule);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .narration {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .control {
+    min-height: var(--control-target-min);
+    padding-inline: var(--control-padding-inline);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--border-radius-sm);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+  }
+
+  .control:hover {
+    background: var(--color-bg-tertiary);
+  }
+
+  .control:focus-visible {
+    outline: var(--border-width-strong) solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+</style>

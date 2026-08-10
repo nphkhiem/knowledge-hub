@@ -39,7 +39,7 @@ What is not here yet:
 - **The animation is not on the page.** The renderer is built and tested, but nothing in the site uses it yet, so the lesson page is currently text only. This is the next thing being worked on.
 - No Model Check, bookmarks, or progress tracking.
 - No search, no browsing, and no learning path pages.
-- No continuous integration, no deployment, and no license files.
+- No continuous integration and no deployment.
 
 If you arrived expecting something finished, this is not it yet.
 
@@ -106,8 +106,10 @@ Contributions are not open yet. The project is still changing shape too quickly 
 
 When it does open, the model will be that lessons are proposed as issues and pull requests, a maintainer reviews them for technical accuracy and teaching quality, and every published lesson carries an Evidence Record built from primary sources. A well written blog post is not enough on its own to support a claim. An authoring guide will land before contributions open.
 
+Factual corrections, accessibility problems, and bugs are welcome now. [CONTRIBUTING.md](CONTRIBUTING.md) says what helps, and the [Code of Conduct](CODE_OF_CONDUCT.md) and [security policy](SECURITY.md) cover the rest.
+
 ## Licensing
 
 The plan is to dual license: Apache-2.0 for the software, tooling, and tests, and CC BY 4.0 for the educational content, meaning lesson text, narration, questions, and original diagrams.
 
-Those license files and the path by path mapping are not in the repository yet. They land before the first release. Until then, please do not treat anything here as licensed for reuse.
+The path by path mapping and the full license texts are in [LICENSE.md](LICENSE.md) and [`LICENSES/`](LICENSES/).

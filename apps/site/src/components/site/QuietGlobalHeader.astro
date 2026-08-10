@@ -1,0 +1,45 @@
+<header class="global-header">
+  <div class="page-width header-inner">
+    <a class="brand" href="/" aria-label="Knowledge Hub home">
+      <span aria-hidden="true" class="brand-mark">KH</span>
+      <span>Knowledge Hub</span>
+    </a>
+  </div>
+</header>
+
+<style>
+  .global-header {
+    min-height: var(--header-height);
+    border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+    background: rgb(243 243 232 / 94%);
+  }
+
+  .header-inner {
+    display: flex;
+    min-height: var(--header-height);
+    align-items: center;
+  }
+
+  .brand {
+    display: inline-flex;
+    min-height: var(--control-target-min);
+    align-items: center;
+    gap: var(--space-5);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+  }
+
+  .brand-mark {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border: var(--border-width-strong) solid var(--color-accent-secondary);
+    border-radius: var(--border-radius-sm);
+    color: var(--color-accent-secondary);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-wide);
+  }
+</style>

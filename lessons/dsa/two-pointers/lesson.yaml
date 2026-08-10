@@ -1,0 +1,157 @@
+schemaVersion: 1
+id: "dsa.two-pointers"
+slug: "two-pointers"
+domain: "dsa"
+collection: "interview-foundations"
+order: 2
+license: "CC-BY-4.0"
+title: "Two Pointers"
+durationMinutes: 4
+objective: "Explain how two coordinated positions discard impossible candidates without checking every pair."
+recognitionSignals:
+  - "The data is ordered or can be traversed in a meaningful order."
+  - "A comparison proves which side cannot contain a useful candidate."
+limitations:
+  - "The pointer move is correct only when an ordering or monotonic invariant proves discarded candidates cannot become valid."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/find_pair_with_sum.py"
+    - language: "typescript"
+      file: "examples/find-pair-with-sum.ts"
+    - language: "java"
+      file: "examples/FindPairWithSum.java"
+    - language: "cpp"
+      file: "examples/find_pair_with_sum.cpp"
+    - language: "go"
+      file: "examples/find_pair_with_sum.go"
+scene:
+  target: 15
+  objects:
+    - id: "values"
+      kind: "array"
+      label: "Sorted values"
+      values: [1, 2, 4, 7, 11, 15]
+    - id: "left"
+      kind: "pointer"
+      label: "Left"
+      targetObjectId: "values"
+      index: 0
+    - id: "right"
+      kind: "pointer"
+      label: "Right"
+      targetObjectId: "values"
+      index: 5
+    - id: "target-label"
+      kind: "label"
+      text: "Target 15"
+    - id: "pair-comparison"
+      kind: "comparison"
+      arrayObjectId: "values"
+      leftPointerId: "left"
+      rightPointerId: "right"
+      target: 15
+    - id: "pair-result"
+      kind: "result"
+      status: "pending"
+timeline:
+  - id: "compare-ends"
+    narration: "Compare 1 and 15. Their sum is 16, which is greater than the target 15."
+    actions:
+      - type: "highlight"
+        objectId: "values"
+        indices: [0, 5]
+        tone: "compare"
+      - type: "compare"
+        objectId: "pair-comparison"
+  - id: "move-right"
+    narration: "Move the right pointer left because the current sum is too large."
+    actions:
+      - type: "move"
+        objectId: "right"
+        toIndex: 4
+  - id: "compare-one-eleven"
+    narration: "Compare 1 and 11. Their sum is 12, which is less than the target."
+    actions:
+      - type: "highlight"
+        objectId: "values"
+        indices: [0, 4]
+        tone: "compare"
+      - type: "compare"
+        objectId: "pair-comparison"
+  - id: "move-left-to-two"
+    narration: "Move the left pointer right because the current sum is too small."
+    actions:
+      - type: "move"
+        objectId: "left"
+        toIndex: 1
+  - id: "compare-two-eleven"
+    narration: "Compare 2 and 11. Their sum is 13, which is still less than the target."
+    actions:
+      - type: "highlight"
+        objectId: "values"
+        indices: [1, 4]
+        tone: "compare"
+      - type: "compare"
+        objectId: "pair-comparison"
+  - id: "move-left-to-four"
+    narration: "Move the left pointer right again because the sum is still too small."
+    actions:
+      - type: "move"
+        objectId: "left"
+        toIndex: 2
+  - id: "compare-four-eleven"
+    narration: "Compare 4 and 11. Their sum is 15, which matches the target."
+    actions:
+      - type: "highlight"
+        objectId: "values"
+        indices: [2, 4]
+        tone: "compare"
+      - type: "compare"
+        objectId: "pair-comparison"
+  - id: "pair-found"
+    narration: "The pointers found the result at indices 2 and 4."
+    terminal: true
+    actions:
+      - type: "set"
+        objectId: "pair-result"
+        property: "status"
+        value: "found"
+      - type: "highlight"
+        objectId: "values"
+        indices: [2, 4]
+        tone: "success"
+modelCheck:
+  prompt: "The current sum is greater than the target in a sorted ascending array. Which pointer should move?"
+  options:
+    - id: "move-right"
+      label: "Move the right pointer left"
+    - id: "move-left"
+      label: "Move the left pointer right"
+    - id: "move-both"
+      label: "Move both pointers"
+  correctOptionId: "move-right"
+  explanation: "Move the right pointer left because every pair using the current largest value is already too large."
+accessibility:
+  summary: "Two pointers move inward across a sorted array until their values add to the target."
+  initialDescription: "The left pointer starts at value 1 and the right pointer starts at value 15. The target is 15."
+  motionEquivalentLabel: "Two Pointers step-by-step explanation"
+evidence:
+  verifiedOn: "2026-08-09"
+  scope: "The visual demonstrates the inward two-pointer form for pair sum on an ascending array; other two-pointer forms use different invariants."
+  sources:
+    - title: "Sorting and Searching — Two sum to x"
+      url: "https://introcs.cs.princeton.edu/java/42sort/"
+      publisher: "Princeton University"
+      accessedOn: "2026-08-09"
+      supports:
+        - "A sorted two-sum instance can be solved in linear time."
+    - title: "Introduction to Algorithms, Fourth Edition"
+      citation: "Cormen, Leiserson, Rivest, and Stein. MIT Press, 2022."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-09"
+      supports:
+        - "Loop invariants and asymptotic analysis justify correctness and complexity claims."

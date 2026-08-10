@@ -1,0 +1,47 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="Page not found | Knowledge Hub">
+  <main id="main-content" class="not-found page-width" tabindex="-1">
+    <p class="error-code">404</p>
+    <h1>Page not found</h1>
+    <p>The page may have moved or may not exist yet.</p>
+    <nav aria-label="Recovery links">
+      <a href="/">Go to Home</a>
+      <a href="/lessons/dsa/two-pointers/">Open Two Pointers</a>
+    </nav>
+  </main>
+</SiteLayout>
+
+<style>
+  .not-found {
+    min-height: 60vh;
+    padding-block: var(--section-space);
+  }
+
+  .error-code {
+    margin: 0;
+    color: var(--color-accent-warm);
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-weight-bold);
+  }
+
+  h1 {
+    margin-block: var(--space-4) var(--space-6);
+    font-size: var(--font-size-3xl);
+  }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-7);
+    margin-block-start: var(--space-8);
+  }
+
+  nav a {
+    display: inline-flex;
+    min-height: var(--control-target-min);
+    align-items: center;
+  }
+</style>
