@@ -1,5 +1,6 @@
 ---
 import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+import DeepDive from "../../../components/lesson/DeepDive.astro";
 import LessonHeader from "../../../components/lesson/LessonHeader.astro";
 import LessonSection from "../../../components/lesson/LessonSection.astro";
 import MotionEquivalentView from "../../../components/lesson/MotionEquivalentView.astro";
@@ -46,6 +47,9 @@ const { lesson } = Astro.props;
         ))
       }
     </div>
+  </LessonSection>
+  <LessonSection id="going-deeper" title="Going deeper">
+    <DeepDive lesson={lesson} />
   </LessonSection>
 </FocusedLessonLayout>
 
