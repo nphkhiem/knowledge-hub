@@ -1,0 +1,161 @@
+name: Pull request
+
+# Six independently named gates. A failure names the thing that broke rather
+# than reporting one opaque red cross, and later lessons join these same gates
+# without any workflow change because every job calls a repository script.
+#
+# Nothing here deploys. Production deployment happens only from main.
+
+on:
+  pull_request:
+  merge_group:
+
+# Read-only by default. No job here needs to write to the repository.
+permissions:
+  contents: read
+
+# A newer push to the same pull request supersedes the run in flight.
+concurrency:
+  group: pull-request-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Formatting
+        run: pnpm format:check
+      - name: Linting
+        run: pnpm lint
+      - name: Spelling
+        run: pnpm spell
+      - name: Types
+        run: pnpm typecheck
+
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version-file: .python-version
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: stable
+          cache-dependency-path: lessons/go.mod
+      - run: pnpm install --frozen-lockfile
+      - name: Unit and integration tests
+        run: pnpm test
+      - name: Executable examples in every published language
+        run: pnpm test:examples
+
+  experience:
+    name: experience
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install the browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build the site under test
+        run: pnpm build
+      - name: Journey, reduced motion, and accessibility
+        run: pnpm test:e2e
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: experience-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Production build
+        run: pnpm build
+      - name: Every expected route was generated
+        run: |
+          set -euo pipefail
+          for route in index.html 404.html lessons/dsa/two-pointers/index.html; do
+            test -s "apps/site/dist/$route" || {
+              echo "Missing or empty route: $route"
+              exit 1
+            }
+          done
+          echo "All expected routes were generated."
+
+  performance:
+    name: performance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install the browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build the site under test
+        run: pnpm build
+      - name: Budgets for paint, stability, latency, and payload
+        run: pnpm test:performance
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Known vulnerabilities in what ships
+        run: pnpm audit --prod --audit-level=high
+      - name: No private or generated files are tracked
+        run: |
+          set -euo pipefail
+          leaked="$(git ls-files | grep -E '^(CONTEXT\.md|AGENTS\.md|hands_off/|\.design/|\.scratch/|\.superpowers/|docs/adr/|docs/superpowers/)|(^|/)(node_modules|dist|__pycache__)/|\.(env|pyc|class)$' || true)"
+          if [ -n "$leaked" ]; then
+            echo "These files must not be tracked:"
+            echo "$leaked"
+            exit 1
+          fi
+          echo "No private or generated files are tracked."

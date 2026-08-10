@@ -91,6 +91,21 @@ useful. Saying it passed when it was not run is worse than saying nothing.
 `main` requires a pull request. Merges are squash only and the branch is deleted
 automatically.
 
+Every pull request runs six independently named checks, so a failure tells you
+which gate broke rather than reporting one opaque red cross:
+
+| Check | What it proves |
+| --- | --- |
+| `quality` | Formatting, linting at zero warnings, spelling, and types. |
+| `tests` | Unit and integration tests, plus the executable examples in every published language. |
+| `experience` | The journey, reduced motion, and accessibility suites in a real browser. |
+| `build` | The production build succeeds and every expected route was generated. |
+| `performance` | Paint, layout stability, interaction latency, and payload budgets. |
+| `security` | Known vulnerabilities in shipped dependencies, and that no private or generated file is tracked. |
+
+`pnpm verify` runs the same commands locally, so a green run before you push
+usually means a green run on the pull request.
+
 ## Quality bar for a lesson
 
 Every published lesson must satisfy all of the following. This is the checklist a
