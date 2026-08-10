@@ -26,7 +26,12 @@ const { examples } = Astro.props;
         data-language-label={languageLabels[example.language]}
       >
         <h4 data-example-heading>{languageLabels[example.language]}</h4>
-        <pre set:html={renderCodeBlock(example.code, example.language)} />
+        <div class="code-frame">
+          <span class="code-language" aria-hidden="true">
+            {languageLabels[example.language]}
+          </span>
+          <pre set:html={renderCodeBlock(example.code, example.language)} />
+        </div>
       </section>
     ))
   }
@@ -54,7 +59,7 @@ const { examples } = Astro.props;
   pre {
     overflow-x: auto;
     margin: 0;
-    padding: var(--space-6);
+    padding: var(--space-8) var(--space-6) var(--space-6);
     border: var(--border-width-thin) solid var(--color-border-subtle);
     border-radius: var(--border-radius-md);
     background: var(--color-code-bg);
@@ -73,17 +78,25 @@ const { examples } = Astro.props;
    * `tok-*`) are specific to this component and used nowhere else, so
    * going unscoped here carries no real collision risk.
    */
+  /**
+   * Tabs share one baseline and mark the selected language with a thick accent
+   * underline. The underline is a position and thickness change, not only a
+   * color change, and the label weight shifts with it, so the selected tab is
+   * still identifiable without color perception.
+   */
   .example-tablist {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: var(--space-5);
+    border-bottom: var(--border-width-thin) solid var(--color-border-secondary);
   }
 
   .example-tab {
     min-height: var(--control-target-min);
-    padding-inline: var(--control-padding-inline);
-    border: var(--border-width-thin) solid var(--color-border-secondary);
-    border-radius: var(--border-radius-sm);
+    padding-inline: var(--space-2);
+    border: 0;
+    border-bottom: var(--space-2) solid transparent;
+    margin-bottom: calc(var(--border-width-thin) * -1);
     background: transparent;
     color: var(--color-text-secondary);
     font-family: var(--font-family-body);
@@ -97,15 +110,30 @@ const { examples } = Astro.props;
    * subtle border/background shift between two similarly light tones.
    */
   .example-tab[aria-selected="true"] {
-    border-color: var(--color-bg-inverse);
-    background: var(--color-bg-inverse);
-    color: var(--color-text-inverse);
+    border-bottom-color: var(--color-accent-primary);
+    color: var(--color-text-primary);
     font-weight: var(--font-weight-semibold);
   }
 
   .example-tab:focus-visible {
     outline: var(--border-width-strong) solid var(--color-border-focus);
     outline-offset: 2px;
+  }
+
+  .code-frame {
+    position: relative;
+  }
+
+  /** Names the language beside the code itself, not only above the block. */
+  .code-language {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-5);
+    color: var(--color-text-tertiary);
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-wide);
+    pointer-events: none;
   }
 
   .lesson-examples code {
