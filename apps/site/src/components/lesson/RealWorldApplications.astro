@@ -1,0 +1,123 @@
+---
+import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+
+interface Props {
+  lesson: CompiledLesson;
+}
+
+const { lesson } = Astro.props;
+const applications = lesson.content.realWorldApplications;
+---
+
+<div class="applications" data-applications>
+  <div
+    class="track"
+    data-applications-track
+    tabindex="0"
+    role="group"
+    aria-label="Real-world applications, scrollable"
+  >
+    {
+      applications.map((application) => (
+        <article
+          data-application
+          id={application.id}
+          aria-labelledby={`${application.id}-title`}
+        >
+          <h3 id={`${application.id}-title`}>{application.title}</h3>
+          <div class="prose" set:html={application.html} />
+        </article>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  import { mountApplicationsPager } from "../../lib/applicationsPager";
+
+  for (const root of document.querySelectorAll("[data-applications]")) {
+    if (root instanceof HTMLElement) mountApplicationsPager(root);
+  }
+</script>
+
+<style>
+  .applications {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  /**
+   * The track scrolls natively, so every application stays reachable by swipe,
+   * trackpad, or keyboard even if the indicator bars never get built.
+   */
+  .track {
+    display: grid;
+    overflow-x: auto;
+    grid-auto-columns: 100%;
+    grid-auto-flow: column;
+    gap: var(--space-6);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  .track:focus-visible {
+    outline: var(--border-width-strong) solid var(--color-border-focus);
+    outline-offset: 4px;
+  }
+
+  article {
+    min-width: 0;
+    padding: var(--space-7);
+    border: var(--border-width-thin) solid var(--color-border-secondary);
+    border-left: var(--border-width-strong) solid var(--color-constraint-rule);
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+    box-shadow: var(--shadow-sm);
+    scroll-snap-align: start;
+  }
+
+  article > h3 {
+    margin-block-end: var(--space-6);
+    font-size: var(--font-size-xl);
+  }
+
+  .applications :global(.pager-indicators) {
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  /**
+   * Each indicator is a bar. The active one is wider and inked, so the state
+   * reads by length as well as by tone rather than by color alone.
+   */
+  .applications :global(.pager-indicator) {
+    width: var(--space-8);
+    height: var(--space-2);
+    padding: 0;
+    border: 0;
+    border-radius: var(--border-radius-full);
+    background: var(--color-border-secondary);
+    cursor: pointer;
+    transition: width var(--duration-fast) var(--easing-default);
+  }
+
+  .applications :global(.pager-indicator[aria-current="true"]) {
+    width: var(--space-11);
+    background: var(--color-text-primary);
+  }
+
+  .applications :global(.pager-indicator:focus-visible) {
+    outline: var(--border-width-strong) solid var(--color-border-focus);
+    outline-offset: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .track {
+      scroll-behavior: auto;
+    }
+
+    .applications :global(.pager-indicator) {
+      transition: none;
+    }
+  }
+</style>

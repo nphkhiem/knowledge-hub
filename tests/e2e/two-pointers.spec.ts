@@ -102,8 +102,8 @@ test("reaches every lesson section by its own fragment", async ({ page }) => {
     "see-it-work",
     "step-by-step",
     "quick-understanding",
-    "real-world-applications",
     "going-deeper",
+    "real-world-applications",
   ];
 
   for (const anchor of anchors) {
@@ -182,8 +182,8 @@ test("renders only the five sections the lesson keeps", async ({ page }) => {
     "see-it-work",
     "step-by-step",
     "quick-understanding",
-    "real-world-applications",
     "going-deeper",
+    "real-world-applications",
   ]);
 });
 
@@ -219,4 +219,41 @@ test("carries no learner-state, model check, or evidence surface", async ({
     share: 0,
     storageNote: 0,
   });
+});
+
+test("pages through the real-world applications with indicator bars", async ({
+  page,
+}) => {
+  await page.goto("/lessons/dsa/two-pointers/");
+  const applications = page.locator("[data-applications]");
+  const indicators = applications.getByRole("button");
+
+  await expect(indicators).toHaveCount(2);
+  await expect(indicators.first()).toHaveAttribute("aria-current", "true");
+
+  await indicators.nth(1).click();
+  await expect(indicators.nth(1)).toHaveAttribute("aria-current", "true");
+  await expect(applications).toHaveAttribute("data-active-application", "1");
+
+  await indicators.nth(1).press("Home");
+  await expect(applications).toHaveAttribute("data-active-application", "0");
+});
+
+test("keeps both applications reachable without JavaScript", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/lessons/dsa/two-pointers/");
+
+  // The track scrolls natively, so the content is present and no dead
+  // indicator bars are rendered for a script that never ran.
+  await expect(page.locator("[data-application]")).toHaveCount(2);
+  await expect(page.locator("[data-applications] button")).toHaveCount(0);
+  await expect(page.locator("[data-applications-track]")).toHaveAttribute(
+    "tabindex",
+    "0",
+  );
+
+  await context.close();
 });

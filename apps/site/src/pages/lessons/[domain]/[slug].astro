@@ -3,6 +3,7 @@ import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
 import DeepDive from "../../../components/lesson/DeepDive.astro";
 import LessonHeader from "../../../components/lesson/LessonHeader.astro";
 import LessonSection from "../../../components/lesson/LessonSection.astro";
+import RealWorldApplications from "../../../components/lesson/RealWorldApplications.astro";
 import PreviousNextLessons from "../../../components/lesson/PreviousNextLessons.astro";
 import MotionEquivalentView from "../../../components/lesson/MotionEquivalentView.astro";
 import VisualBrief from "../../../components/lesson/VisualBrief.astro";
@@ -37,20 +38,11 @@ const { lesson } = Astro.props;
   <LessonSection id="quick-understanding" title="Quick Understanding">
     <div class="prose" set:html={lesson.content.quickUnderstanding.html} />
   </LessonSection>
-  <LessonSection id="real-world-applications" title="Real-World Applications">
-    <div class="applications">
-      {
-        lesson.content.realWorldApplications.map((application) => (
-          <article aria-labelledby={`${application.id}-title`}>
-            <h3 id={`${application.id}-title`}>{application.title}</h3>
-            <div class="prose" set:html={application.html} />
-          </article>
-        ))
-      }
-    </div>
-  </LessonSection>
   <LessonSection id="going-deeper" title="Going deeper">
     <DeepDive lesson={lesson} />
+  </LessonSection>
+  <LessonSection id="real-world-applications" title="Real-World Applications">
+    <RealWorldApplications lesson={lesson} />
   </LessonSection>
   <div class="neighbors-band page-width">
     <PreviousNextLessons />
@@ -62,24 +54,5 @@ const { lesson } = Astro.props;
     max-width: var(--max-width-wide);
     padding-block: var(--section-space);
     border-top: var(--border-width-thin) solid var(--color-border-secondary);
-  }
-
-  .applications {
-    display: grid;
-    gap: var(--space-9);
-  }
-
-  article {
-    padding: var(--space-7);
-    border: var(--border-width-thin) solid var(--color-border-secondary);
-    border-left: var(--border-width-strong) solid var(--color-constraint-rule);
-    border-radius: var(--border-radius-md);
-    background: var(--color-bg-secondary);
-    box-shadow: var(--shadow-sm);
-  }
-
-  article > h3 {
-    margin-block-end: var(--space-6);
-    font-size: var(--font-size-xl);
   }
 </style>
