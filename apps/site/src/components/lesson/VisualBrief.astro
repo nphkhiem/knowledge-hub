@@ -54,7 +54,13 @@ const opening = renderSnapshot(first);
     gap: var(--space-5);
   }
 
+  /**
+   * The figure's own coordinates leave room above and beside its contents, but
+   * the result chip sits close to the bottom of the viewBox, so the stage adds
+   * the breathing room underneath rather than the drawing being redrawn.
+   */
   .stage {
+    padding-block-end: var(--space-5);
     border: var(--border-width-thin) solid var(--color-border-secondary);
     border-radius: var(--border-radius-md);
     background: var(--color-visual-bg);
