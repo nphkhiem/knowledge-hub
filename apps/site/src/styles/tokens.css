@@ -86,7 +86,10 @@
   --color-code-keyword: #345a86;
   --color-code-string: #2d6254;
   --color-code-number: #835c18;
-  --color-code-comment: #64706a;
+  /* Darkened from #64706a, which measured 4.24:1 on --color-code-bg and failed
+     WCAG 1.4.3. This value measures 5.40:1. The approved design token file in
+     .design/ still carries the original and should adopt this correction. */
+  --color-code-comment: #53605a;
 
   /* Typography — families */
   --font-family-display:

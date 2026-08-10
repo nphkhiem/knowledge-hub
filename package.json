@@ -14,17 +14,20 @@
     "lint": "eslint apps packages lessons tests *.mjs *.ts --no-error-on-unmatched-pattern --max-warnings 0",
     "spell": "cspell --no-progress \"{apps,packages,lessons,tests}/**/*.{astro,css,json,md,mjs,ts,yaml,yml}\"",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test tests/e2e --project=chromium",
     "test:examples": "bash scripts/test-examples.sh",
+    "test:performance": "playwright test tests/performance --project=chromium",
     "test:visual": "playwright test tests/visual",
     "typecheck": "pnpm -r typecheck",
-    "verify": "pnpm check && pnpm test && pnpm test:examples && pnpm build"
+    "verify": "pnpm check && pnpm test && pnpm test:examples && pnpm build && pnpm test:e2e"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.62.1",
     "@types/node": "22.20.1",
     "@vitest/coverage-v8": "4.1.10",
+    "axe-core": "4.13.0",
     "cspell": "10.0.1",
     "eslint": "10.8.1",
     "eslint-plugin-astro": "3.1.0",
