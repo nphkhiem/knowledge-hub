@@ -49,6 +49,14 @@ const { lesson } = Astro.props;
   </div>
 </FocusedLessonLayout>
 
+<script>
+  import { mountPager } from "../../../lib/pager";
+
+  for (const root of document.querySelectorAll("[data-pager]")) {
+    if (root instanceof HTMLElement) mountPager(root);
+  }
+</script>
+
 <style>
   .neighbors-band {
     max-width: var(--max-width-wide);

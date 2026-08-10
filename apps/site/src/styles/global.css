@@ -118,3 +118,69 @@ a:hover {
     scroll-behavior: auto;
   }
 }
+
+/**
+ * Pager. A horizontally scrolling track with indicator bars, shared by the
+ * step sequence and the real-world applications.
+ *
+ * The track scrolls natively so every item stays reachable without scripting;
+ * the bars are added by the pager controller and so cannot rely on a component's
+ * scoped styles. The active bar is both longer and inked, so its state reads by
+ * length as well as by tone rather than by color alone.
+ */
+.pager-track {
+  display: grid;
+  overflow-x: auto;
+  grid-auto-columns: 100%;
+  grid-auto-flow: column;
+  gap: var(--space-6);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.pager-track > * {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.pager-track:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-border-focus);
+  outline-offset: 4px;
+}
+
+.pager-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.pager-indicator {
+  width: 3.5rem;
+  height: var(--space-2);
+  padding: 0;
+  border: 0;
+  border-radius: var(--border-radius-full);
+  background: var(--color-border-secondary);
+  cursor: pointer;
+  transition: width var(--duration-fast) var(--easing-default);
+}
+
+.pager-indicator[aria-current="true"] {
+  width: 8rem;
+  background: var(--color-text-primary);
+}
+
+.pager-indicator:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-border-focus);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pager-track {
+    scroll-behavior: auto;
+  }
+
+  .pager-indicator {
+    transition: none;
+  }
+}

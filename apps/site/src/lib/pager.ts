@@ -3,7 +3,7 @@
  * a test. jsdom has no IntersectionObserver and no scrolling, so neither may be
  * reached for directly.
  */
-export interface ApplicationsPagerEnvironment {
+export interface PagerEnvironment {
   readonly observeActive: (
     items: readonly HTMLElement[],
     onActive: (index: number) => void,
@@ -11,7 +11,7 @@ export interface ApplicationsPagerEnvironment {
   readonly scrollToItem: (item: HTMLElement) => void;
 }
 
-export function createBrowserPagerEnvironment(): ApplicationsPagerEnvironment {
+export function createBrowserPagerEnvironment(): PagerEnvironment {
   return {
     observeActive: (items, onActive) => {
       const observer = new IntersectionObserver(
@@ -40,34 +40,45 @@ export function createBrowserPagerEnvironment(): ApplicationsPagerEnvironment {
 }
 
 /**
- * Turns a horizontally scrolling list of applications into a pager.
+ * Turns a horizontally scrolling track into a pager with indicator bars.
  *
  * The track scrolls natively, so without this script a learner can still reach
- * every application by swiping or scrolling. Enhancement adds the indicator
- * bars, which are real buttons: they name the application they move to, they
- * are keyboard operable, and they never depend on hover.
+ * every item by swiping or scrolling. Enhancement adds the bars, which are real
+ * buttons: they name where they move to, they are keyboard operable, and they
+ * never depend on hover.
+ *
+ * The caller supplies the vocabulary through data attributes, so the same pager
+ * serves applications, steps, or anything else without knowing what it holds.
  */
-export function mountApplicationsPager(
+export function mountPager(
   root: HTMLElement,
-  environment: ApplicationsPagerEnvironment = createBrowserPagerEnvironment(),
+  environment: PagerEnvironment = createBrowserPagerEnvironment(),
 ): () => void {
-  const items = [...root.querySelectorAll<HTMLElement>("[data-application]")];
+  const items = [...root.querySelectorAll<HTMLElement>("[data-pager-item]")];
   if (items.length < 2) return () => undefined;
 
+  const noun = root.dataset.pagerNoun ?? "Item";
   const indicators = document.createElement("div");
   indicators.className = "pager-indicators";
   indicators.setAttribute("role", "group");
-  indicators.setAttribute("aria-label", "Choose an application");
+  indicators.setAttribute(
+    "aria-label",
+    root.dataset.pagerGroupLabel ?? `Choose a ${noun.toLowerCase()}`,
+  );
 
   const buttons = items.map((item, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "pager-indicator";
     button.dataset.pagerIndicator = String(index);
-    const title = item.querySelector("h3")?.textContent?.trim() ?? "";
+    const title =
+      item.dataset.pagerItemLabel ??
+      item.querySelector("h3, h4")?.textContent?.trim() ??
+      "";
+    const position = `${noun} ${index + 1} of ${items.length}`;
     button.setAttribute(
       "aria-label",
-      `Application ${index + 1} of ${items.length}: ${title}`,
+      title === "" ? position : `${position}: ${title}`,
     );
     indicators.append(button);
     return button;
@@ -77,7 +88,7 @@ export function mountApplicationsPager(
     buttons.forEach((button, at) => {
       button.setAttribute("aria-current", String(at === index));
     });
-    root.dataset.activeApplication = String(index);
+    root.dataset.pagerActive = String(index);
   }
 
   function show(index: number, moveFocus: boolean): void {

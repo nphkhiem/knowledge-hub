@@ -11,12 +11,22 @@ const steps = renderMotionEquivalent(lesson);
 const labelId = "motion-equivalent-label";
 ---
 
-<div class="motion-equivalent">
+<div
+  class="motion-equivalent"
+  data-pager
+  data-pager-noun="Step"
+  data-pager-group-label="Choose a step"
+>
   <p class="label" id={labelId}>{lesson.accessibility.motionEquivalentLabel}</p>
-  <ol aria-labelledby={labelId} data-motion-equivalent>
+  <ol
+    class="pager-track"
+    aria-labelledby={labelId}
+    data-motion-equivalent
+    tabindex="0"
+  >
     {
       steps.map((step) => (
-        <li>
+        <li data-pager-item data-pager-item-label={step.narration}>
           <figure>
             <span class="step-number" data-step-number>
               {step.stepNumber}
@@ -44,15 +54,14 @@ const labelId = "motion-equivalent-label";
   }
 
   ol {
-    display: grid;
     margin: 0;
     padding: 0;
-    gap: var(--space-7);
     list-style: none;
   }
 
   figure {
     display: grid;
+    height: 100%;
     margin: 0;
     gap: var(--space-4);
     padding: var(--space-6);

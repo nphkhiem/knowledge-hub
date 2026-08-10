@@ -225,7 +225,7 @@ test("pages through the real-world applications with indicator bars", async ({
   page,
 }) => {
   await page.goto("/lessons/dsa/two-pointers/");
-  const applications = page.locator("[data-applications]");
+  const applications = page.locator("#real-world-applications [data-pager]");
   const indicators = applications.getByRole("button");
 
   await expect(indicators).toHaveCount(2);
@@ -233,10 +233,10 @@ test("pages through the real-world applications with indicator bars", async ({
 
   await indicators.nth(1).click();
   await expect(indicators.nth(1)).toHaveAttribute("aria-current", "true");
-  await expect(applications).toHaveAttribute("data-active-application", "1");
+  await expect(applications).toHaveAttribute("data-pager-active", "1");
 
   await indicators.nth(1).press("Home");
-  await expect(applications).toHaveAttribute("data-active-application", "0");
+  await expect(applications).toHaveAttribute("data-pager-active", "0");
 });
 
 test("keeps both applications reachable without JavaScript", async ({
@@ -248,12 +248,37 @@ test("keeps both applications reachable without JavaScript", async ({
 
   // The track scrolls natively, so the content is present and no dead
   // indicator bars are rendered for a script that never ran.
-  await expect(page.locator("[data-application]")).toHaveCount(2);
-  await expect(page.locator("[data-applications] button")).toHaveCount(0);
-  await expect(page.locator("[data-applications-track]")).toHaveAttribute(
-    "tabindex",
-    "0",
-  );
+  await expect(
+    page.locator("#real-world-applications [data-pager-item]"),
+  ).toHaveCount(2);
+  await expect(
+    page.locator("#real-world-applications [data-pager-indicator]"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator("#real-world-applications .pager-track"),
+  ).toHaveAttribute("tabindex", "0");
 
   await context.close();
+});
+
+test("pages through the step sequence with its own indicator bars", async ({
+  page,
+}) => {
+  await page.goto("/lessons/dsa/two-pointers/");
+  const steps = page.locator("#step-by-step [data-pager]");
+  const bars = steps.locator("[data-pager-indicator]");
+
+  await expect(steps.locator("[data-pager-item]")).toHaveCount(9);
+  await expect(bars).toHaveCount(9);
+  await expect(bars.first()).toHaveAttribute("aria-current", "true");
+  await expect(bars.first()).toHaveAttribute(
+    "aria-label",
+    /^Step 1 of 9: The left pointer starts/,
+  );
+
+  await bars.nth(3).click();
+  await expect(steps).toHaveAttribute("data-pager-active", "3");
+
+  await bars.nth(3).press("End");
+  await expect(steps).toHaveAttribute("data-pager-active", "8");
 });
