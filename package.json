@@ -15,7 +15,7 @@
     "spell": "cspell --no-progress \"{apps,packages,lessons,tests}/**/*.{astro,css,json,md,mjs,ts,yaml,yml}\"",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:examples": "for dir in lessons/*/*/examples; do [ -d \"$dir\" ] || continue; python3 -m unittest discover -s \"$dir\" -t \"$dir\" -p 'test_*.py' || exit 1; done",
+    "test:examples": "bash scripts/test-examples.sh",
     "test:visual": "playwright test tests/visual",
     "typecheck": "pnpm -r typecheck",
     "verify": "pnpm check && pnpm test && pnpm test:examples && pnpm build"

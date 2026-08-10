@@ -179,11 +179,20 @@ export const evidenceSchema = z.strictObject({
  * only once the test suite can execute it, because an untested sample must not
  * ship. See docs/adr/0004.
  */
-export const EXAMPLE_LANGUAGES = ["python", "typescript"] as const;
+export const EXAMPLE_LANGUAGES = [
+  "python",
+  "typescript",
+  "java",
+  "cpp",
+  "go",
+] as const;
 
 export type ExampleLanguage = (typeof EXAMPLE_LANGUAGES)[number];
 
 const exampleFileExtensions: Readonly<Record<ExampleLanguage, string>> = {
+  cpp: ".cpp",
+  go: ".go",
+  java: ".java",
   python: ".py",
   typescript: ".ts",
 };
@@ -193,8 +202,8 @@ export const exampleSchema = z.strictObject({
   file: z
     .string()
     .regex(
-      /^examples\/[A-Za-z0-9][A-Za-z0-9_-]*\.(py|ts)$/,
-      "An example file must sit directly in examples/ and end in .py or .ts.",
+      /^examples\/[A-Za-z0-9][A-Za-z0-9_-]*\.(py|ts|java|cpp|go)$/,
+      "An example file must sit directly in examples/ and end in .py, .ts, .java, .cpp, or .go.",
     ),
 });
 
@@ -218,7 +227,12 @@ export const examplesSchema = z
   .refine(
     (examples) =>
       examples.every(
-        ({ file }) => !file.includes("/test_") && !file.endsWith(".test.ts"),
+        ({ file }) =>
+          !file.includes("/test_") &&
+          !file.endsWith(".test.ts") &&
+          !file.endsWith("Test.java") &&
+          !file.endsWith("_test.cpp") &&
+          !file.endsWith("_test.go"),
       ),
     { message: "Declare the implementation, not its test file." },
   );

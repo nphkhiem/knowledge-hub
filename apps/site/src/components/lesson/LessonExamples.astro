@@ -7,6 +7,9 @@ interface Props {
 }
 
 const languageLabels: Readonly<Record<CompiledExample["language"], string>> = {
+  cpp: "C++",
+  go: "Go",
+  java: "Java",
   python: "Python",
   typescript: "TypeScript",
 };
@@ -23,7 +26,7 @@ const { examples } = Astro.props;
         data-language-label={languageLabels[example.language]}
       >
         <h4 data-example-heading>{languageLabels[example.language]}</h4>
-        <pre set:html={renderCodeBlock(example.code)} />
+        <pre set:html={renderCodeBlock(example.code, example.language)} />
       </section>
     ))
   }
@@ -43,35 +46,6 @@ const { examples } = Astro.props;
     gap: var(--space-5);
   }
 
-  .example-tablist {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .example-tab {
-    min-height: var(--control-target-min);
-    padding-inline: var(--control-padding-inline);
-    border: var(--border-width-thin) solid var(--color-border-secondary);
-    border-radius: var(--border-radius-sm);
-    background: var(--color-bg-secondary);
-    color: var(--color-text-secondary);
-    font-family: var(--font-family-body);
-    font-size: var(--font-size-sm);
-  }
-
-  .example-tab[aria-selected="true"] {
-    border-color: var(--color-border-primary);
-    background: var(--color-bg-primary);
-    color: var(--color-text-primary);
-    font-weight: var(--font-weight-semibold);
-  }
-
-  .example-tab:focus-visible {
-    outline: var(--border-width-strong) solid var(--color-border-focus);
-    outline-offset: 2px;
-  }
-
   h4 {
     margin-block-end: var(--space-4);
     font-size: var(--font-size-md);
@@ -86,11 +60,76 @@ const { examples } = Astro.props;
     background: var(--color-code-bg);
     color: var(--color-code-text);
   }
+</style>
 
-  code {
+<style is:global>
+  /**
+   * Global, deliberately: Astro's scoped styles only reach elements the
+   * compiler sees in this file's own template. The tab controls below are
+   * built by exampleTabs.ts at runtime (document.createElement), and the
+   * token spans inside `pre` come from `renderCodeBlock`'s `set:html`
+   * output, so neither ever receives the scoping attribute a normal
+   * `<style>` block relies on. Both class vocabularies (`example-*`,
+   * `tok-*`) are specific to this component and used nowhere else, so
+   * going unscoped here carries no real collision risk.
+   */
+  .example-tablist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .example-tab {
+    min-height: var(--control-target-min);
+    padding-inline: var(--control-padding-inline);
+    border: var(--border-width-thin) solid var(--color-border-secondary);
+    border-radius: var(--border-radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+  }
+
+  /**
+   * The unselected state above is deliberately a quiet outline: the selected
+   * state below needs to read as obviously different at a glance, not just on
+   * close inspection, so it swaps to a solid inverse fill rather than a
+   * subtle border/background shift between two similarly light tones.
+   */
+  .example-tab[aria-selected="true"] {
+    border-color: var(--color-bg-inverse);
+    background: var(--color-bg-inverse);
+    color: var(--color-text-inverse);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .example-tab:focus-visible {
+    outline: var(--border-width-strong) solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  .lesson-examples code {
     font-family: var(--font-family-mono);
     font-size: var(--font-size-sm);
     line-height: var(--line-height-relaxed);
     white-space: pre;
+  }
+
+  .tok-keyword {
+    color: var(--color-code-keyword);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .tok-string {
+    color: var(--color-code-string);
+  }
+
+  .tok-number {
+    color: var(--color-code-number);
+  }
+
+  .tok-comment {
+    color: var(--color-code-comment);
+    font-style: italic;
   }
 </style>

@@ -1119,26 +1119,44 @@ test("compiles each declared implementation with its own source text", async () 
   const lesson = await compileLessonPackage(twoPointersDirectory);
   const examples = lesson.content.examples ?? [];
 
+  function declaredNamingConvention(code: string): string {
+    if (code.includes("find_pair_with_sum")) return "snake_case";
+    if (code.includes("findPairWithSum")) return "camelCase";
+    if (code.includes("FindPairWithSum")) return "PascalCase";
+    return "missing";
+  }
+
   expect(
     examples.map(({ code, file, language }) => ({
-      declaresFunction: code.includes("find_pair_with_sum")
-        ? "python-name"
-        : code.includes("findPairWithSum")
-          ? "typescript-name"
-          : "missing",
+      declaresFunction: declaredNamingConvention(code),
       file,
       language,
     })),
   ).toEqual([
     {
-      declaresFunction: "python-name",
+      declaresFunction: "snake_case",
       file: "examples/find_pair_with_sum.py",
       language: "python",
     },
     {
-      declaresFunction: "typescript-name",
+      declaresFunction: "camelCase",
       file: "examples/find-pair-with-sum.ts",
       language: "typescript",
+    },
+    {
+      declaresFunction: "camelCase",
+      file: "examples/FindPairWithSum.java",
+      language: "java",
+    },
+    {
+      declaresFunction: "snake_case",
+      file: "examples/find_pair_with_sum.cpp",
+      language: "cpp",
+    },
+    {
+      declaresFunction: "PascalCase",
+      file: "examples/find_pair_with_sum.go",
+      language: "go",
     },
   ]);
 });

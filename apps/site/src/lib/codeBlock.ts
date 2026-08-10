@@ -1,3 +1,8 @@
+import type { CompiledExample } from "@knowledge-hub/lesson-compiler";
+import { highlightSyntax } from "./syntaxHighlight";
+
+type ExampleLanguage = CompiledExample["language"];
+
 /**
  * Builds the inner markup of a `<pre>` code block.
  *
@@ -5,11 +10,9 @@
  * formatter can insert indentation inside it. Whitespace between `<pre>` and
  * `<code>` is significant and would appear in the rendered sample.
  */
-export function renderCodeBlock(code: string): string {
-  const escaped = code
-    .trimEnd()
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-  return `<code>${escaped}</code>`;
+export function renderCodeBlock(
+  code: string,
+  language: ExampleLanguage,
+): string {
+  return `<code>${highlightSyntax(code.trimEnd(), language)}</code>`;
 }

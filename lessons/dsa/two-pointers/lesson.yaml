@@ -22,6 +22,12 @@ content:
       file: "examples/find_pair_with_sum.py"
     - language: "typescript"
       file: "examples/find-pair-with-sum.ts"
+    - language: "java"
+      file: "examples/FindPairWithSum.java"
+    - language: "cpp"
+      file: "examples/find_pair_with_sum.cpp"
+    - language: "go"
+      file: "examples/find_pair_with_sum.go"
 scene:
   target: 15
   objects:

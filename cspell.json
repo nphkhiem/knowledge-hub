@@ -5,8 +5,10 @@
   "useGitignore": true,
   "words": [
     "Astro",
+    "constexpr",
     "Cormen",
     "describedby",
+    "docstrings",
     "Fontsource",
     "frontmatter",
     "jsdom",

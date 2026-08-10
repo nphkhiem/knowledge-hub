@@ -579,6 +579,18 @@ test("rejects example declarations that would publish untestable code", () => {
       withExamples([{ language: "python", file: "examples/a.ts" }]),
       "lesson.yaml",
     ).ok,
+    newLanguagesValid: validateLessonSource(
+      withExamples([
+        { language: "java", file: "examples/A.java" },
+        { language: "cpp", file: "examples/a.cpp" },
+        { language: "go", file: "examples/a.go" },
+      ]),
+      "lesson.yaml",
+    ).ok,
+    newLanguageTestFileDeclared: validateLessonSource(
+      withExamples([{ language: "java", file: "examples/ATest.java" }]),
+      "lesson.yaml",
+    ).ok,
     outsideExamplesDirectory: validateLessonSource(
       withExamples([{ language: "python", file: "src/a.py" }]),
       "lesson.yaml",
@@ -600,6 +612,8 @@ test("rejects example declarations that would publish untestable code", () => {
   expect(outcomes).toEqual({
     duplicateLanguage: false,
     mismatchedExtension: false,
+    newLanguageTestFileDeclared: false,
+    newLanguagesValid: true,
     outsideExamplesDirectory: false,
     testFileDeclared: false,
     unsupportedLanguage: false,
