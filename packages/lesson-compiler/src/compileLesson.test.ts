@@ -137,13 +137,13 @@ test("compiles the inward-pointer trace to the first matching pair", async () =>
   ).toEqual([
     [0, 5, undefined],
     [0, 5, "greater"],
-    [0, 4, "greater"],
+    [0, 4, undefined],
     [0, 4, "less"],
+    [1, 4, undefined],
     [1, 4, "less"],
-    [1, 4, "less"],
-    [2, 4, "less"],
+    [2, 4, undefined],
     [2, 4, "equal"],
-    [2, 4, "equal"],
+    [2, 4, undefined],
   ]);
   expect(lesson.snapshots.at(-1)?.terminal).toBe(true);
   expect(lesson.snapshots.at(-1)?.result).toEqual({
@@ -1079,4 +1079,38 @@ test("aggregates independent action diagnostics in canonical path order", () => 
 
   expect(forward).toEqual(expected);
   expect(reversed).toEqual(expected);
+});
+
+test("scopes highlights and comparisons to the step that sets them", async () => {
+  const lesson = await compileLessonPackage(twoPointersDirectory);
+
+  expect(
+    lesson.snapshots.map((snapshot) => ({
+      stepId: snapshot.stepId,
+      highlights: snapshot.highlights,
+      comparedSum: snapshot.comparison?.actual ?? null,
+    })),
+  ).toEqual([
+    { stepId: "initial", highlights: {}, comparedSum: null },
+    { stepId: "compare-ends", highlights: { values: [0, 5] }, comparedSum: 16 },
+    { stepId: "move-right", highlights: {}, comparedSum: null },
+    {
+      stepId: "compare-one-eleven",
+      highlights: { values: [0, 4] },
+      comparedSum: 12,
+    },
+    { stepId: "move-left-to-two", highlights: {}, comparedSum: null },
+    {
+      stepId: "compare-two-eleven",
+      highlights: { values: [1, 4] },
+      comparedSum: 13,
+    },
+    { stepId: "move-left-to-four", highlights: {}, comparedSum: null },
+    {
+      stepId: "compare-four-eleven",
+      highlights: { values: [2, 4] },
+      comparedSum: 15,
+    },
+    { stepId: "pair-found", highlights: { values: [2, 4] }, comparedSum: null },
+  ]);
 });

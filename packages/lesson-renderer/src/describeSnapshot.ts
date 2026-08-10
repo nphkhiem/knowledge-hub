@@ -8,15 +8,16 @@ import { currentComparison, relationPhrase } from "./scene.js";
  */
 export function describeSnapshot(snapshot: SemanticSnapshot): string {
   const comparison = currentComparison(snapshot);
-  const opening =
-    comparison === undefined
-      ? snapshot.narration
-      : [
-          `Compare ${comparison.leftValue} at the ${comparison.leftLabel.toLowerCase()} pointer`,
-          ` with ${comparison.rightValue} at the ${comparison.rightLabel.toLowerCase()} pointer.`,
-          ` Their sum is ${comparison.actual}, ${relationPhrase(comparison.relation)}`,
-          ` the target ${comparison.target}.`,
-        ].join("");
+
+  /** Authored narration already describes its own step, so it stands alone. */
+  if (comparison === undefined) return snapshot.narration;
+
+  const opening = [
+    `Compare ${comparison.leftValue} at the ${comparison.leftLabel.toLowerCase()} pointer`,
+    ` with ${comparison.rightValue} at the ${comparison.rightLabel.toLowerCase()} pointer.`,
+    ` Their sum is ${comparison.actual}, ${relationPhrase(comparison.relation)}`,
+    ` the target ${comparison.target}.`,
+  ].join("");
 
   const result = snapshot.result;
   if (result === undefined) return opening;

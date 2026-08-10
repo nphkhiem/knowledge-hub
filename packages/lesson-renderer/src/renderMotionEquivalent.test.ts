@@ -45,7 +45,7 @@ test("keeps each step's description aligned with its own snapshot", () => {
   ]).toEqual([
     "The left pointer starts at value 1 and the right pointer starts at value 15. The target is 15.",
     "Compare 1 at the left pointer with 15 at the right pointer. Their sum is 16, greater than the target 15.",
-    "Compare 4 at the left pointer with 11 at the right pointer. Their sum is 15, equal to the target 15. The pair at indices 2 and 4 sums to the target.",
+    "The pointers found the result at indices 2 and 4.",
   ]);
 });
 

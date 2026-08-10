@@ -35,10 +35,44 @@ test("falls back to authored narration when no comparison describes the current 
   });
 });
 
-test("adds the outcome sentence once the result resolves", () => {
+test("lets the authored narration stand alone on the terminal step", () => {
   expect(describeSnapshot(snapshotAt(8))).toBe(
+    "The pointers found the result at indices 2 and 4.",
+  );
+});
+
+test("adds the outcome sentence when a step both compares and resolves", () => {
+  const resolved = snapshotAt(8);
+  const compared = snapshotAt(7);
+  if (compared.comparison === undefined) {
+    throw new Error("The compare-four-eleven snapshot has no comparison.");
+  }
+
+  expect(
+    describeSnapshot({ ...resolved, comparison: compared.comparison }),
+  ).toBe(
     "Compare 4 at the left pointer with 11 at the right pointer. Their sum is 15, equal to the target 15. The pair at indices 2 and 4 sums to the target.",
   );
+});
+
+test("refuses to state a sum that the current pointers contradict", () => {
+  const compared = snapshotAt(1);
+  if (compared.comparison === undefined) {
+    throw new Error("The compare-ends snapshot has no comparison.");
+  }
+  const stale = {
+    ...snapshotAt(2),
+    comparison: compared.comparison,
+  };
+
+  expect({
+    stale: describeSnapshot(stale),
+    honest: describeSnapshot(compared),
+  }).toEqual({
+    stale: "Move the right pointer left because the current sum is too large.",
+    honest:
+      "Compare 1 at the left pointer with 15 at the right pointer. Their sum is 16, greater than the target 15.",
+  });
 });
 
 test("states no sum on the steps that only move a pointer", () => {

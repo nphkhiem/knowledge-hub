@@ -13,10 +13,19 @@ export interface MutableSemanticState {
   readonly objectOrder: readonly string[];
   readonly objectsById: Map<string, CompiledSceneObject>;
   readonly pointers: Record<string, number>;
-  readonly highlights: Record<string, readonly number[]>;
+  highlights: Record<string, readonly number[]>;
+  /** What the current step draws attention to. Cleared before each step. */
   comparison?: SemanticSnapshot["comparison"];
-  comparisonIndices?: readonly [number, number];
-  comparisonPointerIds?: readonly [string, string];
+  /**
+   * The most recent comparison, kept across steps so a later step can prove a
+   * found result followed an equal comparison at the same pointer positions.
+   * This is compiler bookkeeping and never reaches a snapshot.
+   */
+  lastComparison?: Readonly<{
+    relation: "less" | "equal" | "greater";
+    indices: readonly [number, number];
+    pointerIds: readonly [string, string];
+  }>;
   result?: SemanticSnapshot["result"];
 }
 
@@ -222,18 +231,18 @@ export function applyAction(
         );
       }
       const actual = leftValue + rightValue;
-      state.comparison = {
-        actual,
-        target: object.target,
-        relation:
-          actual < object.target
-            ? "less"
-            : actual > object.target
-              ? "greater"
-              : "equal",
+      const relation =
+        actual < object.target
+          ? "less"
+          : actual > object.target
+            ? "greater"
+            : "equal";
+      state.comparison = { actual, target: object.target, relation };
+      state.lastComparison = {
+        indices: [leftPointer.index, rightPointer.index],
+        pointerIds: [leftPointer.id, rightPointer.id],
+        relation,
       };
-      state.comparisonIndices = [leftPointer.index, rightPointer.index];
-      state.comparisonPointerIds = [leftPointer.id, rightPointer.id];
       return { ok: true, value: state };
     }
     case "set": {
@@ -269,12 +278,10 @@ export function applyAction(
       if (currentComparison && !currentComparison.ok) return currentComparison;
       let result: SemanticSnapshot["result"];
       if (status === "found") {
-        const indices = state.comparisonIndices;
-        const pointerIds = state.comparisonPointerIds;
+        const lastComparison = state.lastComparison;
         if (
-          state.comparison?.relation !== "equal" ||
-          indices === undefined ||
-          pointerIds === undefined
+          lastComparison === undefined ||
+          lastComparison.relation !== "equal"
         ) {
           return failure(
             context,
@@ -283,6 +290,7 @@ export function applyAction(
             `${context.path}.value`,
           );
         }
+        const { indices, pointerIds } = lastComparison;
         if (
           state.pointers[pointerIds[0]] !== indices[0] ||
           state.pointers[pointerIds[1]] !== indices[1]

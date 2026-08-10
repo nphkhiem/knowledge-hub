@@ -14,16 +14,30 @@ import { primitiveContracts } from "../renderSnapshot.js";
 const untrustedText = "<script>alert(1)</script>";
 const escapedText = "&lt;script&gt;alert(1)&lt;/script&gt;";
 
-/** The terminal snapshot is the one state in which every primitive renders. */
-const resolvedSnapshot = (() => {
+function snapshotFor(stepId: string): SemanticSnapshot {
   const snapshot = compiledTwoPointersLesson.snapshots.find(
-    (candidate) => candidate.stepId === "pair-found",
+    (candidate) => candidate.stepId === stepId,
   );
   if (snapshot === undefined) {
-    throw new Error("The fixture lesson has no pair-found snapshot.");
+    throw new Error(`The fixture lesson has no ${stepId} snapshot.`);
   }
   return snapshot;
-})();
+}
+
+/**
+ * No step of this lesson both compares and resolves, so the state in which all
+ * five primitives render is assembled here: the terminal step plus the equal
+ * comparison of the step before it, which addresses the same two pointers.
+ */
+const equalComparison = snapshotFor("compare-four-eleven").comparison;
+if (equalComparison === undefined) {
+  throw new Error("The compare-four-eleven snapshot has no comparison.");
+}
+
+const resolvedSnapshot: SemanticSnapshot = {
+  ...snapshotFor("pair-found"),
+  comparison: equalComparison,
+};
 
 function objectOfKind(
   snapshot: SemanticSnapshot,

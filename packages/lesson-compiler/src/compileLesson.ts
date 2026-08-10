@@ -107,6 +107,15 @@ function compileValidatedLesson(
   ];
 
   for (const [stepIndex, step] of source.timeline.entries()) {
+    /**
+     * Highlights and comparisons describe what one step draws attention to, so
+     * they are cleared before the step runs. Carrying them forward would let a
+     * later step state a sum, or emphasize a cell, that its own pointers have
+     * already contradicted. Object state and the result are not step-scoped.
+     */
+    state.highlights = {};
+    delete state.comparison;
+
     for (const [actionIndex, action] of step.actions.entries()) {
       const applied = applyAction(state, action, {
         file,
