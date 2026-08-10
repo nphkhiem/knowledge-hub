@@ -7,7 +7,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: "html",
   use: {
-    baseURL: "http://127.0.0.1:4321",
+    // The site is published under a project path, so the base lives here and
+    // specs use paths relative to it rather than repeating the prefix.
+    baseURL: "http://127.0.0.1:4321/knowledge-hub/",
     trace: "on-first-retry",
   },
   webServer: {

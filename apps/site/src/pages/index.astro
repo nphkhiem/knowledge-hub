@@ -1,4 +1,5 @@
 ---
+import { ROUTES, href } from "../lib/routes";
 import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
@@ -10,7 +11,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       Build a practical mental model, then add only the depth you need for real
       development work or a demanding interview.
     </p>
-    <a class="lesson-link" href="/lessons/dsa/two-pointers/">
+    <a class="lesson-link" href={href(ROUTES.twoPointers)}>
       <span>Start with</span>
       <strong>Two Pointers</strong>
       <span aria-hidden="true">→</span>

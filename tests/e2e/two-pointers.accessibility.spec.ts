@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-const LESSON = "/lessons/dsa/two-pointers/";
+const LESSON = "lessons/dsa/two-pointers/";
 
 type LessonState =
   "initial" | "terminal" | "paused" | "deep-dive-open" | "reduced-motion";

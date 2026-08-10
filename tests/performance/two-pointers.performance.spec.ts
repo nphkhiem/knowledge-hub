@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const LESSON = "/lessons/dsa/two-pointers/";
+const LESSON = "lessons/dsa/two-pointers/";
 
 /**
  * A laboratory regression proxy, not a field measurement. These run against a
@@ -86,18 +86,32 @@ test("ships a lesson page small enough to stay within budget", async ({
 }) => {
   let htmlBytes = 0;
   let scriptBytes = 0;
-  page.on("response", async (response) => {
-    const type = response.headers()["content-type"] ?? "";
-    try {
-      const size = (await response.body()).byteLength;
-      if (type.includes("text/html")) htmlBytes += size;
-      if (type.includes("javascript")) scriptBytes += size;
-    } catch {
-      /* Redirects and cached entries have no retrievable body. */
-    }
+  /**
+   * Reading a body is asynchronous, so the measurements are collected as
+   * promises and awaited before asserting. Without that the assertion can run
+   * before the handlers finish and silently under-report, which would let a
+   * bloated bundle pass.
+   */
+  const measurements: Promise<void>[] = [];
+
+  page.on("response", (response) => {
+    measurements.push(
+      (async () => {
+        const type = response.headers()["content-type"] ?? "";
+        try {
+          const size = (await response.body()).byteLength;
+          if (type.includes("text/html")) htmlBytes += size;
+          if (type.includes("javascript")) scriptBytes += size;
+        } catch {
+          /* Redirects and cached entries have no retrievable body. */
+        }
+      })(),
+    );
   });
 
   await page.goto(LESSON, { waitUntil: "load" });
+  await page.waitForLoadState("networkidle");
+  await Promise.all(measurements);
 
   console.log(
     `[performance] html ${(htmlBytes / 1024).toFixed(1)}kB, script ${(scriptBytes / 1024).toFixed(1)}kB`,
@@ -105,6 +119,11 @@ test("ships a lesson page small enough to stay within budget", async ({
 
   expect({
     htmlUnder150k: htmlBytes < 150_000,
+    scriptMeasured: scriptBytes > 0,
     scriptUnder100k: scriptBytes < 100_000,
-  }).toEqual({ htmlUnder150k: true, scriptUnder100k: true });
+  }).toEqual({
+    htmlUnder150k: true,
+    scriptMeasured: true,
+    scriptUnder100k: true,
+  });
 });

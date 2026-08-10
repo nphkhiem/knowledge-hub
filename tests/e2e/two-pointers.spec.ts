@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const LESSON = "/lessons/dsa/two-pointers/";
+const LESSON = "lessons/dsa/two-pointers/";
 
 test("teaches Two Pointers from a direct URL through optional depth", async ({
   page,
@@ -135,7 +135,7 @@ test("keeps the whole lesson readable without JavaScript", async ({
 test("keeps the lesson intact when the compiled data is unusable", async ({
   page,
 }) => {
-  await page.route(`**${LESSON}`, async (route) => {
+  await page.route(`**/${LESSON}`, async (route) => {
     const response = await route.fetch();
     const body = (await response.text()).replace(
       /(<script type="application\/json" data-compiled-lesson[^>]*>)[\s\S]*?(<\/script>)/,
@@ -224,7 +224,7 @@ test("carries no learner-state, model check, or evidence surface", async ({
 test("pages through the real-world applications with indicator bars", async ({
   page,
 }) => {
-  await page.goto("/lessons/dsa/two-pointers/");
+  await page.goto(LESSON);
   const applications = page.locator("#real-world-applications [data-pager]");
   const indicators = applications.getByRole("button");
 
@@ -244,7 +244,7 @@ test("keeps both applications reachable without JavaScript", async ({
 }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
-  await page.goto("/lessons/dsa/two-pointers/");
+  await page.goto(LESSON);
 
   // The track scrolls natively, so the content is present and no dead
   // indicator bars are rendered for a script that never ran.
@@ -264,7 +264,7 @@ test("keeps both applications reachable without JavaScript", async ({
 test("pages through the step sequence with its own indicator bars", async ({
   page,
 }) => {
-  await page.goto("/lessons/dsa/two-pointers/");
+  await page.goto(LESSON);
   const steps = page.locator("#step-by-step [data-pager]");
   const bars = steps.locator("[data-pager-indicator]");
 

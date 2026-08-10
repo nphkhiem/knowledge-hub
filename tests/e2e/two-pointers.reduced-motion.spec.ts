@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const LESSON = "/lessons/dsa/two-pointers/";
+const LESSON = "lessons/dsa/two-pointers/";
 
 /**
  * The preference is emulated explicitly. Neither a file-level `test.use` nor
