@@ -1,0 +1,127 @@
+---
+import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
+
+interface Props {
+  lesson: CompiledLesson;
+}
+
+const { lesson } = Astro.props;
+const { modelCheck } = lesson;
+---
+
+<div class="model-check" data-model-check>
+  <fieldset>
+    <legend>{modelCheck.prompt}</legend>
+    {
+      modelCheck.options.map((option) => (
+        <label>
+          <input
+            type="radio"
+            name="model-check"
+            value={option.id}
+            data-model-option
+          />
+          <span>{option.label}</span>
+        </label>
+      ))
+    }
+  </fieldset>
+  <p class="optional">
+    Answering is optional. Nothing is graded and nothing is saved.
+  </p>
+  <button type="button" data-model-submit hidden disabled>
+    Check my model
+  </button>
+  <div class="explanation" data-model-explanation aria-live="polite" hidden>
+    <p class="verdict" data-model-verdict></p>
+    <p data-model-reason>{modelCheck.explanation}</p>
+  </div>
+</div>
+
+<script>
+  import { bootstrapModelCheck } from "../../lib/bootstrapModelCheck";
+
+  for (const root of document.querySelectorAll("[data-model-check]")) {
+    if (root instanceof HTMLElement) bootstrapModelCheck(root);
+  }
+</script>
+
+<style>
+  .model-check {
+    display: grid;
+    gap: var(--space-5);
+    justify-items: start;
+  }
+
+  fieldset {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  legend {
+    margin-block-end: var(--space-5);
+    padding: 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-relaxed);
+  }
+
+  label {
+    display: flex;
+    min-height: var(--control-target-min);
+    align-items: center;
+    gap: var(--space-4);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+  }
+
+  input:focus-visible {
+    outline: var(--border-width-strong) solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  .optional {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+  }
+
+  button {
+    min-height: var(--control-target-min);
+    padding-inline: var(--control-padding-inline);
+    border: var(--border-width-thin) solid var(--color-border-primary);
+    border-radius: var(--border-radius-sm);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-sm);
+  }
+
+  button:disabled {
+    border-color: var(--color-border-subtle);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  button:focus-visible {
+    outline: var(--border-width-strong) solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  .explanation {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border-left: var(--border-width-strong) solid var(--color-annotation-rule);
+    background: var(--color-bg-secondary);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .verdict {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+  }
+</style>
