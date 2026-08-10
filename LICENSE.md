@@ -52,8 +52,7 @@ Apache-2.0 AND CC-BY-4.0
 
 ## Third party material
 
-Self hosted fonts are distributed under the SIL Open Font License by their
-respective authors and are not covered by the licenses above. Dependency
-licenses are recorded in `pnpm-lock.yaml` and in each dependency's own
-distribution. A consolidated third party notice file is planned before the first
-public release.
+Third party material, including the self hosted fonts and every build
+dependency, is recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). None of it is covered by the
+licenses above.
