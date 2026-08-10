@@ -1,11 +1,8 @@
 ---
 import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
 import DeepDive from "../../../components/lesson/DeepDive.astro";
-import EvidenceRecord from "../../../components/lesson/EvidenceRecord.astro";
 import LessonHeader from "../../../components/lesson/LessonHeader.astro";
 import LessonSection from "../../../components/lesson/LessonSection.astro";
-import LessonUtilities from "../../../components/lesson/LessonUtilities.astro";
-import ModelCheck from "../../../components/lesson/ModelCheck.astro";
 import PreviousNextLessons from "../../../components/lesson/PreviousNextLessons.astro";
 import MotionEquivalentView from "../../../components/lesson/MotionEquivalentView.astro";
 import VisualBrief from "../../../components/lesson/VisualBrief.astro";
@@ -31,9 +28,6 @@ const { lesson } = Astro.props;
   description={lesson.objective}
 >
   <LessonHeader lesson={lesson} />
-  <div class="utilities-band page-width">
-    <LessonUtilities lesson={lesson} />
-  </div>
   <LessonSection id="see-it-work" title="See it work">
     <VisualBrief lesson={lesson} />
   </LessonSection>
@@ -55,14 +49,8 @@ const { lesson } = Astro.props;
       }
     </div>
   </LessonSection>
-  <LessonSection id="model-check" title="Check your model">
-    <ModelCheck lesson={lesson} />
-  </LessonSection>
   <LessonSection id="going-deeper" title="Going deeper">
     <DeepDive lesson={lesson} />
-  </LessonSection>
-  <LessonSection id="evidence" title="Evidence">
-    <EvidenceRecord lesson={lesson} />
   </LessonSection>
   <div class="neighbors-band page-width">
     <PreviousNextLessons />
@@ -70,11 +58,6 @@ const { lesson } = Astro.props;
 </FocusedLessonLayout>
 
 <style>
-  .utilities-band {
-    max-width: var(--max-width-wide);
-    padding-block-end: var(--space-7);
-  }
-
   .neighbors-band {
     max-width: var(--max-width-wide);
     padding-block: var(--section-space);

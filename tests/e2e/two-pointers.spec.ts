@@ -32,19 +32,8 @@ test("teaches Two Pointers from a direct URL through optional depth", async ({
     page.getByRole("heading", { name: "Real-World Applications" }),
   ).toBeVisible();
 
-  await page
-    .getByRole("radio", { name: "Move the right pointer left" })
-    .check();
-  await page.getByRole("button", { name: "Check my model" }).click();
-  await expect(
-    page.getByText(/every pair using the current largest value/i),
-  ).toBeVisible();
-
-  await page.getByRole("button", { name: "Bookmark" }).click();
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Remove bookmark" }),
-  ).toBeVisible();
+  await page.locator("details.deep-dive summary").click();
+  await expect(page.getByRole("tab", { name: "Python" })).toBeVisible();
 });
 
 test("resumes from where it paused rather than starting over", async ({
@@ -114,9 +103,7 @@ test("reaches every lesson section by its own fragment", async ({ page }) => {
     "step-by-step",
     "quick-understanding",
     "real-world-applications",
-    "model-check",
     "going-deeper",
-    "evidence",
   ];
 
   for (const anchor of anchors) {
@@ -141,10 +128,6 @@ test("keeps the whole lesson readable without JavaScript", async ({
 
   // No control may sit there doing nothing when nothing can wire it up.
   await expect(page.getByRole("button", { name: /animation/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Bookmark" })).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Check my model" }),
-  ).toHaveCount(0);
 
   await context.close();
 });
@@ -173,23 +156,6 @@ test("keeps the lesson intact when the compiled data is unusable", async ({
   await expect(page.getByRole("button", { name: /animation/ })).toBeHidden();
 });
 
-test("marks completed and shares without an account", async ({ page }) => {
-  await page.goto(LESSON);
-
-  await page.getByRole("button", { name: "Mark completed" }).click();
-  await expect(page.getByRole("button", { name: "Completed" })).toBeDisabled();
-  await expect(page.getByRole("status")).toContainText(
-    "Lesson marked as completed.",
-  );
-
-  await page.getByRole("button", { name: "Share" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    /copied|Copy the address/,
-  );
-
-  await expect(page.getByText(/account|sign in|sync/i)).toHaveCount(0);
-});
-
 test("suspends the loop while the figure is offscreen", async ({ page }) => {
   await page.goto(LESSON);
   const brief = page.locator("[data-visual-brief]");
@@ -197,10 +163,60 @@ test("suspends the loop while the figure is offscreen", async ({ page }) => {
     timeout: 10_000,
   });
 
-  await page.locator("#evidence").scrollIntoViewIfNeeded();
+  await page.locator("#going-deeper").scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
   const whenScrolledAway = await brief.getAttribute("data-step-index");
   await page.waitForTimeout(2_000);
 
   expect(await brief.getAttribute("data-step-index")).toBe(whenScrolledAway);
+});
+
+test("renders only the five sections the lesson keeps", async ({ page }) => {
+  await page.goto(LESSON);
+
+  const sections = await page
+    .locator("section.lesson-section")
+    .evaluateAll((nodes) => nodes.map((node) => node.id));
+
+  expect(sections).toEqual([
+    "see-it-work",
+    "step-by-step",
+    "quick-understanding",
+    "real-world-applications",
+    "going-deeper",
+  ]);
+});
+
+test("carries no learner-state, model check, or evidence surface", async ({
+  page,
+}) => {
+  await page.goto(LESSON);
+
+  expect({
+    bookmark: await page.getByRole("button", { name: "Bookmark" }).count(),
+    checkModel: await page
+      .getByRole("button", { name: "Check my model" })
+      .count(),
+    complete: await page
+      .getByRole("button", { name: "Mark completed" })
+      .count(),
+    evidenceHeading: await page
+      .getByRole("heading", { name: "Evidence" })
+      .count(),
+    modelHeading: await page
+      .getByRole("heading", { name: "Check your model" })
+      .count(),
+    radios: await page.getByRole("radio").count(),
+    share: await page.getByRole("button", { name: "Share" }).count(),
+    storageNote: await page.getByText("Kept in this browser only.").count(),
+  }).toEqual({
+    bookmark: 0,
+    checkModel: 0,
+    complete: 0,
+    evidenceHeading: 0,
+    modelHeading: 0,
+    radios: 0,
+    share: 0,
+    storageNote: 0,
+  });
 });

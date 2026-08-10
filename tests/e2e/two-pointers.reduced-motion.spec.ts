@@ -53,12 +53,5 @@ test("keeps the full step sequence as the way to learn it", async ({
 test("still teaches the rest of the lesson", async ({ page }) => {
   await expect(page.locator("#quick-understanding")).toBeVisible();
   await expect(page.locator("#real-world-applications")).toBeVisible();
-  await expect(page.locator("#evidence")).toBeVisible();
-  await page
-    .getByRole("radio", { name: "Move the right pointer left" })
-    .check();
-  await page.getByRole("button", { name: "Check my model" }).click();
-  await expect(
-    page.getByText(/every pair using the current largest value/i),
-  ).toBeVisible();
+  await expect(page.locator("#going-deeper")).toBeVisible();
 });

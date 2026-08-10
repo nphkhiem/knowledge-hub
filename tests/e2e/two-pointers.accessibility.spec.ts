@@ -4,13 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 const LESSON = "/lessons/dsa/two-pointers/";
 
 type LessonState =
-  | "initial"
-  | "terminal"
-  | "paused"
-  | "model-answered"
-  | "deep-dive-open"
-  | "bookmarked"
-  | "reduced-motion";
+  "initial" | "terminal" | "paused" | "deep-dive-open" | "reduced-motion";
 
 async function openTwoPointersState(
   page: Page,
@@ -31,24 +25,9 @@ async function openTwoPointersState(
     case "paused":
       await page.getByRole("button", { name: "Pause animation" }).click();
       return;
-    case "model-answered":
-      await page
-        .getByRole("radio", { name: "Move the right pointer left" })
-        .check();
-      await page.getByRole("button", { name: "Check my model" }).click();
-      await expect(
-        page.getByText(/every pair using the current largest value/i),
-      ).toBeVisible();
-      return;
     case "deep-dive-open":
       await page.locator("details.deep-dive summary").click();
       await expect(page.getByRole("tab").first()).toBeVisible();
-      return;
-    case "bookmarked":
-      await page.getByRole("button", { name: "Bookmark" }).click();
-      await expect(
-        page.getByRole("button", { name: "Remove bookmark" }),
-      ).toBeVisible();
       return;
     case "initial":
     case "reduced-motion":
@@ -60,9 +39,7 @@ const states: LessonState[] = [
   "initial",
   "terminal",
   "paused",
-  "model-answered",
   "deep-dive-open",
-  "bookmarked",
   "reduced-motion",
 ];
 
@@ -116,20 +93,10 @@ test("reaches every control by keyboard with a visible focus ring", async ({
   // Every interactive affordance on the page must be in the focus order.
   const joined = reachable.join("|");
   expect({
-    bookmark: joined.includes("Bookmark"),
-    complete: joined.includes("Mark completed"),
     deepDive: joined.includes("Deep dive"),
     pause: joined.includes("Pause"),
-    share: joined.includes("Share"),
     skipLink: joined.includes("Skip to main content"),
-  }).toEqual({
-    bookmark: true,
-    complete: true,
-    deepDive: true,
-    pause: true,
-    share: true,
-    skipLink: true,
-  });
+  }).toEqual({ deepDive: true, pause: true, skipLink: true });
 });
 
 test("keeps one heading level one and an unbroken heading order", async ({
