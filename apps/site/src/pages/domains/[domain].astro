@@ -1,0 +1,120 @@
+---
+import type { GetStaticPaths } from "astro";
+
+import LessonListRow from "../../components/home/LessonListRow.astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { getCompiledLessons } from "../../lib/lessonCatalog";
+import { summarizeDomains, type DomainSummary } from "../../lib/domains";
+import { href, lessonPath } from "../../lib/routes";
+
+/**
+ * Only domains with published lessons get a route. A domain page promising an
+ * empty shelf is worse than no page, and the Domain Index links here, so an
+ * empty route would also be a dead link.
+ */
+export const getStaticPaths: GetStaticPaths = async () => {
+  const domains = summarizeDomains(await getCompiledLessons());
+  return domains.map((summary) => ({
+    params: { domain: summary.domain },
+    props: { summary },
+  }));
+};
+
+const { summary } = Astro.props as { summary: DomainSummary };
+const lessonWord = summary.lessons.length === 1 ? "lesson" : "lessons";
+---
+
+<SiteLayout title={`${summary.title} lessons`} description={summary.definition}>
+  <main id="main-content" class="domain-main page-width" tabindex="-1">
+    <p class="eyebrow">Domain</p>
+    <h1>{summary.title}</h1>
+    <p class="definition">{summary.definition}</p>
+
+    <!-- One expression: adjacent expressions on separate lines lose the space
+    between them, which rendered "1lesson published". -->
+    <p class="count">
+      {
+        `${summary.lessons.length} ${lessonWord} published, ${summary.totalMinutes} minutes of reading.`
+      }
+    </p>
+
+    <p class="start">
+      <span>New here? Start with</span>
+      <a href={href(lessonPath(summary.domain, summary.startHere.slug))}>
+        {summary.startHere.title}
+      </a>
+    </p>
+
+    <h2 id="all-lessons">All {summary.title} lessons</h2>
+    <ol class="lesson-list" aria-labelledby="all-lessons">
+      {
+        summary.lessons.map((lesson, index) => (
+          <LessonListRow lesson={lesson} position={index + 1} />
+        ))
+      }
+    </ol>
+  </main>
+</SiteLayout>
+
+<style>
+  .domain-main {
+    padding-block: var(--section-space);
+  }
+
+  .eyebrow {
+    margin-block-end: var(--space-4);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .definition {
+    max-width: var(--max-width-prose);
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+
+  .count {
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .start {
+    max-width: var(--max-width-prose);
+    margin-block-start: var(--space-7);
+    padding: var(--space-5) var(--space-6);
+    border-left: var(--border-width-strong) solid var(--color-accent-primary);
+    background: var(--color-bg-secondary);
+  }
+
+  .start span {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .start a {
+    color: var(--color-text-primary);
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-lg);
+  }
+
+  h2 {
+    margin-block-start: var(--section-space);
+    font-size: var(--font-size-xl);
+  }
+
+  .lesson-list {
+    margin-block-start: var(--space-5);
+    padding: 0;
+    border-top: var(--border-width-thin) solid var(--color-border-subtle);
+    list-style: none;
+  }
+</style>
