@@ -17,7 +17,7 @@
     "test:e2e": "playwright test tests/e2e --project=chromium",
     "test:examples": "bash scripts/test-examples.sh",
     "test:performance": "playwright test tests/performance --project=chromium",
-    "test:visual": "playwright test tests/visual",
+    "test:visual": "playwright test tests/visual --project=chromium",
     "typecheck": "pnpm -r typecheck",
     "verify": "pnpm check && pnpm test && pnpm test:examples && pnpm build && pnpm test:e2e"
   },
