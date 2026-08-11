@@ -31,5 +31,7 @@ export const ROUTES = {
   home: "/",
   explore: "/explore/",
   paths: "/paths/",
+  about: "/about/",
+  accessibility: "/accessibility/",
   twoPointers: "/lessons/dsa/two-pointers/",
 } as const;
