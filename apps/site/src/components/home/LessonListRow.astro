@@ -1,0 +1,92 @@
+---
+import type { CollectionEntry } from "../../lib/collection";
+import { domainLabel } from "../../lib/collection";
+import { href, lessonPath } from "../../lib/routes";
+
+interface Props {
+  lesson: CollectionEntry;
+  position: number;
+}
+
+const { lesson, position } = Astro.props;
+---
+
+<li class="lesson-row">
+  <a class="lesson-link" href={href(lessonPath(lesson.domain, lesson.slug))}>
+    <span class="position" aria-hidden="true">
+      {String(position).padStart(2, "0")}
+    </span>
+    <span class="body">
+      <span class="title">{lesson.title}</span>
+      <span class="objective">{lesson.objective}</span>
+    </span>
+    <span class="meta">
+      <span class="domain">{domainLabel(lesson.domain)}</span>
+      <span class="duration">{lesson.durationMinutes} min</span>
+    </span>
+  </a>
+</li>
+
+<style>
+  .lesson-row {
+    border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+    list-style: none;
+  }
+
+  .lesson-link {
+    display: grid;
+    min-height: var(--control-target-min);
+    grid-template-columns: auto 1fr;
+    gap: var(--space-3) var(--space-6);
+    padding-block: var(--space-6);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .position {
+    color: var(--color-text-tertiary, var(--color-text-secondary));
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-sm);
+    /* Aligns the numeral with the first line of the title, not its box. */
+    line-height: var(--line-height-heading, 1.3);
+  }
+
+  .body {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .title {
+    color: var(--color-text-primary);
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-lg);
+  }
+
+  .lesson-link:hover .title,
+  .lesson-link:focus-visible .title {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .objective {
+    max-width: var(--max-width-annotation);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    grid-column: 2;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  .domain {
+    color: var(--color-accent-secondary);
+    font-weight: var(--font-weight-semibold);
+  }
+</style>
