@@ -184,3 +184,20 @@ a:hover {
     transition: none;
   }
 }
+
+/*
+ * Text that must reach a screen reader without occupying visual space. Used for
+ * labels whose purpose is obvious from placeholder and context to a sighted
+ * reader but which a control still needs in order to have an accessible name.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  border: 0;
+  margin: -1px;
+  padding: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

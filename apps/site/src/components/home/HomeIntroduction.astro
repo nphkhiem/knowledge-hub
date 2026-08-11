@@ -1,3 +1,7 @@
+---
+import { ROUTES, href } from "../../lib/routes";
+---
+
 <section class="introduction" aria-labelledby="home-promise">
   <p class="eyebrow">Visual software knowledge</p>
   <h1 id="home-promise">
@@ -7,6 +11,22 @@
     Build a practical mental model, then add only the depth you need for real
     development work or a demanding interview.
   </p>
+  <form
+    class="search-entry"
+    method="get"
+    action={href(ROUTES.explore)}
+    role="search"
+  >
+    <label class="visually-hidden" for="home-search">Search lessons</label>
+    <input
+      id="home-search"
+      name="q"
+      type="search"
+      autocomplete="off"
+      placeholder="Search lessons"
+    />
+    <button type="submit">Search</button>
+  </form>
 </section>
 
 <style>
@@ -35,5 +55,41 @@
     margin-block-start: var(--space-7);
     color: var(--color-text-secondary);
     font-size: var(--font-size-lg);
+  }
+
+  /*
+   * A real form, not a scripted trigger: it submits to /explore/ and works
+   * without JavaScript, which is what makes search a one-action entry rather
+   * than a dialog that only opens when a bundle has loaded.
+   */
+  .search-entry {
+    display: flex;
+    flex-wrap: wrap;
+    margin-block-start: var(--space-8);
+    gap: var(--space-4);
+  }
+
+  .search-entry input {
+    min-width: min(100%, 18rem);
+    min-height: var(--control-target-min);
+    flex: 1 1 18rem;
+    padding: var(--space-3) var(--space-5);
+    border: var(--border-width-thin) solid var(--color-border-secondary);
+    border-radius: var(--border-radius-sm);
+    background: var(--color-bg-secondary);
+    color: inherit;
+    font: inherit;
+  }
+
+  .search-entry button {
+    min-height: var(--control-target-min);
+    padding: var(--space-3) var(--space-6);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    background: var(--color-accent-secondary);
+    color: var(--color-bg-primary);
+    cursor: pointer;
+    font: inherit;
+    font-weight: var(--font-weight-semibold);
   }
 </style>

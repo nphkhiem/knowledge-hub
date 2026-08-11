@@ -8,6 +8,9 @@ import { ROUTES, href } from "../../lib/routes";
       <span aria-hidden="true" class="brand-mark">KH</span>
       <span>Knowledge Hub</span>
     </a>
+    <nav class="primary" aria-label="Primary">
+      <a href={href(ROUTES.explore)}>Explore</a>
+    </nav>
   </div>
 </header>
 
@@ -22,6 +25,31 @@ import { ROUTES, href } from "../../lib/routes";
     display: flex;
     min-height: var(--header-height);
     align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+  }
+
+  .primary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .primary a {
+    display: inline-flex;
+    min-height: var(--control-target-min);
+    align-items: center;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+  }
+
+  .primary a:hover,
+  .primary a:focus-visible {
+    color: var(--color-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 
   .brand {
