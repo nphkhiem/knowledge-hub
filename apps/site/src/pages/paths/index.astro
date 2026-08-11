@@ -1,0 +1,119 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { domainLabel } from "../../lib/collection";
+import { getCompiledLessons } from "../../lib/lessonCatalog";
+import { summarizePaths } from "../../lib/paths";
+import { href, ROUTES } from "../../lib/routes";
+
+const paths = summarizePaths(await getCompiledLessons());
+---
+
+<SiteLayout
+  title="Learning paths"
+  description="Ordered routes through the Knowledge Hub lessons. Recommendations, never locks."
+>
+  <main id="main-content" class="paths-main page-width" tabindex="-1">
+    <p class="eyebrow">Learning paths</p>
+    <h1>Ordered routes through the lessons</h1>
+    <p class="lede">
+      A path recommends a sequence. Nothing is locked, nothing has to be
+      finished first, and every lesson is still readable on its own.
+    </p>
+
+    <ul class="path-list">
+      {
+        paths.map((path) => (
+          <li>
+            <a href={href(`/paths/${path.slug}/`)}>
+              <span class="title">{path.title}</span>
+              <span class="purpose">{path.purpose}</span>
+              <span class="meta">
+                {`${path.publishedCount} of ${path.totalCount} published`}
+                {path.domains.length > 0
+                  ? ` · ${path.domains.map(domainLabel).join(", ")}`
+                  : ""}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="alternative">
+      Prefer to browse? <a href={href(ROUTES.explore)}>Explore every lesson</a>.
+    </p>
+  </main>
+</SiteLayout>
+
+<style>
+  .paths-main {
+    padding-block: var(--section-space);
+  }
+
+  .eyebrow {
+    margin-block-end: var(--space-4);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 20ch;
+    font-size: var(--font-size-3xl);
+  }
+
+  .lede {
+    max-width: var(--max-width-prose);
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+
+  .path-list {
+    display: grid;
+    margin-block-start: var(--space-8);
+    padding: 0;
+    gap: var(--space-5);
+    list-style: none;
+  }
+
+  .path-list a {
+    display: grid;
+    padding: var(--space-7);
+    border: var(--border-width-thin) solid var(--color-border-subtle);
+    border-left: var(--border-width-strong) solid var(--color-accent-primary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+    color: inherit;
+    gap: var(--space-3);
+    text-decoration: none;
+  }
+
+  .title {
+    color: var(--color-text-primary);
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-xl);
+  }
+
+  .purpose {
+    max-width: var(--max-width-prose);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .meta {
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  .alternative {
+    margin-block-start: var(--space-8);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+</style>

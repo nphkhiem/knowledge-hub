@@ -1,0 +1,125 @@
+---
+import type { GetStaticPaths } from "astro";
+
+import LessonListRow from "../../components/home/LessonListRow.astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { domainLabel } from "../../lib/collection";
+import { getCompiledLessons } from "../../lib/lessonCatalog";
+import { summarizePaths, type PathSummary } from "../../lib/paths";
+import { href, ROUTES } from "../../lib/routes";
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const paths = summarizePaths(await getCompiledLessons());
+  return paths.map((path) => ({
+    params: { path: path.slug },
+    props: { path },
+  }));
+};
+
+const { path } = Astro.props as { path: PathSummary };
+const composition = path.domains.map(domainLabel).join(", ");
+---
+
+<SiteLayout title={path.title} description={path.purpose}>
+  <main id="main-content" class="path-main page-width" tabindex="-1">
+    <p class="eyebrow">Learning path</p>
+    <h1>{path.title}</h1>
+    <p class="purpose">{path.purpose}</p>
+
+    <p class="progress">
+      {
+        path.publishedCount === 0
+          ? `None of the ${path.totalCount} lessons are published yet.`
+          : `${path.publishedCount} of ${path.totalCount} lessons published, ${path.totalMinutes} minutes of reading${composition === "" ? "" : ` in ${composition}`}. The rest are still being written.`
+      }
+    </p>
+
+    <p class="no-locks">
+      Nothing here is gated. You can start anywhere, skip anything, and every
+      lesson works on its own from its own address.
+    </p>
+
+    {
+      path.lessons.length > 0 && (
+        <>
+          <h2 id="path-lessons">In recommended order</h2>
+          <ol class="lesson-list" aria-labelledby="path-lessons">
+            {path.lessons.map((lesson, index) => (
+              <LessonListRow lesson={lesson} position={index + 1} />
+            ))}
+          </ol>
+        </>
+      )
+    }
+
+    <p class="alternative">
+      <a href={href(ROUTES.paths)}>All learning paths</a>
+      <span aria-hidden="true">·</span>
+      <a href={href(ROUTES.explore)}>Explore every lesson</a>
+    </p>
+  </main>
+</SiteLayout>
+
+<style>
+  .path-main {
+    padding-block: var(--section-space);
+  }
+
+  .eyebrow {
+    margin-block-end: var(--space-4);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .purpose {
+    max-width: var(--max-width-prose);
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+
+  .progress {
+    max-width: var(--max-width-prose);
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .no-locks {
+    max-width: var(--max-width-prose);
+    margin-block-start: var(--space-6);
+    padding: var(--space-5) var(--space-6);
+    border-left: var(--border-width-strong) solid var(--color-accent-secondary);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  h2 {
+    margin-block-start: var(--section-space);
+    font-size: var(--font-size-xl);
+  }
+
+  .lesson-list {
+    margin-block-start: var(--space-5);
+    padding: 0;
+    border-top: var(--border-width-thin) solid var(--color-border-subtle);
+    list-style: none;
+  }
+
+  .alternative {
+    display: flex;
+    flex-wrap: wrap;
+    margin-block-start: var(--space-8);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    gap: var(--space-4);
+  }
+</style>
