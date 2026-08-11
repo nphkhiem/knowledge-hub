@@ -1,0 +1,149 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Accessibility"
+  description="How Knowledge Hub behaves for keyboard, screen reader, reduced motion, and zoom, including what is not done yet."
+>
+  <main id="main-content" class="prose-page page-width" tabindex="-1">
+    <p class="eyebrow">Accessibility</p>
+    <h1>How this site behaves</h1>
+
+    <p class="lede">
+      The target is WCAG 2.2 AA. This page describes what is actually
+      implemented and tested, and what is not, rather than claiming compliance
+      in general.
+    </p>
+
+    <h2>Animation</h2>
+    <p>
+      Every lesson opens with an animation that starts on its own and repeats.
+      One control pauses it and holds the current state; pressing it again
+      continues from there rather than starting over.
+    </p>
+    <p>
+      If your device asks for reduced motion, the animation never starts. The
+      opening state is held, the control is hidden because there is no motion to
+      control, and the full step-by-step sequence below carries the same
+      explanation. The animation also suspends while it is scrolled out of view
+      or the tab is hidden.
+    </p>
+
+    <h2>Meaning never depends on one channel</h2>
+    <p>
+      Nothing is conveyed by color, motion, or position alone. Every animated
+      state has a written description, and the complete step sequence is
+      rendered as static figures with text, so the lesson is readable whether or
+      not the animation runs at all. If the animation fails to load, the notice
+      explains it and the rest of the lesson is untouched.
+    </p>
+
+    <h2>Keyboard and screen readers</h2>
+    <p>
+      Every control is reachable by keyboard with a visible focus indicator, and
+      there are no focus traps. A skip link leads straight to the main content.
+      Headings run in order with one level-one heading per page. The animation
+      does not announce each loop to a screen reader, which would otherwise
+      interrupt continuously.
+    </p>
+
+    <h2>Zoom and reflow</h2>
+    <p>
+      The layout reflows at 200% zoom without a horizontal scrollbar and without
+      clipping content. The step sequence scrolls sideways inside its own
+      region, which is a deliberate one-dimensional scroll rather than the page
+      scrolling in two directions.
+    </p>
+
+    <h2>Privacy</h2>
+    <p>
+      The site stores nothing in your browser: no cookies, no local storage, no
+      session storage. This is asserted by an automated test, not assumed.
+    </p>
+
+    <h2>What is tested, and how</h2>
+    <p>
+      Automated accessibility checks run against every pull request across the
+      lesson's opening, terminal, paused, expanded, and reduced-motion states,
+      alongside keyboard traversal and reflow checks. Anything reported as
+      serious or critical fails the build.
+    </p>
+
+    <h2>Known gaps</h2>
+    <p>Stated plainly rather than left for you to discover:</p>
+    <ul>
+      <li>
+        Automated checks run in Chromium only. Firefox and WebKit are not yet
+        covered.
+      </li>
+      <li>
+        Screen-reader behavior has been checked by hand rather than
+        continuously, so a regression there would not be caught automatically.
+      </li>
+      <li>
+        Visual regression baselines exist but are not enforced in continuous
+        integration.
+      </li>
+      <li>
+        The animation labels inside lesson figures are small on narrow screens.
+        They scale with the figure and are readable, but they are the tightest
+        thing on the page.
+      </li>
+    </ul>
+
+    <h2>Reporting a problem</h2>
+    <p>
+      Accessibility problems are the most useful issues to report. Please say
+      what you were using, what you expected, and what happened. The repository
+      is linked in the footer.
+    </p>
+  </main>
+</SiteLayout>
+
+<style>
+  .prose-page {
+    max-width: var(--max-width-prose);
+    padding-block: var(--section-space);
+  }
+
+  .eyebrow {
+    margin-block-end: var(--space-4);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .lede {
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+
+  h2 {
+    margin-block: var(--space-9) var(--space-5);
+    font-size: var(--font-size-xl);
+  }
+
+  p,
+  li {
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed, 1.7);
+  }
+
+  p + p {
+    margin-block-start: var(--space-5);
+  }
+
+  ul {
+    display: grid;
+    padding-inline-start: var(--space-7);
+    gap: var(--space-4);
+  }
+</style>

@@ -6,11 +6,29 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 <SiteLayout title="Page not found | Knowledge Hub">
   <main id="main-content" class="not-found page-width" tabindex="-1">
     <p class="error-code">404</p>
-    <h1>Page not found</h1>
-    <p>The page may have moved or may not exist yet.</p>
-    <nav aria-label="Recovery links">
-      <a href={href(ROUTES.home)}>Go to Home</a>
-      <a href={href(ROUTES.twoPointers)}>Open Two Pointers</a>
+    <h1>That page is not here</h1>
+    <p class="lede">
+      The address may be mistyped, the page may have moved, or the lesson may
+      not be written yet. The collection is still being built, so the last one
+      is likely.
+    </p>
+
+    <h2 id="recovery">Try one of these</h2>
+    <nav aria-labelledby="recovery">
+      <a href={href(ROUTES.explore)}>
+        <span class="title">Search every lesson</span>
+        <span class="detail"
+          >Find a lesson by name or by what you recognized</span
+        >
+      </a>
+      <a href={href(ROUTES.paths)}>
+        <span class="title">Follow a learning path</span>
+        <span class="detail">An ordered route through the collection</span>
+      </a>
+      <a href={href(ROUTES.home)}>
+        <span class="title">Start from the beginning</span>
+        <span class="detail">The promise and where to begin</span>
+      </a>
     </nav>
   </main>
 </SiteLayout>
@@ -33,16 +51,43 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     font-size: var(--font-size-3xl);
   }
 
+  .lede {
+    max-width: var(--max-width-prose);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+
+  h2 {
+    margin-block: var(--space-9) var(--space-5);
+    font-size: var(--font-size-lg);
+  }
+
   nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-7);
-    margin-block-start: var(--space-8);
+    display: grid;
+    max-width: var(--max-width-prose);
+    gap: var(--space-4);
   }
 
   nav a {
-    display: inline-flex;
-    min-height: var(--control-target-min);
-    align-items: center;
+    display: grid;
+    padding: var(--space-6);
+    border: var(--border-width-thin) solid var(--color-border-subtle);
+    border-left: var(--border-width-strong) solid var(--color-accent-primary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+    color: inherit;
+    gap: var(--space-2);
+    text-decoration: none;
+  }
+
+  .title {
+    color: var(--color-text-primary);
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-lg);
+  }
+
+  .detail {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
   }
 </style>

@@ -1,7 +1,25 @@
+---
+import { ROUTES, href } from "../../lib/routes";
+
+const REPOSITORY = "https://github.com/nphkhiem/knowledge-hub";
+---
+
 <footer class="site-footer">
   <div class="page-width footer-inner">
-    <strong>Knowledge Hub</strong>
-    <p>Visual mental models for practical software development.</p>
+    <div class="identity">
+      <strong>Knowledge Hub</strong>
+      <p>Visual mental models for practical software development.</p>
+    </div>
+    <nav class="utility" aria-label="Utility">
+      <a href={href(ROUTES.about)}>About</a>
+      <a href={href(ROUTES.accessibility)}>Accessibility</a>
+      <a href={REPOSITORY}>Source</a>
+      <!-- Contribution is optional and stays last, per the approved
+      information architecture. -->
+      <a href={`${REPOSITORY}/blob/main/CONTRIBUTING.md`}>
+        Contribute on GitHub
+      </a>
+    </nav>
   </div>
 </footer>
 
@@ -27,5 +45,28 @@
 
   .footer-inner p {
     margin: 0;
+  }
+
+  .identity {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .utility {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+  }
+
+  .utility a {
+    display: inline-flex;
+    min-height: var(--control-target-min);
+    align-items: center;
+    color: var(--color-text-secondary);
+  }
+
+  .utility a:hover,
+  .utility a:focus-visible {
+    color: var(--color-text-primary);
   }
 </style>

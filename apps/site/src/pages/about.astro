@@ -1,0 +1,128 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { href, ROUTES } from "../lib/routes";
+---
+
+<SiteLayout
+  title="About"
+  description="What Knowledge Hub is for, and the editorial standard every lesson is held to."
+>
+  <main id="main-content" class="prose-page page-width" tabindex="-1">
+    <p class="eyebrow">About</p>
+    <h1>What this is for</h1>
+
+    <p class="lede">
+      Knowledge Hub exists to make one difficult software concept concrete
+      quickly. Not to cover everything, and not to replace the documentation.
+    </p>
+
+    <h2>The promise</h2>
+    <p>
+      A lesson should take three to five minutes. In that time you should be
+      able to explain the mental model in your own words, recognize when the
+      idea applies, and name a limitation that still matters. If a lesson does
+      not do that, it is not finished.
+    </p>
+
+    <h2>How a lesson is built</h2>
+    <p>
+      Every lesson starts with an animation that demonstrates the idea from its
+      opening state to a result, then repeats. The same underlying description
+      produces the animation, the static step sequence, and the text a screen
+      reader announces, so no reader gets a lesser version of the explanation.
+    </p>
+    <p>
+      A lesson is data, not code. It is validated before it can publish: broken
+      references, unreachable steps, missing accessibility content, and
+      incomplete evidence all fail the build rather than reaching a reader.
+    </p>
+
+    <h2>The editorial standard</h2>
+    <ul>
+      <li>
+        Every factual claim traces to a primary source, recorded with the date
+        it was checked. A blog post is not sufficient support on its own.
+      </li>
+      <li>
+        Every lesson names a real limitation. A technique that always works is a
+        technique that has not been examined.
+      </li>
+      <li>
+        Real-world applications describe actual software situations, with the
+        production constraint that still bites. Toy restatements do not count.
+      </li>
+      <li>
+        Code samples run in the test suite. A sample that is not executed does
+        not ship.
+      </li>
+    </ul>
+
+    <h2>What it does not do</h2>
+    <p>
+      There are no accounts, no backend, and no analytics. The site remembers
+      nothing about you: no progress, no bookmarks, no history. Every page is
+      identical for everyone. That means it cannot offer to resume where you
+      left off, which is a real cost and a deliberate trade for keeping the
+      thing simple and private.
+    </p>
+    <p>
+      There are also no scores, streaks, or leaderboards. Understanding is the
+      point, and measuring it would change what the lessons optimize for.
+    </p>
+
+    <h2>Reading and contributing</h2>
+    <p>
+      Start with <a href={href(ROUTES.paths)}>Interview Foundations</a>, or
+      <a href={href(ROUTES.explore)}>browse every lesson</a>. The source lives
+      on GitHub; corrections to a lesson's facts or evidence are the most useful
+      thing you can send.
+    </p>
+  </main>
+</SiteLayout>
+
+<style>
+  .prose-page {
+    max-width: var(--max-width-prose);
+    padding-block: var(--section-space);
+  }
+
+  .eyebrow {
+    margin-block-end: var(--space-4);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .lede {
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+
+  h2 {
+    margin-block: var(--space-9) var(--space-5);
+    font-size: var(--font-size-xl);
+  }
+
+  p,
+  li {
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed, 1.7);
+  }
+
+  p + p {
+    margin-block-start: var(--space-5);
+  }
+
+  ul {
+    display: grid;
+    padding-inline-start: var(--space-7);
+    gap: var(--space-4);
+  }
+</style>

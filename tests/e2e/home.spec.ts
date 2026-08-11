@@ -46,7 +46,7 @@ test("opens the lesson from its row", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("ships no link it cannot honour", async ({ page }) => {
+test("ships no link it cannot honor", async ({ page }) => {
   await page.goto(HOME);
 
   const internal = await page
