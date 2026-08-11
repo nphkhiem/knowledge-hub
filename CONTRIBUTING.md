@@ -88,8 +88,10 @@ screenshots for anything visible, and known gaps.
 Be honest in the verification section. "I ran `pnpm verify` and it passed" is
 useful. Saying it passed when it was not run is worse than saying nothing.
 
-`main` requires a pull request. Merges are squash only and the branch is deleted
-automatically.
+`main` requires a pull request. You may merge or squash; the branch is deleted
+automatically either way. Prefer a merge commit when your commits tell a useful
+story on their own, and a squash when they are a single change split by
+accident.
 
 Every pull request runs six independently named checks, so a failure tells you
 which gate broke rather than reporting one opaque red cross:
@@ -106,7 +108,7 @@ which gate broke rather than reporting one opaque red cross:
 `pnpm verify` runs the same commands locally, so a green run before you push
 usually means a green run on the pull request.
 
-Nothing deploys from a pull request. A squash merge to `main` builds the site,
+Nothing deploys from a pull request. A merge to `main` builds the site,
 publishes it to GitHub Pages, and then smoke tests the published URL.
 
 One local wrinkle: on macOS `astro preview` puts itself in the background, so the
