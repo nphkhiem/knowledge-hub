@@ -1,0 +1,107 @@
+---
+import type { DomainSummary } from "../../lib/domains";
+import { href } from "../../lib/routes";
+
+interface Props {
+  domains: readonly DomainSummary[];
+}
+
+const { domains } = Astro.props;
+---
+
+{
+  domains.length > 0 && (
+    <section class="domains" aria-labelledby="browse-by-domain">
+      <div class="section-label">
+        <p class="eyebrow">Browse</p>
+        <h2 id="browse-by-domain">By domain</h2>
+      </div>
+
+      <ul class="domain-list">
+        {domains.map((domain) => (
+          <li>
+            <a href={href(`/domains/${domain.domain}/`)}>
+              <span class="title">{domain.title}</span>
+              <span class="definition">{domain.definition}</span>
+              <span class="count">
+                {`${domain.lessons.length} ${domain.lessons.length === 1 ? "lesson" : "lessons"}`}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .domains {
+    display: grid;
+    padding-block: var(--section-space);
+    border-top: var(--border-width-thin) solid var(--color-border-subtle);
+    gap: var(--space-7);
+  }
+
+  @media (min-width: 60rem) {
+    .domains {
+      grid-template-columns: minmax(12rem, 1fr) minmax(0, 3fr);
+      gap: var(--space-9);
+    }
+  }
+
+  .eyebrow {
+    margin-block-end: var(--space-3);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h2 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .domain-list {
+    display: grid;
+    padding: 0;
+    gap: var(--space-5);
+    list-style: none;
+  }
+
+  .domain-list a {
+    display: grid;
+    padding: var(--space-6);
+    border: var(--border-width-thin) solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+    color: inherit;
+    gap: var(--space-3);
+    text-decoration: none;
+  }
+
+  .domain-list a:hover,
+  .domain-list a:focus-visible {
+    border-color: var(--color-border-secondary);
+  }
+
+  .title {
+    color: var(--color-text-primary);
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-lg);
+  }
+
+  .definition {
+    max-width: var(--max-width-annotation);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .count {
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+</style>

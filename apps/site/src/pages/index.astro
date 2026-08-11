@@ -1,29 +1,31 @@
 ---
+import DomainIndex from "../components/home/DomainIndex.astro";
 import FeaturedLearningPath from "../components/home/FeaturedLearningPath.astro";
 import HomeIntroduction from "../components/home/HomeIntroduction.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
 import { summarizeCollection } from "../lib/collection";
+import { summarizeDomains } from "../lib/domains";
 import { getCompiledLessons } from "../lib/lessonCatalog";
 
 /**
- * Home is curated, not a catalog. It presents the promise and one guided
- * starting point, and it reports what is actually published rather than what is
- * planned, so a partly written collection is never presented as a full library.
+ * Home is curated, not a catalog. It presents the promise, one guided starting
+ * point, and the domains, and it reports what is actually published rather than
+ * what is planned, so a partly written collection is never presented as a full
+ * library.
  *
- * The Domain Index and the search entry are deliberately absent. Both exist to
- * route to pages that do not exist yet, `/domains/<domain>/` from D03 and
- * `/explore/` from D02, and this page ships no link it cannot honour.
+ * The Domain Index renders only domains that have published lessons, because
+ * those are the only ones with a route to link to.
  */
-const summary = summarizeCollection(
-  await getCompiledLessons(),
-  "interview-foundations",
-);
+const lessons = await getCompiledLessons();
+const summary = summarizeCollection(lessons, "interview-foundations");
+const domains = summarizeDomains(lessons);
 ---
 
 <SiteLayout title="Knowledge Hub">
   <main id="main-content" class="home-main page-width" tabindex="-1">
     <HomeIntroduction />
     <FeaturedLearningPath summary={summary} />
+    <DomainIndex domains={domains} />
   </main>
 </SiteLayout>
 
