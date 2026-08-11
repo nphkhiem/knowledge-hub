@@ -29,5 +29,6 @@ export function lessonPath(domain: string, slug: string): string {
 
 export const ROUTES = {
   home: "/",
+  explore: "/explore/",
   twoPointers: "/lessons/dsa/two-pointers/",
 } as const;

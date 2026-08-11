@@ -11,7 +11,7 @@ interface Props {
 const { lesson, position } = Astro.props;
 ---
 
-<li class="lesson-row">
+<li class="lesson-row" data-lesson-slug={lesson.slug}>
   <a class="lesson-link" href={href(lessonPath(lesson.domain, lesson.slug))}>
     <span class="position" aria-hidden="true">
       {String(position).padStart(2, "0")}
