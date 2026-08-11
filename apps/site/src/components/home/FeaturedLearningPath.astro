@@ -1,0 +1,105 @@
+---
+import type { CollectionSummary } from "../../lib/collection";
+import { domainLabel } from "../../lib/collection";
+import LessonListRow from "./LessonListRow.astro";
+
+interface Props {
+  summary: CollectionSummary;
+}
+
+const { summary } = Astro.props;
+
+const composition = summary.domains.map(domainLabel).join(", ");
+---
+
+<section class="featured" aria-labelledby="interview-foundations">
+  <div class="section-label">
+    <p class="eyebrow">Learning path</p>
+    <h2 id="interview-foundations">Interview Foundations</h2>
+  </div>
+
+  <div class="section-body">
+    <p class="purpose">
+      Fifteen visual lessons on the ideas that come up most often in demanding
+      technical interviews, across data structures and algorithms, networking,
+      and system design. Read them in order or open any one on its own.
+    </p>
+
+    {
+      summary.publishedCount === 0 ? (
+        <p class="progress">
+          No lessons are published yet. The first will appear here.
+        </p>
+      ) : (
+        <>
+          <p class="progress">
+            <strong>
+              {summary.publishedCount} of {summary.totalCount} lessons
+            </strong>
+            {" published so far, "}
+            {summary.totalMinutes} minutes of reading in {composition}. The rest
+            are still being written.
+          </p>
+
+          <ol class="lesson-list">
+            {summary.lessons.map((lesson, index) => (
+              <LessonListRow lesson={lesson} position={index + 1} />
+            ))}
+          </ol>
+        </>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .featured {
+    display: grid;
+    padding-block: var(--section-space);
+    border-top: var(--border-width-thin) solid var(--color-border-subtle);
+    gap: var(--space-7);
+  }
+
+  @media (min-width: 60rem) {
+    .featured {
+      grid-template-columns: minmax(12rem, 1fr) minmax(0, 3fr);
+      gap: var(--space-9);
+    }
+  }
+
+  .eyebrow {
+    margin-block-end: var(--space-3);
+    color: var(--color-accent-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  h2 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .purpose {
+    max-width: var(--max-width-prose);
+    color: var(--color-text-secondary);
+  }
+
+  .progress {
+    max-width: var(--max-width-prose);
+    margin-block-start: var(--space-6);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .progress strong {
+    color: var(--color-text-primary);
+  }
+
+  .lesson-list {
+    margin-block-start: var(--space-7);
+    padding: 0;
+    border-top: var(--border-width-thin) solid var(--color-border-subtle);
+    list-style: none;
+  }
+</style>

@@ -18,6 +18,15 @@ export function href(path: string): string {
   return joinBase(import.meta.env.BASE_URL, path);
 }
 
+/**
+ * The canonical address of a lesson. Lowercase kebab-case with a trailing
+ * slash, matching the approved route contract, and the only place that shape is
+ * spelled out.
+ */
+export function lessonPath(domain: string, slug: string): string {
+  return `/lessons/${domain}/${slug}/`;
+}
+
 export const ROUTES = {
   home: "/",
   twoPointers: "/lessons/dsa/two-pointers/",

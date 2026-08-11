@@ -1,5 +1,20 @@
 import { expect, test } from "vitest";
-import { joinBase } from "./routes";
+import { ROUTES, joinBase, lessonPath } from "./routes";
+
+test("builds the canonical lesson path from a domain and slug", () => {
+  expect({
+    dsa: lessonPath("dsa", "two-pointers"),
+    networking: lessonPath("networking", "url-to-response"),
+  }).toEqual({
+    dsa: "/lessons/dsa/two-pointers/",
+    networking: "/lessons/networking/url-to-response/",
+  });
+});
+
+test("the hardcoded Two Pointers route agrees with the built one", () => {
+  // Two ways of naming the same page must not drift apart.
+  expect(lessonPath("dsa", "two-pointers")).toBe(ROUTES.twoPointers);
+});
 
 test("prefixes an internal path with a project base", () => {
   expect({
