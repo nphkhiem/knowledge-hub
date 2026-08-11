@@ -2,6 +2,16 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  /**
+   * Baselines are pixel images tied to the operating system that rendered them,
+   * and this version's default template ends in `{-snapshotSuffix}`, which
+   * defaults to an empty string. Without `{platform}` a macOS baseline and a
+   * Linux run would resolve to the same file, so CI would report font
+   * rasterization as a design regression. The suite is deliberately local-only
+   * for now; naming the platform keeps adding Linux baselines later additive.
+   */
+  snapshotPathTemplate:
+    "{testDir}/{testFileDir}/{testFileBaseName}-snapshots/{arg}{-projectName}-{platform}{ext}",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
