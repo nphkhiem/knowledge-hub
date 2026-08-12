@@ -7,6 +7,7 @@ const DOMAINS = ["dsa", "networking", "system-design"] as const;
 /** One lesson as the static search index carries it. */
 export interface SearchRecord {
   readonly slug: string;
+  readonly difficulty: CompiledLesson["difficulty"];
   readonly domain: CompiledLesson["domain"];
   readonly collection: string;
   readonly order: number;
@@ -27,6 +28,7 @@ export interface SearchFilters {
 export function toSearchRecord(lesson: CompiledLesson): SearchRecord {
   return {
     slug: lesson.slug,
+    difficulty: lesson.difficulty,
     domain: lesson.domain,
     collection: lesson.collection,
     order: lesson.order,

@@ -45,14 +45,21 @@ const lessonWord = summary.lessons.length === 1 ? "lesson" : "lessons";
       </a>
     </p>
 
-    <h2 id="all-lessons">All {summary.title} lessons</h2>
-    <ol class="lesson-list" aria-labelledby="all-lessons">
-      {
-        summary.lessons.map((lesson, index) => (
-          <LessonListRow lesson={lesson} position={index + 1} />
-        ))
-      }
-    </ol>
+    {
+      summary.byDifficulty.map((group) => (
+        <section class="difficulty-group">
+          <h2 id={`difficulty-${group.difficulty}`}>{group.label}</h2>
+          <ol
+            class="lesson-list"
+            aria-labelledby={`difficulty-${group.difficulty}`}
+          >
+            {group.lessons.map((lesson, index) => (
+              <LessonListRow lesson={lesson} position={index + 1} />
+            ))}
+          </ol>
+        </section>
+      ))
+    }
   </main>
 </SiteLayout>
 
@@ -106,7 +113,7 @@ const lessonWord = summary.lessons.length === 1 ? "lesson" : "lessons";
     font-size: var(--font-size-lg);
   }
 
-  h2 {
+  .difficulty-group h2 {
     margin-block-start: var(--section-space);
     font-size: var(--font-size-xl);
   }

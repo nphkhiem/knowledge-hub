@@ -12,6 +12,7 @@ export const validTwoPointersSource = deepFreeze({
   slug: "two-pointers",
   domain: "dsa",
   collection: "interview-foundations",
+  difficulty: "easy",
   order: 2,
   license: "CC-BY-4.0",
   title: "Two Pointers",

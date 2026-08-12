@@ -95,3 +95,21 @@ test("reads without JavaScript", async ({ browser }) => {
 
   await context.close();
 });
+
+test("groups lessons by difficulty without moving any lesson address", async ({
+  page,
+}) => {
+  await page.goto(DSA);
+
+  // C00's core guarantee: difficulty is metadata, never a route segment. A
+  // regraded lesson must keep the address it was published under.
+  await expect(page.locator("#difficulty-easy")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Two Pointers/ }).first(),
+  ).toHaveAttribute("href", /\/lessons\/dsa\/two-pointers\/$/);
+
+  const headings = await page
+    .locator("[id^='difficulty-']")
+    .evaluateAll((nodes) => nodes.map((node) => node.id));
+  expect(headings).toEqual(["difficulty-easy"]);
+});

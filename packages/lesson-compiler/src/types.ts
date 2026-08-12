@@ -115,6 +115,7 @@ export interface CompiledLesson {
   readonly slug: string;
   readonly domain: "dsa" | "networking" | "system-design";
   readonly collection: "interview-foundations";
+  readonly difficulty: "easy" | "medium" | "hard";
   readonly order: number;
   readonly license: "CC-BY-4.0";
   readonly title: string;

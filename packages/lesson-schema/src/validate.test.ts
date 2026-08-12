@@ -620,3 +620,52 @@ test("rejects example declarations that would publish untestable code", () => {
     valid: true,
   });
 });
+
+test("requires a difficulty grade", () => {
+  const withoutDifficulty: Record<string, unknown> = {
+    ...validTwoPointersSource,
+  };
+  delete withoutDifficulty["difficulty"];
+
+  expect(validateLessonSource(withoutDifficulty, "lesson.yaml").ok).toBe(false);
+});
+
+test("accepts only the three declared difficulty grades", () => {
+  const grades = ["easy", "medium", "hard", "trivial", "Easy", ""];
+
+  expect(
+    grades.filter(
+      (difficulty) =>
+        validateLessonSource(
+          { ...validTwoPointersSource, difficulty },
+          "lesson.yaml",
+        ).ok,
+    ),
+  ).toEqual(["easy", "medium", "hard"]);
+});
+
+test("allows an order beyond the first fifteen lessons", () => {
+  // The collection grew past Interview Foundations' fifteen. A ceiling of 15
+  // would reject every DSA lesson after it.
+  expect(
+    [1, 15, 16, 40, 99].filter(
+      (order) =>
+        validateLessonSource(
+          { ...validTwoPointersSource, order },
+          "lesson.yaml",
+        ).ok,
+    ),
+  ).toEqual([1, 15, 16, 40, 99]);
+});
+
+test("still rejects an order outside any sane range", () => {
+  expect(
+    [0, -1, 1000].filter(
+      (order) =>
+        validateLessonSource(
+          { ...validTwoPointersSource, order },
+          "lesson.yaml",
+        ).ok,
+    ),
+  ).toEqual([]);
+});

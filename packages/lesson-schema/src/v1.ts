@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const domainIdSchema = z.enum(["dsa", "networking", "system-design"]);
 
+export const difficultySchema = z.enum(["easy", "medium", "hard"]);
+
 const objectIdSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 const actionTargetSchema = { objectId: objectIdSchema };
 
@@ -243,7 +245,17 @@ export const lessonSourceV1Schema = z.strictObject({
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   domain: domainIdSchema,
   collection: z.literal("interview-foundations"),
-  order: z.number().int().min(1).max(15),
+  /**
+   * Difficulty is metadata, never a route segment. A lesson that is regraded
+   * keeps its canonical address, so a published link never moves.
+   */
+  difficulty: difficultySchema,
+  /**
+   * Position within the collection. The ceiling was fifteen while Interview
+   * Foundations was the whole roadmap; the DSA curriculum alone is larger, so
+   * the bound now only rejects values that cannot be a position at all.
+   */
+  order: z.number().int().min(1).max(200),
   license: z.literal("CC-BY-4.0"),
   title: z.string().min(1),
   durationMinutes: z.number().int().min(3).max(5),

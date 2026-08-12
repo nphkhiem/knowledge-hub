@@ -2,6 +2,26 @@ import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
 
 import type { CollectionEntry } from "./collection.js";
 
+type Difficulty = CompiledLesson["difficulty"];
+
+/**
+ * Presentation order for difficulty groups. Easy first, because a domain index
+ * exists to give a reader somewhere to start.
+ */
+const DIFFICULTY_ORDER: readonly Difficulty[] = ["easy", "medium", "hard"];
+
+export const DIFFICULTY_LABELS: Readonly<Record<Difficulty, string>> = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+};
+
+export interface DifficultyGroup {
+  readonly difficulty: Difficulty;
+  readonly label: string;
+  readonly lessons: readonly CollectionEntry[];
+}
+
 type Domain = CompiledLesson["domain"];
 
 /**
@@ -40,6 +60,11 @@ export interface DomainSummary {
   /** The recommended first lesson: the earliest in reading order. */
   readonly startHere: CollectionEntry;
   readonly totalMinutes: number;
+  /**
+   * The same lessons grouped for display. Difficulty is metadata, never a route
+   * segment, so grouping cannot move a published lesson's address.
+   */
+  readonly byDifficulty: readonly DifficultyGroup[];
 }
 
 /**
@@ -56,6 +81,7 @@ export function summarizeDomains(
   for (const lesson of lessons) {
     const entry: CollectionEntry = {
       slug: lesson.slug,
+      difficulty: lesson.difficulty,
       domain: lesson.domain,
       title: lesson.title,
       objective: lesson.objective,
@@ -75,7 +101,14 @@ export function summarizeDomains(
     const startHere = ordered[0];
     if (startHere === undefined) continue;
 
+    const byDifficulty = DIFFICULTY_ORDER.map((difficulty) => ({
+      difficulty,
+      label: DIFFICULTY_LABELS[difficulty],
+      lessons: ordered.filter((entry) => entry.difficulty === difficulty),
+    })).filter((group) => group.lessons.length > 0);
+
     summaries.push({
+      byDifficulty,
       domain,
       title: DOMAIN_DEFINITIONS[domain].title,
       definition: DOMAIN_DEFINITIONS[domain].definition,
