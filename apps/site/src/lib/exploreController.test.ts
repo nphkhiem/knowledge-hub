@@ -6,6 +6,7 @@ import type { SearchRecord } from "./search.js";
 const records: SearchRecord[] = [
   {
     slug: "two-pointers",
+    difficulty: "easy",
     domain: "dsa",
     collection: "interview-foundations",
     order: 2,
@@ -16,6 +17,7 @@ const records: SearchRecord[] = [
   },
   {
     slug: "url-to-response",
+    difficulty: "easy",
     domain: "networking",
     collection: "interview-foundations",
     order: 8,

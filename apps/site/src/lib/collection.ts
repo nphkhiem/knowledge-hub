@@ -48,6 +48,7 @@ export function summarizeCollection(
     .filter((lesson) => lesson.collection === collection)
     .map((lesson): CollectionEntry => ({
       slug: lesson.slug,
+      difficulty: lesson.difficulty,
       domain: lesson.domain,
       title: lesson.title,
       objective: lesson.objective,

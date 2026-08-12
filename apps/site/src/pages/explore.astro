@@ -75,6 +75,7 @@ const domains = [...new Set(ordered.map((record) => record.domain))].sort();
           <LessonListRow
             lesson={{
               slug: record.slug,
+              difficulty: record.difficulty,
               domain: record.domain,
               title: record.title,
               objective: record.objective,
