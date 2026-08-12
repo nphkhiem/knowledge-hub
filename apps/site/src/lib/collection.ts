@@ -13,6 +13,7 @@ export const INTERVIEW_FOUNDATIONS_TOTAL = 15;
 /** One lesson as a collection listing needs it. */
 export interface CollectionEntry {
   readonly slug: string;
+  readonly difficulty: CompiledLesson["difficulty"];
   readonly domain: CompiledLesson["domain"];
   readonly title: string;
   readonly objective: string;

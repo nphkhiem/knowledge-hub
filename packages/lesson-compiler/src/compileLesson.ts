@@ -136,6 +136,7 @@ function compileValidatedLesson(
       slug: source.slug,
       domain: source.domain,
       collection: source.collection,
+      difficulty: source.difficulty,
       order: source.order,
       license: source.license,
       title: source.title,

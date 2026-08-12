@@ -9,6 +9,7 @@ function lesson(
 ): CompiledLesson {
   return {
     collection: "interview-foundations",
+    difficulty: "easy",
     domain: "dsa",
     durationMinutes: 4,
     objective: `Objective for ${overrides.slug}`,
@@ -84,4 +85,39 @@ test("every domain the schema allows has a definition to render", () => {
     "networking",
     "system-design",
   ]);
+});
+
+test("groups a domain's lessons by difficulty in a fixed order", () => {
+  const [dsa] = summarizeDomains([
+    lesson({ slug: "hard-one", order: 3, difficulty: "hard" }),
+    lesson({ slug: "easy-one", order: 1, difficulty: "easy" }),
+    lesson({ slug: "medium-one", order: 2, difficulty: "medium" }),
+    lesson({ slug: "easy-two", order: 4, difficulty: "easy" }),
+  ]);
+
+  expect(
+    dsa?.byDifficulty.map((group) => ({
+      difficulty: group.difficulty,
+      slugs: group.lessons.map((item) => item.slug),
+    })),
+  ).toEqual([
+    { difficulty: "easy", slugs: ["easy-one", "easy-two"] },
+    { difficulty: "medium", slugs: ["medium-one"] },
+    { difficulty: "hard", slugs: ["hard-one"] },
+  ]);
+});
+
+test("omits a difficulty group that has no lessons", () => {
+  const [dsa] = summarizeDomains([lesson({ slug: "only", order: 1 })]);
+
+  expect(dsa?.byDifficulty.map((group) => group.difficulty)).toEqual(["easy"]);
+});
+
+test("grouping by difficulty never changes a lesson's address", () => {
+  // Difficulty is metadata. A regraded lesson keeps its canonical URL.
+  const [dsa] = summarizeDomains([
+    lesson({ slug: "two-pointers", order: 2, difficulty: "hard" }),
+  ]);
+
+  expect(dsa?.byDifficulty[0]?.lessons[0]?.slug).toBe("two-pointers");
 });
