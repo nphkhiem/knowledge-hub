@@ -38,7 +38,11 @@ export interface ArrayGeometry {
 export interface PrimitiveRenderContext {
   readonly snapshot: SemanticSnapshot;
   readonly presentation: PrimitivePresentation;
+  /** The first array's band. Kept for primitives that need any array at all. */
   readonly geometry: ArrayGeometry;
+  /** The band belonging to one array, by its object id. */
+  readonly geometryFor: (objectId: string) => ArrayGeometry;
+  readonly rowCount: number;
 }
 
 export interface PrimitiveContract {
