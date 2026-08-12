@@ -5,6 +5,21 @@ import { href, lessonPath } from "../../lib/routes";
 
 interface Props {
   lesson: CollectionEntry;
+  /**
+   * The numeral shown beside the title. It means different things by surface,
+   * deliberately.
+   *
+   * On a path surface pass `lesson.order`: the number is the lesson's place in
+   * a curriculum, so a partly written path shows 02 with 01 absent rather than
+   * implying the second lesson is the first.
+   *
+   * On a list surface (Explore results, a domain index) pass the index: the
+   * number ordinates the list in front of the reader, and declared order would
+   * read as arbitrary gaps in a set of search results.
+   *
+   * `tests/e2e/catalog-growth.spec.ts` defends the path case. See
+   * `docs/catalog-assumptions.md`.
+   */
   position: number;
 }
 

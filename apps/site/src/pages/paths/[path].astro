@@ -44,8 +44,8 @@ const composition = path.domains.map(domainLabel).join(", ");
         <>
           <h2 id="path-lessons">In recommended order</h2>
           <ol class="lesson-list" aria-labelledby="path-lessons">
-            {path.lessons.map((lesson, index) => (
-              <LessonListRow lesson={lesson} position={index + 1} />
+            {path.lessons.map((lesson) => (
+              <LessonListRow lesson={lesson} position={lesson.order} />
             ))}
           </ol>
         </>

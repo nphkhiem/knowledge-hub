@@ -42,8 +42,8 @@ const composition = summary.domains.map(domainLabel).join(", ");
           </p>
 
           <ol class="lesson-list">
-            {summary.lessons.map((lesson, index) => (
-              <LessonListRow lesson={lesson} position={index + 1} />
+            {summary.lessons.map((lesson) => (
+              <LessonListRow lesson={lesson} position={lesson.order} />
             ))}
           </ol>
         </>
