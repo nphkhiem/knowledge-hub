@@ -1,0 +1,59 @@
+# Catalog assumptions
+
+The discovery layer was designed and shipped while exactly one lesson existed. That is not a small caveat. With a catalog of one, most of its decisions are not merely unverified, they are **unfalsifiable**: no input exists that could show them wrong.
+
+This document names the five that matter, and `tests/e2e/catalog-growth.spec.ts` makes the catalog growing past one lesson force each of them back into view.
+
+Two of the five are real assertions that cannot be silenced without making a decision. Three are review prompts that a machine cannot judge. The difference is stated per item rather than left for you to guess, because a checklist that mixes proofs and prompts without saying which is which teaches people to trust all of it equally.
+
+## 1. Search ranking has never ranked anything
+
+**Kind: prompt.**
+
+`apps/site/src/lib/search.ts` scores an exact title match 100, a title substring 50, a recognition signal 20, and objective text 10, then sorts, breaking ties on reading order.
+
+With one record, `sort` on a one-element array is a no-op. Every query returns either that lesson or nothing. The weighting has never ordered two things, and neither has the tie-break. The unit tests exercise it against three synthetic records invented alongside the function, which tests the code and not the weighting's fitness for real lesson titles.
+
+**What to do when it trips.** Search a term that several real lessons plausibly match, such as `order`, `search`, or `linear`. Ask whether the returned order is the order you would have picked. Pay attention to whether recognition signals should outrank objective text, which is a guess today.
+
+## 2. The authoring contract is proven circularly
+
+**Kind: prompt.**
+
+The schema, the compiler, and the five primitives (array, pointer, label, comparison, result) were designed alongside the one lesson that validates them. That is a closed loop: the contract was fitted to Two Pointers and then verified against Two Pointers.
+
+The first-slice plan said the slice must prove one complete lesson before the schema or primitive catalog expands. The second lesson is the first genuine test of whether the contract generalizes or whether it encoded one lesson's shape by accident.
+
+**What to do when it trips.** Ask what the new lesson needed that did not already exist. A sixth primitive, a new action, or a field added to the schema is a signal that the contract was fitted rather than designed, and the cost of that compounds across a fifteen-lesson collection. Discovering it at lesson two is cheap; discovering it at lesson nine is not.
+
+## 3. Displayed position against declared order
+
+**Kind: assertion.** Defended by `tests/e2e/catalog-growth.spec.ts`.
+
+A lesson row shows a numeral, and it means different things by surface. On a path surface it is the lesson's place in a curriculum, so it renders `lesson.order`. On a list surface, Explore results or a domain index, it ordinates the list in front of the reader, so it renders the index.
+
+This distinction was invisible while one lesson existed, and it was wrong: the path page showed Two Pointers as `01` although it is `order: 2` of Interview Foundations, implying it was the first lesson of the path when "Complexity as a Budget" is. Corrected on 2026-08-11.
+
+The test asserts that every numeral on a path surface equals its lesson's declared order. It stays true trivially while published orders are contiguous, and fails at the first gap, which cannot be resolved without deciding what a reader should see.
+
+## 4. Previous and Next have never rendered
+
+**Kind: assertion.** Defended by `tests/e2e/catalog-growth.spec.ts`.
+
+`PreviousNextLessons.astro` accepts published neighbors only and therefore renders nothing on every page today, because one lesson has no neighbor. It is the one navigation component with no exercise at all.
+
+The test asserts that when two lessons share a collection, a lesson page offers a link to its neighbor. It is vacuously satisfied now and becomes a real check the moment a second lesson lands.
+
+## 5. Aggregate arithmetic is trivially true
+
+**Kind: prompt.**
+
+"1 of 15 lessons published, 4 minutes of reading in DSA" sums one number over a set of one domain. Totals, domain composition, and de-duplication are all correct in the way that any function is correct on a single input.
+
+**What to do when it trips.** Read the summary sentences on Home, the path page, and the domain page against the catalog and confirm the arithmetic and the plurals. A pluralization bug of exactly this kind already shipped once and was caught in a browser rather than by a unit test: the summary read "Showing all 1 lessons."
+
+## Why this exists as tests rather than a note
+
+Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
+
+The tripwires are tests so that the pull request adding a second lesson cannot merge without confronting them.
