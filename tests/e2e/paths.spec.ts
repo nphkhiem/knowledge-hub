@@ -20,8 +20,8 @@ test("opens a path and shows its lessons in recommended order", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: "Interview Foundations" }),
   ).toBeVisible();
-  await expect(page.getByText(/1 of 15 lessons published/)).toBeVisible();
-  await expect(page.locator("[data-lesson-slug]")).toHaveCount(1);
+  await expect(page.getByText(/\d+ of 15 lessons published/)).toBeVisible();
+  await expect(page.locator("[data-lesson-slug]")).not.toHaveCount(0);
 });
 
 test("says plainly that nothing is gated", async ({ page }) => {
@@ -32,10 +32,14 @@ test("says plainly that nothing is gated", async ({ page }) => {
 
 test("reaches the lesson from the path", async ({ page }) => {
   await page.goto(FOUNDATIONS);
+  const firstTitle = (
+    await page.locator("[data-lesson-slug] .title").first().textContent()
+  )?.trim();
   await page.locator("[data-lesson-slug] a").first().click();
 
+  // Whichever lesson leads the list, following it must land on that lesson.
   await expect(
-    page.getByRole("heading", { level: 1, name: "Two Pointers" }),
+    page.getByRole("heading", { level: 1, name: firstTitle }),
   ).toBeVisible();
 });
 
@@ -89,7 +93,7 @@ test("reads without JavaScript", async ({ browser }) => {
   await page.goto(FOUNDATIONS);
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("[data-lesson-slug]")).toHaveCount(1);
+  await expect(page.locator("[data-lesson-slug]")).not.toHaveCount(0);
 
   await context.close();
 });

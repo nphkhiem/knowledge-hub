@@ -34,11 +34,9 @@ const composition = summary.domains.map(domainLabel).join(", ");
         <>
           <p class="progress">
             <strong>
-              {summary.publishedCount} of {summary.totalCount} lessons
+              {`${summary.publishedCount} of ${summary.totalCount} lessons`}
             </strong>
-            {" published so far, "}
-            {summary.totalMinutes} minutes of reading in {composition}. The rest
-            are still being written.
+            {`published so far, ${summary.totalMinutes} minutes of reading in ${composition}. The rest are still being written.`}
           </p>
 
           <ol class="lesson-list">

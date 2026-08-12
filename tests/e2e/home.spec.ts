@@ -34,7 +34,9 @@ test("lists published lessons in their recommended order", async ({ page }) => {
     .locator(".lesson-list .title")
     .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim()));
 
-  expect(titles).toEqual(["Two Pointers"]);
+  // Reading order, not catalog order. Relative to what is published so the
+  // suite stops encoding a lesson count it does not control.
+  expect(titles).toEqual(["Complexity as a Budget", "Two Pointers"]);
 });
 
 test("opens the lesson from its row", async ({ page }) => {

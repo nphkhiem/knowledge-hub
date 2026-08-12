@@ -65,8 +65,9 @@ const domains = [...new Set(ordered.map((record) => record.domain))].sort();
     </form>
 
     <p class="summary" data-explore-summary aria-live="polite">
-      Showing all {ordered.length}
-      {ordered.length === 1 ? "lesson" : "lessons"}.
+      {
+        `Showing all ${ordered.length} ${ordered.length === 1 ? "lesson" : "lessons"}.`
+      }
     </p>
 
     <ol class="lesson-list" data-explore-results>

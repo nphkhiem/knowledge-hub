@@ -5,7 +5,7 @@ import type {
 import { describeSnapshot } from "./describeSnapshot.js";
 import { asSafeMarkup, escapeId, escapeText } from "./escapeMarkup.js";
 import {
-  LOGICAL_HEIGHT,
+  logicalHeightFor,
   LOGICAL_WIDTH,
   createRenderContext,
 } from "./geometry.js";
@@ -35,6 +35,7 @@ export function renderView(
   presentation: PrimitivePresentation,
 ): RenderedSnapshot {
   const context = createRenderContext(snapshot, presentation);
+  const logicalHeight = logicalHeightFor(context.rowCount);
   const description = describeSnapshot(snapshot);
   const titleId = `snapshot-${escapeId(snapshot.stepId)}-title`;
   const objects = snapshot.objects.map((object) =>
@@ -43,11 +44,11 @@ export function renderView(
 
   return {
     description,
-    logicalHeight: LOGICAL_HEIGHT,
+    logicalHeight,
     logicalWidth: LOGICAL_WIDTH,
     markup: asSafeMarkup(
       [
-        `<svg viewBox="0 0 ${LOGICAL_WIDTH} ${LOGICAL_HEIGHT}" role="img"`,
+        `<svg viewBox="0 0 ${LOGICAL_WIDTH} ${logicalHeight}" role="img"`,
         ` aria-labelledby="${titleId}">`,
         `<title id="${titleId}">${escapeText(description)}</title>`,
         ...objects,

@@ -1,5 +1,5 @@
 import type { SemanticSnapshot } from "@knowledge-hub/lesson-compiler";
-import { findArrayObject } from "./scene.js";
+
 import type {
   ArrayGeometry,
   PrimitivePresentation,
@@ -11,6 +11,20 @@ export const LOGICAL_HEIGHT = 420;
 export const ARRAY_TOP = 160;
 export const ARRAY_HEIGHT = 96;
 export const ARRAY_BOTTOM = ARRAY_TOP + ARRAY_HEIGHT;
+
+/**
+ * Vertical distance between two arrays.
+ *
+ * One array's band runs from its own label, 112 above its top, to the text of a
+ * pointer below it, 160 beneath its top. The stride clears that 272 with room
+ * left, so a second array can never draw over the first.
+ */
+export const ROW_STRIDE = 320;
+
+/** A figure grows downward for each array it carries. */
+export function logicalHeightFor(rowCount: number): number {
+  return LOGICAL_HEIGHT + Math.max(0, rowCount - 1) * ROW_STRIDE;
+}
 
 const HORIZONTAL_PADDING = 60;
 const MIN_CELL_WIDTH = 72;
@@ -25,7 +39,10 @@ const CHARACTER_WIDTH_RATIO = 0.62;
  * Cells share the available width. They stay within a legible range while the
  * item count allows it, and shrink below it rather than leave the viewBox.
  */
-export function computeArrayGeometry(cellCount: number): ArrayGeometry {
+export function computeArrayGeometry(
+  cellCount: number,
+  rowIndex = 0,
+): ArrayGeometry {
   const available = LOGICAL_WIDTH - HORIZONTAL_PADDING * 2;
   const fitted = cellCount > 0 ? available / cellCount : available;
   const cellWidth =
@@ -36,7 +53,7 @@ export function computeArrayGeometry(cellCount: number): ArrayGeometry {
     cellWidth,
     height: ARRAY_HEIGHT,
     left: (LOGICAL_WIDTH - cellWidth * cellCount) / 2,
-    top: ARRAY_TOP,
+    top: ARRAY_TOP + rowIndex * ROW_STRIDE,
   };
 }
 
@@ -103,10 +120,24 @@ export function createRenderContext(
   snapshot: SemanticSnapshot,
   presentation: PrimitivePresentation,
 ): PrimitiveRenderContext {
-  const arrayObject = findArrayObject(snapshot);
+  /**
+   * Every array gets its own band, in scene order. Sharing one geometry made
+   * two arrays draw on top of each other and sized the second one's cells for
+   * the first one's length.
+   */
+  const arrays = snapshot.objects.filter((object) => object.kind === "array");
+  const geometries = new Map<string, ArrayGeometry>(
+    arrays.map((object, rowIndex) => [
+      object.id,
+      computeArrayGeometry(object.values.length, rowIndex),
+    ]),
+  );
+  const first = computeArrayGeometry(arrays[0]?.values.length ?? 0);
 
   return {
-    geometry: computeArrayGeometry(arrayObject?.values.length ?? 0),
+    geometry: first,
+    geometryFor: (objectId: string) => geometries.get(objectId) ?? first,
+    rowCount: arrays.length,
     presentation,
     snapshot,
   };
