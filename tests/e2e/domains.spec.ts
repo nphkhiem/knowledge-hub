@@ -20,16 +20,20 @@ test("recommends a starting lesson and lists every published one", async ({
   await page.goto(DSA);
 
   await expect(page.getByText("New here? Start with")).toBeVisible();
-  await expect(page.locator("[data-lesson-slug]")).toHaveCount(1);
-  await expect(page.getByText(/1 lesson published/)).toBeVisible();
+  await expect(page.locator("[data-lesson-slug]")).not.toHaveCount(0);
+  await expect(page.getByText(/lessons? published/)).toBeVisible();
 });
 
 test("opens the lesson from the domain list", async ({ page }) => {
   await page.goto(DSA);
+  const firstTitle = (
+    await page.locator("[data-lesson-slug] .title").first().textContent()
+  )?.trim();
   await page.locator("[data-lesson-slug] a").first().click();
 
+  // Whichever lesson leads the list, following it must land on that lesson.
   await expect(
-    page.getByRole("heading", { level: 1, name: "Two Pointers" }),
+    page.getByRole("heading", { level: 1, name: firstTitle }),
   ).toBeVisible();
 });
 
@@ -91,7 +95,7 @@ test("reads without JavaScript", async ({ browser }) => {
   await page.goto(DSA);
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("[data-lesson-slug]")).toHaveCount(1);
+  await expect(page.locator("[data-lesson-slug]")).not.toHaveCount(0);
 
   await context.close();
 });

@@ -1,0 +1,159 @@
+schemaVersion: 1
+id: "dsa.complexity-as-a-budget"
+slug: "complexity-as-a-budget"
+domain: "dsa"
+collection: "interview-foundations"
+order: 1
+difficulty: "easy"
+license: "CC-BY-4.0"
+title: "Complexity as a Budget"
+durationMinutes: 4
+objective: "Explain how the size of the input decides how much work an algorithm can afford."
+recognitionSignals:
+  - "The input can grow, and you need to know what happens when it does."
+  - "Two approaches both work on small data but only one survives large data."
+  - "Someone says an approach is linear or quadratic and you need that to mean something."
+limitations:
+  - "A growth rate hides constant factors, so the slower-growing approach can still lose on small inputs."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/measure_scans.py"
+    - language: "typescript"
+      file: "examples/measure-scans.ts"
+    - language: "java"
+      file: "examples/MeasureScans.java"
+    - language: "cpp"
+      file: "examples/measure_scans.cpp"
+    - language: "go"
+      file: "examples/measure_scans.go"
+scene:
+  target: 8
+  objects:
+    - id: "input"
+      kind: "array"
+      label: "Input, 4 items"
+      values: [3, 8, 2, 5]
+    - id: "budget"
+      kind: "array"
+      label: "Steps used"
+      values: [1, 2, 3, 4, 5, 6, 7, 8]
+    - id: "reader"
+      kind: "pointer"
+      label: "Reading"
+      targetObjectId: "input"
+      index: 0
+    - id: "budget-label"
+      kind: "label"
+      text: "A budget of 8 steps"
+timeline:
+  - id: "read-first"
+    narration: "One pass reads the first item. That costs one step from the budget."
+    actions:
+      - type: "highlight"
+        objectId: "input"
+        indices: [0]
+        tone: "compare"
+      - type: "highlight"
+        objectId: "budget"
+        indices: [0]
+        tone: "compare"
+  - id: "read-second"
+    narration: "The second item costs one more. Two items read, two steps spent."
+    actions:
+      - type: "move"
+        objectId: "reader"
+        toIndex: 1
+      - type: "highlight"
+        objectId: "input"
+        indices: [1]
+        tone: "compare"
+      - type: "highlight"
+        objectId: "budget"
+        indices: [0, 1]
+        tone: "compare"
+  - id: "read-third"
+    narration: "A third item, a third step. The cost is tracking the input exactly."
+    actions:
+      - type: "move"
+        objectId: "reader"
+        toIndex: 2
+      - type: "highlight"
+        objectId: "input"
+        indices: [2]
+        tone: "compare"
+      - type: "highlight"
+        objectId: "budget"
+        indices: [0, 1, 2]
+        tone: "compare"
+  - id: "read-fourth"
+    narration: "Four items read for four steps. This is linear: double the input and you double the cost."
+    actions:
+      - type: "move"
+        objectId: "reader"
+        toIndex: 3
+      - type: "highlight"
+        objectId: "input"
+        indices: [3]
+        tone: "compare"
+      - type: "highlight"
+        objectId: "budget"
+        indices: [0, 1, 2, 3]
+        tone: "success"
+  - id: "pairs-begin"
+    narration: "Now compare every item with every other item instead. The first item alone costs three steps."
+    actions:
+      - type: "move"
+        objectId: "reader"
+        toIndex: 0
+      - type: "highlight"
+        objectId: "budget"
+        indices: [0, 1, 2]
+        tone: "compare"
+  - id: "pairs-grow"
+    narration: "The second item adds two more, the third adds one. Six steps for four items."
+    actions:
+      - type: "move"
+        objectId: "reader"
+        toIndex: 2
+      - type: "highlight"
+        objectId: "budget"
+        indices: [0, 1, 2, 3, 4, 5]
+        tone: "compare"
+  - id: "budget-spent"
+    narration: "Four items fit. Eight items would need twenty-eight steps and the budget is gone."
+    terminal: true
+    actions:
+      - type: "highlight"
+        objectId: "budget"
+        indices: [0, 1, 2, 3, 4, 5, 6, 7]
+        tone: "compare"
+modelCheck:
+  prompt: "An approach takes 6 steps for 4 items. Roughly how many steps for 8 items if the cost grows with every pair?"
+  options:
+    - id: "doubles"
+      label: "About 12, because the input doubled"
+    - id: "quadruples"
+      label: "About 28, because every new item pairs with all the earlier ones"
+    - id: "same"
+      label: "About 6, because the approach did not change"
+  correctOptionId: "quadruples"
+  explanation: "Pairwise cost grows with the square of the input, not with the input. Doubling from 4 to 8 items takes the pair count from 6 to 28, roughly four times as much work rather than twice."
+accessibility:
+  summary: "An animation contrasting a linear scan and a pairwise scan over the same four items, showing how many steps each spends from a budget of eight."
+  initialDescription: "Four input values and a budget of eight steps, with nothing spent yet."
+  motionEquivalentLabel: "Budget consumption step by step"
+evidence:
+  verifiedOn: "2026-08-12"
+  scope: "Growth rates are described for worst-case step counts on a single processor. Constant factors, memory hierarchy, and parallelism are out of scope."
+  sources:
+    - title: "Introduction to Algorithms, fourth edition, chapter 3: Characterizing Running Times"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 3."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-12"
+      supports:
+        - "Asymptotic notation describes how running time grows with input size rather than giving an exact step count."
+        - "A pairwise comparison over n items performs n(n-1)/2 comparisons."

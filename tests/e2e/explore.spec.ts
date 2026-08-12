@@ -12,9 +12,10 @@ test("lists the whole catalog", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Explore" }),
   ).toBeVisible();
-  await expect(visibleRows(page)).toHaveCount(1);
+  const total = await page.locator("[data-lesson-slug]").count();
+  await expect(visibleRows(page)).toHaveCount(total);
   await expect(page.locator("[data-explore-summary]")).toContainText(
-    "Showing all 1 lesson.",
+    `Showing all ${total} lesson`,
   );
 });
 
@@ -36,7 +37,9 @@ test("explains an empty result and recovers from it", async ({ page }) => {
   await expect(page.locator("[data-explore-empty]")).toBeVisible();
 
   await page.getByLabel("Search lessons").fill("");
-  await expect(visibleRows(page)).toHaveCount(1);
+  await expect(visibleRows(page)).toHaveCount(
+    await page.locator("[data-lesson-slug]").count(),
+  );
   await expect(page.locator("[data-explore-empty]")).toBeHidden();
 });
 
@@ -61,7 +64,9 @@ test("ignores a parameter the site no longer supports", async ({ page }) => {
   // shared link must still open something useful.
   await page.goto(`${EXPLORE}?saved=1`);
 
-  await expect(visibleRows(page)).toHaveCount(1);
+  await expect(visibleRows(page)).toHaveCount(
+    await page.locator("[data-lesson-slug]").count(),
+  );
   await expect(page.locator("[data-explore-empty]")).toBeHidden();
 });
 
@@ -69,7 +74,9 @@ test("filters by domain", async ({ page }) => {
   await page.goto(EXPLORE);
   await page.getByLabel("Domain").selectOption("dsa");
 
-  await expect(visibleRows(page)).toHaveCount(1);
+  await expect(visibleRows(page)).toHaveCount(
+    await page.locator("[data-lesson-slug]").count(),
+  );
   await expect(page.locator("[data-explore-summary]")).toContainText("in DSA");
 });
 
@@ -88,7 +95,9 @@ test("serves the whole catalog without JavaScript", async ({ browser }) => {
   await page.goto(EXPLORE);
 
   // The catalog is real markup, so it is browsable with scripting unavailable.
-  await expect(visibleRows(page)).toHaveCount(1);
+  await expect(visibleRows(page)).toHaveCount(
+    await page.locator("[data-lesson-slug]").count(),
+  );
   await expect(page.getByRole("link", { name: /Two Pointers/ })).toBeVisible();
 
   await context.close();
@@ -107,7 +116,9 @@ test("survives an unusable search index", async ({ page }) => {
   await page.goto(EXPLORE);
 
   // Filtering is gone, but the catalog it would have filtered is still here.
-  await expect(visibleRows(page)).toHaveCount(1);
+  await expect(visibleRows(page)).toHaveCount(
+    await page.locator("[data-lesson-slug]").count(),
+  );
   await expect(page.getByRole("link", { name: /Two Pointers/ })).toBeVisible();
 });
 

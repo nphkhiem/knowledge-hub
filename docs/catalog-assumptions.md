@@ -52,6 +52,18 @@ The test asserts that when two lessons share a collection, a lesson page offers 
 
 **What to do when it trips.** Read the summary sentences on Home, the path page, and the domain page against the catalog and confirm the arithmetic and the plurals. A pluralization bug of exactly this kind already shipped once and was caught in a browser rather than by a unit test: the summary read "Showing all 1 lessons."
 
+## Reviewed at two lessons, 2026-08-12
+
+"Complexity as a Budget" was the first growth. What the review found:
+
+**1, ranking.** The tie-break works. Queries matching both lessons return them in reading order, verified for the first time. A real gap surfaced beside it: the index covers only title, objective, and recognition signals, so a term central to a lesson's prose finds nothing. Searching `scan` returns no results although one lesson is entirely about scans. Indexing lesson body text is now an open question rather than a hypothetical.
+
+**2, schema generality.** Better than predicted. The lesson needed no new primitive; `array`, `pointer`, `label`, `move`, and `highlight` sufficed. Two rough edges: labels cannot change text, because `set` supports only `result.status`, so a lesson about a counter has to represent it as a second array consumed by highlights; and `scene.target` is a required number that means nothing outside a target-sum lesson, so it was set arbitrarily to satisfy the schema.
+
+**5, aggregates.** Found two real defects on first contact. Home read "2 of 15 lessons  published" with a doubled space, and Explore's prerendered summary read "Showing all 2lessons" with none. The second had been wrong since Explore shipped and no test caught it, because every browser test runs with JavaScript, which replaces that text. It was only ever visible to readers without scripting.
+
+**3 and 4** were defended by their assertions. Item 4 fired correctly and Previous/Next was built to satisfy it: the component had been complete since F09 and was simply never passed any props.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.

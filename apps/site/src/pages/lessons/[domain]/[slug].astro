@@ -9,6 +9,8 @@ import MotionEquivalentView from "../../../components/lesson/MotionEquivalentVie
 import VisualBrief from "../../../components/lesson/VisualBrief.astro";
 import FocusedLessonLayout from "../../../layouts/FocusedLessonLayout.astro";
 import { getCompiledLessons } from "../../../lib/lessonCatalog";
+import { findNeighbors } from "../../../lib/neighbors";
+import { href } from "../../../lib/routes";
 
 interface Props {
   lesson: CompiledLesson;
@@ -22,6 +24,18 @@ export async function getStaticPaths() {
 }
 
 const { lesson } = Astro.props;
+
+// Neighbors are resolved at build time from the published catalog, so a link
+// only ever points at a lesson that exists.
+const raw = findNeighbors(await getCompiledLessons(), lesson);
+const neighbors = {
+  ...(raw.previous === undefined
+    ? {}
+    : { previous: { ...raw.previous, href: href(raw.previous.href) } }),
+  ...(raw.next === undefined
+    ? {}
+    : { next: { ...raw.next, href: href(raw.next.href) } }),
+};
 ---
 
 <FocusedLessonLayout
@@ -45,7 +59,7 @@ const { lesson } = Astro.props;
     <RealWorldApplications lesson={lesson} />
   </LessonSection>
   <div class="neighbors-band page-width">
-    <PreviousNextLessons />
+    <PreviousNextLessons {...neighbors} />
   </div>
 </FocusedLessonLayout>
 

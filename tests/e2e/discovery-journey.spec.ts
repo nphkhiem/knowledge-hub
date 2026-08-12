@@ -74,10 +74,15 @@ test("a browsing learner reaches a lesson through a domain", async ({
   await page
     .getByRole("link", { name: /Data Structures and Algorithms/ })
     .click();
+  const firstTitle = await page
+    .locator("[data-lesson-slug] .title")
+    .first()
+    .textContent();
   await page.locator("[data-lesson-slug] a").first().click();
 
+  // Whichever lesson leads the domain, browsing must land on it.
   await expect(
-    page.getByRole("heading", { level: 1, name: "Two Pointers" }),
+    page.getByRole("heading", { level: 1, name: (firstTitle ?? "").trim() }),
   ).toBeVisible();
 });
 
@@ -86,10 +91,15 @@ test("a path follower reaches a lesson through the recommended order", async ({
 }) => {
   await page.goto("paths/");
   await page.getByRole("link", { name: /Interview Foundations/ }).click();
+  const firstTitle = await page
+    .locator("[data-lesson-slug] .title")
+    .first()
+    .textContent();
   await page.locator("[data-lesson-slug] a").first().click();
 
+  // The path's first published lesson, whichever that is.
   await expect(
-    page.getByRole("heading", { level: 1, name: "Two Pointers" }),
+    page.getByRole("heading", { level: 1, name: (firstTitle ?? "").trim() }),
   ).toBeVisible();
 });
 
