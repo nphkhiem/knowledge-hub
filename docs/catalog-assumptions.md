@@ -62,6 +62,10 @@ The test asserts that when two lessons share a collection, a lesson page offers 
 
 **5, aggregates.** Found two real defects on first contact. Home read "2 of 15 lessons  published" with a doubled space, and Explore's prerendered summary read "Showing all 2lessons" with none. The second had been wrong since Explore shipped and no test caught it, because every browser test runs with JavaScript, which replaces that text. It was only ever visible to readers without scripting.
 
+**6, discovered rather than predicted: the renderer is single-array by construction.** `createRenderContext` finds one array object and computes one geometry from it, so every array primitive draws at the same `ARRAY_TOP` with cell widths sized for the first one. Two arrays overlap their labels and the wider one overflows the figure. This was invisible while one lesson existed because that lesson has one array. Any lesson contrasting two collections, and any lesson needing a second row of anything, is blocked until geometry becomes per-array.
+
+**7, discovered rather than predicted: the test suite encoded the catalog size.** Ten assertions across four specs asserted exactly one lesson. They failed on the second lesson for no product reason at all. Assertions about a catalog should be relative to what is published, or they break every time content lands.
+
 **3 and 4** were defended by their assertions. Item 4 fired correctly and Previous/Next was built to satisfy it: the component had been complete since F09 and was simply never passed any props.
 
 ## Why this exists as tests rather than a note
