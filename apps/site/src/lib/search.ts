@@ -16,6 +16,46 @@ export interface SearchRecord {
   readonly durationMinutes: number;
   /** Recognition signals, which are how a learner names a concept they half know. */
   readonly terms: readonly string[];
+  /**
+   * Unique words from the lesson's prose.
+   *
+   * Stored as unique words rather than as the prose itself because this index
+   * ships inside the page and the payload is budgeted. A term central to a
+   * lesson is usually in its body rather than its title: before this existed,
+   * searching `scan` returned nothing though a whole lesson is about scans.
+   */
+  readonly prose: string;
+}
+
+const SHORTEST_INDEXED_WORD = 3;
+/**
+ * Words indexed per lesson.
+ *
+ * The index ships inside the page, so its size is the whole collection's, not
+ * one lesson's. Uncapped, two lessons cost 2.5 kB each and thirty-three would
+ * cost about 81 kB of payload on a page with a performance budget. A cap keeps
+ * that growth bounded and predictable; the words it drops are the tail of a
+ * lesson's prose, which is where a search term is least likely to be decisive.
+ */
+const MOST_INDEXED_WORDS = 90;
+
+/** Reduces compiled markup to the unique words worth searching. */
+export function proseTerms(...html: readonly string[]): string {
+  const seen = new Set<string>();
+  const words: string[] = [];
+
+  for (const word of html
+    .join(" ")
+    .replace(/<[^>]*>/g, " ")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)) {
+    if (word.length < SHORTEST_INDEXED_WORD || seen.has(word)) continue;
+    seen.add(word);
+    words.push(word);
+    if (words.length === MOST_INDEXED_WORDS) break;
+  }
+
+  return words.join(" ");
 }
 
 export interface SearchFilters {
@@ -36,6 +76,19 @@ export function toSearchRecord(lesson: CompiledLesson): SearchRecord {
     objective: lesson.objective,
     durationMinutes: lesson.durationMinutes,
     terms: lesson.recognitionSignals,
+    // Ordered by signal, because the cap truncates the tail. Application
+    // titles are short and name concrete situations a learner searches for,
+    // so they are indexed before the bodies they head.
+    prose: proseTerms(
+      ...lesson.content.realWorldApplications.map(
+        (application) => application.title,
+      ),
+      lesson.content.quickUnderstanding.html,
+      ...lesson.content.realWorldApplications.map(
+        (application) => application.html,
+      ),
+      lesson.content.deepDive?.html ?? "",
+    ),
   };
 }
 
@@ -98,6 +151,9 @@ function score(record: SearchRecord, query: string): number {
   if (record.terms.some((term) => term.toLowerCase().includes(needle)))
     return 20;
   if (record.objective.toLowerCase().includes(needle)) return 10;
+  // The body is the weakest signal: a word appearing somewhere in the prose
+  // says far less than the same word in a title or a recognition signal.
+  if (record.prose.includes(needle)) return 5;
   return 0;
 }
 

@@ -14,6 +14,7 @@ const records: SearchRecord[] = [
     objective: "Discard impossible candidates.",
     durationMinutes: 4,
     terms: ["sorted", "pair sum"],
+    prose: "",
   },
   {
     slug: "url-to-response",
@@ -25,6 +26,7 @@ const records: SearchRecord[] = [
     objective: "Follow a request from DNS onwards.",
     durationMinutes: 6,
     terms: ["dns"],
+    prose: "",
   },
 ];
 

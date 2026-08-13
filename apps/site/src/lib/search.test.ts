@@ -1,7 +1,12 @@
 import { expect, test } from "vitest";
 
 import type { SearchRecord } from "./search.js";
-import { describeFilters, parseFilters, searchLessons } from "./search.js";
+import {
+  describeFilters,
+  parseFilters,
+  proseTerms,
+  searchLessons,
+} from "./search.js";
 
 const records: SearchRecord[] = [
   {
@@ -14,6 +19,7 @@ const records: SearchRecord[] = [
     objective: "Discard impossible candidates without checking every pair.",
     durationMinutes: 4,
     terms: ["two pointers", "sorted", "pair sum"],
+    prose: "",
   },
   {
     slug: "binary-search",
@@ -25,6 +31,7 @@ const records: SearchRecord[] = [
     objective: "Halve an ordered range until the answer is found.",
     durationMinutes: 5,
     terms: ["binary search", "ordered", "midpoint"],
+    prose: "",
   },
   {
     slug: "url-to-response",
@@ -36,6 +43,7 @@ const records: SearchRecord[] = [
     objective: "Follow a request from DNS through to a rendered response.",
     durationMinutes: 6,
     terms: ["dns", "tls", "http"],
+    prose: "",
   },
 ];
 
@@ -135,4 +143,47 @@ test("explains the active filters in plain language", () => {
     both: '1 lesson matching "pair" in DSA.',
     empty: 'No lessons matching "kubernetes".',
   });
+});
+
+test("extracts unique lowercase words from compiled prose", () => {
+  const words = proseTerms(
+    "<h2>Recognition signals</h2><p>A <em>scan</em> repeated once per item. A scan!</p>",
+  );
+
+  // Unique, lowercased, markup stripped, short words dropped. Uniqueness is
+  // what keeps the embedded index small enough to ship on the page.
+  expect(words).toBe("recognition signals scan repeated once per item");
+});
+
+test("finds a lesson by a term that appears only in its prose", () => {
+  const withProse: SearchRecord[] = [
+    { ...records[0]!, prose: "scan repeated once per item" },
+    { ...records[1]!, prose: "halving an ordered range" },
+  ];
+
+  expect(
+    searchLessons(withProse, { query: "scan" }).map((r) => r.slug),
+  ).toEqual(["two-pointers"]);
+});
+
+test("a prose match ranks below every other kind of match", () => {
+  const withProse: SearchRecord[] = [
+    { ...records[0]!, title: "Unrelated", prose: "binary search appears here" },
+    { ...records[1]!, prose: "" },
+  ];
+
+  // "Binary Search" matches by title and must outrank a body mention.
+  expect(
+    searchLessons(withProse, { query: "binary search" }).map((r) => r.slug),
+  ).toEqual(["binary-search", "two-pointers"]);
+});
+
+test("caps the words indexed for one lesson", () => {
+  const many = Array.from({ length: 400 }, (_, index) => `word${index}`).join(
+    " ",
+  );
+
+  // The index ships on the page, so its growth has to be bounded by something
+  // other than how much prose an author writes.
+  expect(proseTerms(many).split(" ").length).toBeLessThanOrEqual(90);
 });
