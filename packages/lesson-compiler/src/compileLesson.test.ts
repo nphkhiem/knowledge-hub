@@ -729,7 +729,6 @@ test("diagnoses a found result using the same array index twice", () => {
       ...source,
       scene: {
         ...source.scene,
-        target: 22,
         objects: source.scene.objects.map((object) => {
           if (object.kind === "pointer") return { ...object, index: 4 };
           if (object.kind === "comparison") return { ...object, target: 22 };

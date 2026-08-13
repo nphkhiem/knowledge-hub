@@ -31,7 +31,6 @@ content:
     - language: "go"
       file: "examples/measure_scans.go"
 scene:
-  target: 8
   objects:
     - id: "input"
       kind: "array"

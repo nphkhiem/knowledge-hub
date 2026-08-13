@@ -444,7 +444,6 @@ test("returns independent diagnostics in stable file-path-code order", () => {
     {
       ...validTwoPointersSource,
       scene: {
-        target: 15,
         objects: [{ id: "custom", kind: "canvas" }],
       },
       timeline: [
@@ -497,7 +496,7 @@ test.each([
   const result = validateLessonSource(
     {
       ...validTwoPointersSource,
-      scene: { target: 1, objects: [primitive] },
+      scene: { objects: [primitive] },
     },
     "lesson.yaml",
   );
@@ -668,4 +667,29 @@ test("still rejects an order outside any sane range", () => {
         ).ok,
     ),
   ).toEqual([]);
+});
+
+test("a scene needs no target of its own", () => {
+  // Nothing ever read scene.target: the compiler copies only scene.objects, and
+  // a comparison carries its own target. It forced every author to invent a
+  // number that no code consumed.
+  const scene = { objects: validTwoPointersSource.scene.objects };
+
+  expect(
+    validateLessonSource({ ...validTwoPointersSource, scene }, "lesson.yaml")
+      .ok,
+  ).toBe(true);
+});
+
+test("a scene still carrying a target is rejected rather than ignored", () => {
+  const scene = {
+    objects: validTwoPointersSource.scene.objects,
+    target: 15,
+  };
+
+  // Silently ignoring it would leave copies of the old shape spreading.
+  expect(
+    validateLessonSource({ ...validTwoPointersSource, scene }, "lesson.yaml")
+      .ok,
+  ).toBe(false);
 });

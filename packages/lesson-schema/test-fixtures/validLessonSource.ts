@@ -27,7 +27,6 @@ export const validTwoPointersSource = deepFreeze({
     deepDive: "deep-dive.md",
   },
   scene: {
-    target: 15,
     objects: [
       {
         id: "values",
