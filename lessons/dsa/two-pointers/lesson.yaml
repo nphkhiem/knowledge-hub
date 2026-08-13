@@ -30,7 +30,6 @@ content:
     - language: "go"
       file: "examples/find_pair_with_sum.go"
 scene:
-  target: 15
   objects:
     - id: "values"
       kind: "array"

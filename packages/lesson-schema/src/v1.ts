@@ -56,7 +56,6 @@ export const primitiveSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const sceneSchema = z.strictObject({
-  target: z.number(),
   objects: z.array(primitiveSchema).min(1),
 });
 
