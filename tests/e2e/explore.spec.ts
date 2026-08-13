@@ -154,3 +154,14 @@ test("searches from the home page entry", async ({ page }) => {
   await expect(page).toHaveURL(/explore\/\?q=pair/);
   await expect(visibleRows(page)).toHaveCount(1);
 });
+
+test("finds a lesson by a term that appears only in its prose", async ({
+  page,
+}) => {
+  await page.goto(EXPLORE);
+  // Before the index reached lesson prose, this returned nothing although a
+  // whole lesson is about scans.
+  await page.getByLabel("Search lessons").fill("scan");
+
+  await expect(visibleRows(page)).not.toHaveCount(0);
+});
