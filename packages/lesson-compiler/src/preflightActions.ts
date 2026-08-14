@@ -58,6 +58,41 @@ export function validateStaticActions(
           }
           break;
         }
+        case "narrow": {
+          // Partially duplicated from applyAction. Preflight cannot know how
+          // far a window has already narrowed, because that depends on earlier
+          // steps, so it checks the authored range only. Every range the window
+          // can actually hold is inside that one, so escaping it is always an
+          // error and this reports no false positives. applyAction catches a
+          // narrow that escapes the current, smaller range.
+          if (object.kind !== "window") {
+            diagnostics.push({
+              code: "reference.wrong-kind",
+              file,
+              path: `${path}.objectId`,
+              message: `Action "narrow" requires a window, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
+            });
+            break;
+          }
+          if (action.toEnd < action.toStart) {
+            diagnostics.push({
+              code: "reference.invalid",
+              file,
+              path: `${path}.toEnd`,
+              message: `Window "${object.id}" cannot end at ${action.toEnd}, before its start ${action.toStart}.`,
+            });
+            break;
+          }
+          if (action.toStart < object.start || action.toEnd > object.end) {
+            diagnostics.push({
+              code: "reference.invalid",
+              file,
+              path: `${path}.toEnd`,
+              message: `Action "narrow" must land inside "${object.id}", which covers ${object.start} to ${object.end}, but ${action.toStart} to ${action.toEnd} does not.`,
+            });
+          }
+          break;
+        }
         case "slide": {
           // Duplicated from applyAction so every bad slide in a lesson is
           // reported at once. The width is read from the authored window

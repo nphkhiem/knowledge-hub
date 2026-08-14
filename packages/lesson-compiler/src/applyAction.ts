@@ -228,6 +228,44 @@ export function applyAction(
       });
       return { ok: true, value: state };
     }
+    case "narrow": {
+      if (object.kind !== "window") {
+        return failure(
+          context,
+          `Action "narrow" requires a window, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      if (action.toEnd < action.toStart) {
+        return failure(
+          context,
+          `Window "${object.id}" cannot end at ${action.toEnd}, before its start ${action.toStart}.`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      /**
+       * Narrowing may not escape the range it starts from, on either side. A
+       * window that could widen would not be converging, which is the whole
+       * claim a halving search makes. Standing still is allowed: halving an odd
+       * range leaves one bound where it was.
+       */
+      if (action.toStart < object.start || action.toEnd > object.end) {
+        return failure(
+          context,
+          `Action "narrow" must land inside "${object.id}", which covers ${object.start} to ${object.end}, but ${action.toStart} to ${action.toEnd} does not.`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      replaceObject(state, {
+        ...object,
+        start: action.toStart,
+        end: action.toEnd,
+      });
+      return { ok: true, value: state };
+    }
     case "insert": {
       if (object.kind !== "buckets") {
         return failure(
