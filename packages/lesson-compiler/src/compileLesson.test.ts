@@ -1416,3 +1416,183 @@ test("reports every bad slide in a lesson rather than only the first", () => {
     compiled.diagnostics.filter(({ path }) => path.endsWith(".toEnd")).length,
   ).toBeGreaterThan(1);
 });
+
+function probeSource(actions: readonly unknown[], target = 8): LessonSourceV1 {
+  const migrated = migrateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        objects: [
+          {
+            id: "readings",
+            kind: "array",
+            label: "Readings",
+            values: [2, 4, 8, 16, 32],
+          },
+          {
+            id: "probe",
+            kind: "pointer",
+            label: "Middle",
+            targetObjectId: "readings",
+            index: 2,
+          },
+          {
+            id: "against-target",
+            kind: "comparison",
+            arrayObjectId: "readings",
+            leftPointerId: "probe",
+            target,
+          },
+        ],
+      },
+      timeline: [
+        {
+          id: "only",
+          narration: "Compare the probed value against the target.",
+          terminal: true,
+          actions,
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the probe fixture to be valid.");
+  }
+  return migrated.value;
+}
+
+test("compares one probed value against a target, with no second pointer", () => {
+  const compiled = compileLesson(
+    probeSource([{ type: "compare", objectId: "against-target" }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(true);
+  if (!compiled.ok) return;
+  expect(compiled.value.snapshots.at(-1)?.comparison).toEqual({
+    actual: 8,
+    target: 8,
+    relation: "equal",
+  });
+});
+
+test("reports which side of the target a probed value falls on", () => {
+  const below = compileLesson(
+    probeSource([{ type: "compare", objectId: "against-target" }], 20),
+    compiledContent,
+  );
+  const above = compileLesson(
+    probeSource([{ type: "compare", objectId: "against-target" }], 3),
+    compiledContent,
+  );
+
+  expect([
+    below.ok ? below.value.snapshots.at(-1)?.comparison?.relation : "failed",
+    above.ok ? above.value.snapshots.at(-1)?.comparison?.relation : "failed",
+  ]).toEqual(["less", "greater"]);
+});
+
+test("narrows a window to a range inside the one it already covers", () => {
+  const compiled = compileLesson(
+    windowSource(
+      [
+        { type: "narrow", objectId: "frame", toStart: 3, toEnd: 5 },
+        { type: "narrow", objectId: "frame", toStart: 4, toEnd: 4 },
+      ],
+      { start: 0, end: 5 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiledWindow(compiled)).toEqual({ start: 4, end: 4 });
+});
+
+test("rejects a narrow that widens the window", () => {
+  // A search that can widen is not converging on anything.
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "narrow", objectId: "frame", toStart: 0, toEnd: 4 }],
+      {
+        start: 1,
+        end: 3,
+      },
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "narrow" must land inside "frame", which covers 1 to 3, but 0 to 4 does not.',
+  );
+});
+
+test("rejects a narrow that escapes the current range on one side", () => {
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "narrow", objectId: "frame", toStart: 2, toEnd: 5 }],
+      {
+        start: 1,
+        end: 3,
+      },
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("accepts a narrow that keeps the window exactly where it is", () => {
+  // Halving an odd range can leave one side unchanged, so standing still is a
+  // legal step even though growing is not.
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "narrow", objectId: "frame", toStart: 1, toEnd: 3 }],
+      {
+        start: 1,
+        end: 3,
+      },
+    ),
+    compiledContent,
+  );
+
+  expect(compiledWindow(compiled)).toEqual({ start: 1, end: 3 });
+});
+
+test("rejects a narrow that escapes the range an earlier step left it in", () => {
+  // Only applyAction can catch this. Both ranges sit inside the authored 0 to
+  // 5, so preflight, which cannot know how far the window has already
+  // narrowed, has no basis to object.
+  const compiled = compileLesson(
+    windowSource(
+      [
+        { type: "narrow", objectId: "frame", toStart: 3, toEnd: 5 },
+        { type: "narrow", objectId: "frame", toStart: 1, toEnd: 2 },
+      ],
+      { start: 0, end: 5 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "narrow" must land inside "frame", which covers 3 to 5, but 1 to 2 does not.',
+  );
+});
+
+test("rejects narrowing something that is not a window", () => {
+  const compiled = compileLesson(
+    windowSource([
+      { type: "narrow", objectId: "readings", toStart: 0, toEnd: 2 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "narrow" requires a window, but "readings" resolves to an array.',
+  );
+});

@@ -24,8 +24,13 @@ const relationGlyphs: Readonly<Record<CurrentComparison["relation"], string>> =
 function describeComparison(context: PrimitiveRenderContext): string {
   const comparison = currentComparison(context.snapshot);
   if (comparison === undefined) return "";
+  // A pair states a sum. A single probed value states itself.
+  const subject =
+    comparison.rightLabel === undefined
+      ? `Value ${comparison.actual}`
+      : `Sum ${comparison.actual}`;
   return [
-    `Sum ${comparison.actual} is ${relationPhrase(comparison.relation)}`,
+    `${subject} is ${relationPhrase(comparison.relation)}`,
     ` target ${comparison.target}`,
   ].join("");
 }

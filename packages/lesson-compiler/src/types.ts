@@ -72,7 +72,8 @@ export type CompiledSceneObject =
       readonly kind: "comparison";
       readonly arrayObjectId: string;
       readonly leftPointerId: string;
-      readonly rightPointerId: string;
+      /** Absent when the comparison weighs one probed value, not a pair sum. */
+      readonly rightPointerId?: string | undefined;
       readonly target: number;
     })
   | (CompiledSceneObjectBase & {

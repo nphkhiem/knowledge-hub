@@ -53,12 +53,22 @@ export const labelPrimitiveSchema = z.strictObject({
   kind: z.literal("label"),
   text: z.string().min(1),
 });
+/**
+ * A value weighed against a target.
+ *
+ * With both pointers it compares their sum, which is what a pair-sum search
+ * asks. With only `leftPointerId` it compares the single value that pointer
+ * addresses, which is what a search that probes one position at a time asks.
+ * The second pointer is optional rather than a second primitive because the
+ * question is the same either way: is this less than, equal to, or greater
+ * than the target.
+ */
 export const comparisonPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
   kind: z.literal("comparison"),
   arrayObjectId: objectIdSchema,
   leftPointerId: objectIdSchema,
-  rightPointerId: objectIdSchema,
+  rightPointerId: objectIdSchema.optional(),
   target: z.number(),
 });
 /**
@@ -170,6 +180,19 @@ export const slideActionSchema = z.strictObject({
   toStart: z.number().int().min(0),
   toEnd: z.number().int().min(0),
 });
+/**
+ * Shrinks a window to a range inside the one it already covers.
+ *
+ * The counterpart to slide: that action moves a window and keeps its width,
+ * this one changes the width and cannot escape the current range. A search that
+ * could widen would not be converging on anything, so the compiler rejects it.
+ */
+export const narrowActionSchema = z.strictObject({
+  type: z.literal("narrow"),
+  ...actionTargetSchema,
+  toStart: z.number().int().min(0),
+  toEnd: z.number().int().min(0),
+});
 
 export const actionSchema = z.discriminatedUnion("type", [
   showActionSchema,
@@ -184,6 +207,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   dequeueActionSchema,
   insertActionSchema,
   slideActionSchema,
+  narrowActionSchema,
 ]);
 
 export const timelineStepSchema = z.strictObject({

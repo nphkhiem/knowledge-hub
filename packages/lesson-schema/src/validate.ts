@@ -18,6 +18,7 @@ const supportedActions = [
   "dequeue",
   "insert",
   "slide",
+  "narrow",
 ] as const;
 const supportedPrimitives = [
   "array",
@@ -66,7 +67,7 @@ function unsupportedActionDiagnostic(input: VersionOneInput, file: string) {
           file,
           path: `timeline[${stepIndex}].actions[${actionIndex}].type`,
           message:
-            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide.",
+            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide, narrow.",
         };
       }
     }

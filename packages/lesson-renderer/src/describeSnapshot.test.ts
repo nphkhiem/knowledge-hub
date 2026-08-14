@@ -23,6 +23,62 @@ test("describes a sum below the target with its own relation wording", () => {
   );
 });
 
+/** A probe scene: one pointer weighed against a target, with no pair. */
+function probeSnapshot(index: number, target: number): SemanticSnapshot {
+  const values = [2, 4, 8, 16, 32] as const;
+  const actual = values[index] ?? 0;
+  return {
+    stepId: "probe",
+    narration: "Weigh the probed value against the target.",
+    terminal: false,
+    objects: [
+      {
+        id: "readings",
+        kind: "array",
+        visible: true,
+        label: "Readings",
+        values: [...values],
+      },
+      {
+        id: "probe",
+        kind: "pointer",
+        visible: true,
+        label: "Middle",
+        targetObjectId: "readings",
+        index,
+      },
+      {
+        id: "against-target",
+        kind: "comparison",
+        visible: true,
+        arrayObjectId: "readings",
+        leftPointerId: "probe",
+        target,
+      },
+    ],
+    pointers: { probe: index },
+    highlights: {},
+    comparison: {
+      actual,
+      target,
+      relation:
+        actual < target ? "less" : actual > target ? "greater" : "equal",
+    },
+  };
+}
+
+test("describes a single probed value against its target", () => {
+  expect(describeSnapshot(probeSnapshot(2, 20))).toBe(
+    "The middle pointer addresses 8, less than the target 20.",
+  );
+});
+
+test("describes a probe that lands exactly on the target", () => {
+  expect(describeSnapshot(probeSnapshot(3, 16))).toBe(
+    "The middle pointer addresses 16, equal to the target 16.",
+  );
+});
+
 test("falls back to authored narration when no comparison describes the current pointers", () => {
   expect({
     afterMove: describeSnapshot(snapshotAt(2)),

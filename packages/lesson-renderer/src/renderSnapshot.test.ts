@@ -21,6 +21,51 @@ function withNarration(
   return { ...snapshot, narration };
 }
 
+test("renders a single probed value against its target, not a sum", () => {
+  // The comparison primitive words itself separately from the snapshot
+  // description, so the probe form needs its own check that it reaches markup.
+  const probe: SemanticSnapshot = {
+    stepId: "probe",
+    narration: "Weigh the probed value.",
+    terminal: false,
+    objects: [
+      {
+        id: "readings",
+        kind: "array",
+        visible: true,
+        label: "Readings",
+        values: [2, 4, 8, 16, 32],
+      },
+      {
+        id: "probe",
+        kind: "pointer",
+        visible: true,
+        label: "Middle",
+        targetObjectId: "readings",
+        index: 2,
+      },
+      {
+        id: "against-target",
+        kind: "comparison",
+        visible: true,
+        arrayObjectId: "readings",
+        leftPointerId: "probe",
+        target: 20,
+      },
+    ],
+    pointers: { probe: 2 },
+    highlights: {},
+    comparison: { actual: 8, target: 20, relation: "less" },
+  };
+
+  const markup = renderSnapshot(probe).markup;
+
+  expect({
+    claimsASum: markup.includes("Sum 8"),
+    statesTheValue: markup.includes("Value 8 is less than target 20"),
+  }).toEqual({ claimsASum: false, statesTheValue: true });
+});
+
 test("renders pointers as named SVG groups without color-only meaning", () => {
   const rendered = renderSnapshot(snapshotAt(1));
 
