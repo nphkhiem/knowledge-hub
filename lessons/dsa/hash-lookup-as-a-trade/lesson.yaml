@@ -1,0 +1,117 @@
+schemaVersion: 1
+id: "dsa.hash-lookup-as-a-trade"
+slug: "hash-lookup-as-a-trade"
+domain: "dsa"
+collection: "interview-foundations"
+order: 3
+difficulty: "easy"
+license: "CC-BY-4.0"
+title: "Hash Lookup as a Trade"
+durationMinutes: 4
+objective: "Explain how storing a key by where it hashes removes a scan, and what that costs."
+recognitionSignals:
+  - "The same collection is searched over and over for different keys."
+  - "You need to know whether something is present, not where it sits in order."
+  - "Two different keys can land in the same place and both must survive."
+limitations:
+  - "A hash tells you where a key would be, never what comes before or after it, so ordered questions need a different structure."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/lookup_costs.py"
+    - language: "typescript"
+      file: "examples/lookup-costs.ts"
+    - language: "java"
+      file: "examples/LookupCosts.java"
+    - language: "cpp"
+      file: "examples/lookup_costs.cpp"
+    - language: "go"
+      file: "examples/lookup_costs.go"
+scene:
+  objects:
+    - id: "slots"
+      kind: "buckets"
+      label: "Six buckets"
+      slotCount: 6
+      entries: []
+    - id: "trade-label"
+      kind: "label"
+      text: "Memory bought, scanning removed"
+timeline:
+  - id: "insert-cat"
+    narration: "The key cat hashes to slot 1, so it is stored at slot 1. Nothing was searched to decide that."
+    actions:
+      - type: "insert"
+        objectId: "slots"
+        key: "cat"
+        slot: 1
+      - type: "highlight"
+        objectId: "slots"
+        indices: [1]
+        tone: "compare"
+  - id: "insert-dog"
+    narration: "The key dog hashes to slot 4. Each key names its own place."
+    actions:
+      - type: "insert"
+        objectId: "slots"
+        key: "dog"
+        slot: 4
+      - type: "highlight"
+        objectId: "slots"
+        indices: [4]
+        tone: "compare"
+  - id: "insert-emu"
+    narration: "The key emu also hashes to slot 1. Two keys now share one slot, which is a collision."
+    actions:
+      - type: "insert"
+        objectId: "slots"
+        key: "emu"
+        slot: 1
+      - type: "highlight"
+        objectId: "slots"
+        indices: [1]
+        tone: "compare"
+  - id: "lookup-dog"
+    narration: "To find dog, hash it once and go straight to slot 4. No other slot is examined."
+    actions:
+      - type: "highlight"
+        objectId: "slots"
+        indices: [4]
+        tone: "success"
+  - id: "lookup-emu"
+    narration: "Finding emu reaches slot 1 just as directly, then reads the two keys there. A collision costs a short local check, not a scan of everything."
+    terminal: true
+    actions:
+      - type: "highlight"
+        objectId: "slots"
+        indices: [1]
+        tone: "success"
+modelCheck:
+  prompt: "Two keys hash to the same slot. What has that cost?"
+  options:
+    - id: "lost"
+      label: "One of them is lost and must be stored elsewhere"
+    - id: "local"
+      label: "A short check among the keys in that slot, not a scan of the whole table"
+    - id: "rehash"
+      label: "Every key must be moved to a new slot"
+  correctOptionId: "local"
+  explanation: "Both keys stay in the slot they hashed to. Finding one means hashing to that slot and then reading the few keys it holds, which stays cheap while collisions stay rare. It is the rate of collisions, not their existence, that decides whether a hash table is still fast."
+accessibility:
+  summary: "An animation storing three keys in six buckets by where each one hashes, including two keys sharing a slot, then finding a key by hashing to its slot directly."
+  initialDescription: "Six empty buckets, numbered zero to five."
+  motionEquivalentLabel: "Bucket contents step by step"
+evidence:
+  verifiedOn: "2026-08-12"
+  scope: "Describes separate chaining with a uniform hash. Open addressing, resizing policy, and adversarial key selection are out of scope."
+  sources:
+    - title: "Introduction to Algorithms, fourth edition, chapter 11: Hash Tables"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 11."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-12"
+      supports:
+        - "A hash function maps a key to a slot index, so a lookup examines one slot rather than scanning the collection."
+        - "Under separate chaining with simple uniform hashing, a search takes expected time proportional to one plus the load factor."

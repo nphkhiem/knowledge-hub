@@ -68,6 +68,20 @@ The test asserts that when two lessons share a collection, a lesson page offers 
 
 **3 and 4** were defended by their assertions. Item 4 fired correctly and Previous/Next was built to satisfy it: the component had been complete since F09 and was simply never passed any props.
 
+## Reviewed at three lessons, 2026-08-12
+
+"Hash Lookup as a Trade" was the second growth, and it answered item 2 far more sharply than the first did.
+
+**1, ranking.** Sound across three. Searching `scan` returns Hash Lookup first because its objective says "removes a scan", ahead of two lessons matching only in prose, tie-broken by reading order. The weighting is behaving as designed on real content.
+
+**2, schema generality. This is the real answer.** The second lesson needed nothing new; the third needed a new primitive (`buckets`), a new action (`insert`), and an extension of an existing one (`highlight`, which accepted only arrays). So the contract generalizes across lessons of the same shape and stops at the first lesson of a different shape. That is worth knowing before the remaining twenty-one DSA lessons: expect a new primitive roughly whenever a lesson's subject is not a sequence.
+
+Two enforcement points had to change for one rule, because `applyAction` and `preflightActions` each carry their own copy of the action contract. Preflight exists to report every diagnostic at once rather than stopping at the first, so the duplication is deliberate, but it means an action rule is never changed in one place.
+
+**5, aggregates.** Correct at three with no defects: `3 of 15`, twelve minutes, plurals right on every surface.
+
+**7 recurred, and it was mine.** After documenting that the suite must not encode the catalog size, I hardcoded two lesson titles into `home.spec.ts` while fixing that very problem. It broke on the next lesson. The assertion now derives declared order from the page and checks it ascends, which cannot rot as content lands.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
