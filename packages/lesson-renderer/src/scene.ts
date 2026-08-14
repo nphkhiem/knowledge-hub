@@ -90,8 +90,9 @@ export interface CurrentComparison {
   readonly relation: "less" | "equal" | "greater";
   readonly leftLabel: string;
   readonly leftValue: number;
-  readonly rightLabel: string;
-  readonly rightValue: number;
+  /** Both absent when the comparison weighs one probed value, not a pair. */
+  readonly rightLabel?: string | undefined;
+  readonly rightValue?: number | undefined;
 }
 
 /**
@@ -107,12 +108,32 @@ export function currentComparison(
   if (comparison === undefined || scene === undefined) return undefined;
 
   const left = findPointerObject(snapshot, scene.leftPointerId);
-  const right = findPointerObject(snapshot, scene.rightPointerId);
-  if (left === undefined || right === undefined) return undefined;
-
+  if (left === undefined) return undefined;
   const leftValue = pointerValue(snapshot, left);
+  if (leftValue === undefined) return undefined;
+
+  /**
+   * A comparison with no second pointer weighs the one value its pointer
+   * addresses. The staleness rule is the same either way: the recorded total
+   * must still match what the pointers currently address, or the comparison
+   * describes a position the figure has already moved past.
+   */
+  if (scene.rightPointerId === undefined) {
+    if (leftValue !== comparison.actual) return undefined;
+    return {
+      actual: comparison.actual,
+      leftLabel: left.label,
+      leftValue,
+      relation: comparison.relation,
+      target: comparison.target,
+    };
+  }
+
+  const right = findPointerObject(snapshot, scene.rightPointerId);
+  if (right === undefined) return undefined;
+
   const rightValue = pointerValue(snapshot, right);
-  if (leftValue === undefined || rightValue === undefined) return undefined;
+  if (rightValue === undefined) return undefined;
   if (leftValue + rightValue !== comparison.actual) return undefined;
 
   return {

@@ -180,19 +180,29 @@ export function validateStaticActions(
           }
           const array = objectFor(object.arrayObjectId);
           const leftPointer = objectFor(object.leftPointerId);
-          const rightPointer = objectFor(object.rightPointerId);
-          if (
+          // Absent when the comparison weighs one probed value rather than a
+          // pair sum, in which case only the left pointer has to line up.
+          const rightPointer =
+            object.rightPointerId === undefined
+              ? undefined
+              : objectFor(object.rightPointerId);
+          const strays = (pointer: SceneObjectV1 | undefined): boolean =>
+            pointer?.kind === "pointer" &&
             array?.kind === "array" &&
-            leftPointer?.kind === "pointer" &&
-            rightPointer?.kind === "pointer" &&
-            (leftPointer.targetObjectId !== array.id ||
-              rightPointer.targetObjectId !== array.id)
+            pointer.targetObjectId !== array.id;
+
+          if (
+            strays(leftPointer) ||
+            (object.rightPointerId !== undefined && strays(rightPointer))
           ) {
             diagnostics.push({
               code: "reference.invalid",
               file,
               path: `${path}.objectId`,
-              message: `Comparison "${object.id}" requires two pointers targeting array "${object.arrayObjectId}".`,
+              message:
+                object.rightPointerId === undefined
+                  ? `Comparison "${object.id}" requires a pointer targeting array "${object.arrayObjectId}".`
+                  : `Comparison "${object.id}" requires two pointers targeting array "${object.arrayObjectId}".`,
             });
           }
           break;

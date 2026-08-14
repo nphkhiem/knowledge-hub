@@ -53,12 +53,22 @@ export const labelPrimitiveSchema = z.strictObject({
   kind: z.literal("label"),
   text: z.string().min(1),
 });
+/**
+ * A value weighed against a target.
+ *
+ * With both pointers it compares their sum, which is what a pair-sum search
+ * asks. With only `leftPointerId` it compares the single value that pointer
+ * addresses, which is what a search that probes one position at a time asks.
+ * The second pointer is optional rather than a second primitive because the
+ * question is the same either way: is this less than, equal to, or greater
+ * than the target.
+ */
 export const comparisonPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
   kind: z.literal("comparison"),
   arrayObjectId: objectIdSchema,
   leftPointerId: objectIdSchema,
-  rightPointerId: objectIdSchema,
+  rightPointerId: objectIdSchema.optional(),
   target: z.number(),
 });
 /**

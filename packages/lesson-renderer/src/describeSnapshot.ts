@@ -12,12 +12,20 @@ export function describeSnapshot(snapshot: SemanticSnapshot): string {
   /** Authored narration already describes its own step, so it stands alone. */
   if (comparison === undefined) return snapshot.narration;
 
-  const opening = [
-    `Compare ${comparison.leftValue} at the ${comparison.leftLabel.toLowerCase()} pointer`,
-    ` with ${comparison.rightValue} at the ${comparison.rightLabel.toLowerCase()} pointer.`,
-    ` Their sum is ${comparison.actual}, ${relationPhrase(comparison.relation)}`,
-    ` the target ${comparison.target}.`,
-  ].join("");
+  /** One probed value states itself. A pair has to state its sum as well. */
+  const opening =
+    comparison.rightLabel === undefined
+      ? [
+          `The ${comparison.leftLabel.toLowerCase()} pointer addresses`,
+          ` ${comparison.leftValue}, ${relationPhrase(comparison.relation)}`,
+          ` the target ${comparison.target}.`,
+        ].join("")
+      : [
+          `Compare ${comparison.leftValue} at the ${comparison.leftLabel.toLowerCase()} pointer`,
+          ` with ${comparison.rightValue} at the ${comparison.rightLabel.toLowerCase()} pointer.`,
+          ` Their sum is ${comparison.actual}, ${relationPhrase(comparison.relation)}`,
+          ` the target ${comparison.target}.`,
+        ].join("");
 
   const result = snapshot.result;
   if (result === undefined) return opening;

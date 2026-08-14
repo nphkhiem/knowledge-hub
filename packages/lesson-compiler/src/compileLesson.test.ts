@@ -1417,6 +1417,82 @@ test("reports every bad slide in a lesson rather than only the first", () => {
   ).toBeGreaterThan(1);
 });
 
+function probeSource(actions: readonly unknown[], target = 8): LessonSourceV1 {
+  const migrated = migrateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        objects: [
+          {
+            id: "readings",
+            kind: "array",
+            label: "Readings",
+            values: [2, 4, 8, 16, 32],
+          },
+          {
+            id: "probe",
+            kind: "pointer",
+            label: "Middle",
+            targetObjectId: "readings",
+            index: 2,
+          },
+          {
+            id: "against-target",
+            kind: "comparison",
+            arrayObjectId: "readings",
+            leftPointerId: "probe",
+            target,
+          },
+        ],
+      },
+      timeline: [
+        {
+          id: "only",
+          narration: "Compare the probed value against the target.",
+          terminal: true,
+          actions,
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the probe fixture to be valid.");
+  }
+  return migrated.value;
+}
+
+test("compares one probed value against a target, with no second pointer", () => {
+  const compiled = compileLesson(
+    probeSource([{ type: "compare", objectId: "against-target" }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(true);
+  if (!compiled.ok) return;
+  expect(compiled.value.snapshots.at(-1)?.comparison).toEqual({
+    actual: 8,
+    target: 8,
+    relation: "equal",
+  });
+});
+
+test("reports which side of the target a probed value falls on", () => {
+  const below = compileLesson(
+    probeSource([{ type: "compare", objectId: "against-target" }], 20),
+    compiledContent,
+  );
+  const above = compileLesson(
+    probeSource([{ type: "compare", objectId: "against-target" }], 3),
+    compiledContent,
+  );
+
+  expect([
+    below.ok ? below.value.snapshots.at(-1)?.comparison?.relation : "failed",
+    above.ok ? above.value.snapshots.at(-1)?.comparison?.relation : "failed",
+  ]).toEqual(["less", "greater"]);
+});
+
 test("narrows a window to a range inside the one it already covers", () => {
   const compiled = compileLesson(
     windowSource(

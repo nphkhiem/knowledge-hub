@@ -96,10 +96,14 @@ export function validateLessonSemantics(
       }
     }
     if (object.kind === "comparison") {
+      // The second pointer is checked only when the comparison declares one. A
+      // comparison that weighs a single probed value has none to resolve.
       const references = [
         ["arrayObjectId", object.arrayObjectId, "array"],
         ["leftPointerId", object.leftPointerId, "pointer"],
-        ["rightPointerId", object.rightPointerId, "pointer"],
+        ...(object.rightPointerId === undefined
+          ? []
+          : ([["rightPointerId", object.rightPointerId, "pointer"]] as const)),
       ] as const;
       for (const [property, reference, expectedKind] of references) {
         const target = objectsById.get(reference);

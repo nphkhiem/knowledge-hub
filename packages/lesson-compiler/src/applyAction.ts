@@ -21,10 +21,15 @@ export interface MutableSemanticState {
    * found result followed an equal comparison at the same pointer positions.
    * This is compiler bookkeeping and never reaches a snapshot.
    */
+  /**
+   * One or two positions, because a comparison may weigh a single probed value
+   * rather than a pair sum. The V1 result action still requires a pair and
+   * rejects the single-value form rather than inventing a meaning for it.
+   */
   lastComparison?: Readonly<{
     relation: "less" | "equal" | "greater";
-    indices: readonly [number, number];
-    pointerIds: readonly [string, string];
+    indices: readonly number[];
+    pointerIds: readonly string[];
   }>;
   result?: SemanticSnapshot["result"];
 }
@@ -77,6 +82,27 @@ function replaceObject(
   state.objectsById.set(object.id, object);
 }
 
+type PointerObject = Extract<CompiledSceneObject, { kind: "pointer" }>;
+
+/**
+ * The pointer `id` names, but only when it really is a pointer into `array`.
+ * Returning undefined for every other case keeps the narrowing in one place
+ * rather than repeating a four-clause guard at each call site.
+ */
+function pointerInto(
+  state: MutableSemanticState,
+  id: string | undefined,
+  array: CompiledSceneObject | undefined,
+): PointerObject | undefined {
+  if (id === undefined || array === undefined || array.kind !== "array") {
+    return undefined;
+  }
+  const candidate = state.objectsById.get(id);
+  return candidate?.kind === "pointer" && candidate.targetObjectId === array.id
+    ? candidate
+    : undefined;
+}
+
 function resolveCurrentV1Comparison(
   state: MutableSemanticState,
   context: CompileContext,
@@ -96,7 +122,16 @@ function resolveCurrentV1Comparison(
   const comparison = comparisons[0]!;
   const array = state.objectsById.get(comparison.arrayObjectId);
   const leftPointer = state.objectsById.get(comparison.leftPointerId);
-  const rightPointer = state.objectsById.get(comparison.rightPointerId);
+  /**
+   * A V1 result names a pair, so it needs a pair comparison. A comparison that
+   * weighs one probed value is rejected here rather than given an invented
+   * meaning: a lesson that ends on a single position needs a different result
+   * shape than this one, and should not borrow this one silently.
+   */
+  const rightPointer =
+    comparison.rightPointerId === undefined
+      ? undefined
+      : state.objectsById.get(comparison.rightPointerId);
   if (
     !array ||
     array.kind !== "array" ||
@@ -332,34 +367,43 @@ export function applyAction(
         );
       }
       const array = state.objectsById.get(object.arrayObjectId);
-      const leftPointer = state.objectsById.get(object.leftPointerId);
-      const rightPointer = state.objectsById.get(object.rightPointerId);
+      const leftPointer = pointerInto(state, object.leftPointerId, array);
+      /**
+       * A comparison without a second pointer weighs the one value its pointer
+       * addresses. With a second it weighs the pair's sum. Everything after
+       * this point asks the same question of the same target.
+       */
+      const wantsPair = object.rightPointerId !== undefined;
+      const rightPointer = wantsPair
+        ? pointerInto(state, object.rightPointerId, array)
+        : undefined;
       if (
         !array ||
         array.kind !== "array" ||
         !leftPointer ||
-        leftPointer.kind !== "pointer" ||
-        !rightPointer ||
-        rightPointer.kind !== "pointer" ||
-        leftPointer.targetObjectId !== array.id ||
-        rightPointer.targetObjectId !== array.id
+        (wantsPair && !rightPointer)
       ) {
         return failure(
           context,
-          `Comparison "${object.id}" requires two pointers targeting array "${object.arrayObjectId}".`,
+          wantsPair
+            ? `Comparison "${object.id}" requires two pointers targeting array "${object.arrayObjectId}".`
+            : `Comparison "${object.id}" requires a pointer targeting array "${object.arrayObjectId}".`,
           "reference.invalid",
           `${context.path}.objectId`,
         );
       }
       const leftValue = array.values[leftPointer.index];
-      const rightValue = array.values[rightPointer.index];
-      if (leftValue === undefined || rightValue === undefined) {
+      const rightValue = rightPointer && array.values[rightPointer.index];
+      if (
+        leftValue === undefined ||
+        (rightPointer !== undefined && rightValue === undefined)
+      ) {
         return failure(
           context,
           `Comparison "${object.id}" references an out-of-bounds pointer.`,
         );
       }
-      const actual = leftValue + rightValue;
+      const actual = leftValue + (rightValue ?? 0);
       const relation =
         actual < object.target
           ? "less"
@@ -368,8 +412,12 @@ export function applyAction(
             : "equal";
       state.comparison = { actual, target: object.target, relation };
       state.lastComparison = {
-        indices: [leftPointer.index, rightPointer.index],
-        pointerIds: [leftPointer.id, rightPointer.id],
+        indices: rightPointer
+          ? [leftPointer.index, rightPointer.index]
+          : [leftPointer.index],
+        pointerIds: rightPointer
+          ? [leftPointer.id, rightPointer.id]
+          : [leftPointer.id],
         relation,
       };
       return { ok: true, value: state };
@@ -420,9 +468,29 @@ export function applyAction(
           );
         }
         const { indices, pointerIds } = lastComparison;
+        const [leftId, rightId] = pointerIds;
+        const [leftAt, rightAt] = indices;
+        /**
+         * A V1 found result names a pair. A comparison that weighed a single
+         * probed value cannot produce one, and is rejected rather than padded
+         * out into a pair that the lesson never stated.
+         */
         if (
-          state.pointers[pointerIds[0]] !== indices[0] ||
-          state.pointers[pointerIds[1]] !== indices[1]
+          leftId === undefined ||
+          rightId === undefined ||
+          leftAt === undefined ||
+          rightAt === undefined
+        ) {
+          return failure(
+            context,
+            `A found result requires a comparison of two pointers.`,
+            "reference.invalid",
+            `${context.path}.value`,
+          );
+        }
+        if (
+          state.pointers[leftId] !== leftAt ||
+          state.pointers[rightId] !== rightAt
         ) {
           return failure(
             context,
@@ -431,7 +499,7 @@ export function applyAction(
             `${context.path}.value`,
           );
         }
-        if (indices[0] === indices[1]) {
+        if (leftAt === rightAt) {
           return failure(
             context,
             `A found result requires two distinct pointer indices.`,
@@ -439,7 +507,7 @@ export function applyAction(
             `${context.path}.value`,
           );
         }
-        result = { kind: "found", indices };
+        result = { kind: "found", indices: [leftAt, rightAt] };
       } else if (status === "not-found" && currentComparison?.ok) {
         const { actual, leftIndex, rightIndex, target } =
           currentComparison.value;
