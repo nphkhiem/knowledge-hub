@@ -58,25 +58,34 @@ export function validateStaticActions(
           }
           break;
         }
-        case "highlight":
-          if (object.kind !== "array") {
+        case "highlight": {
+          // Both kinds that have positions accept a highlight. This rule is
+          // duplicated from applyAction because preflight reports every
+          // diagnostic at once rather than stopping at the first.
+          const positions =
+            object.kind === "array"
+              ? object.values.length
+              : object.kind === "buckets"
+                ? object.slotCount
+                : undefined;
+
+          if (positions === undefined) {
             diagnostics.push({
               code: "reference.wrong-kind",
               file,
               path: `${path}.objectId`,
-              message: `Action "highlight" requires an array, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
+              message: `Action "highlight" requires an array or buckets, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
             });
-          } else if (
-            action.indices.some((index) => index >= object.values.length)
-          ) {
+          } else if (action.indices.some((index) => index >= positions)) {
             diagnostics.push({
               code: "reference.invalid",
               file,
               path: `${path}.indices`,
-              message: `Highlight indices must be inside array "${object.id}".`,
+              message: `Highlight indices must be inside "${object.id}".`,
             });
           }
           break;
+        }
         case "compare": {
           if (object.kind !== "comparison") {
             diagnostics.push({

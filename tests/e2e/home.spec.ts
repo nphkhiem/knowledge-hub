@@ -34,9 +34,19 @@ test("lists published lessons in their recommended order", async ({ page }) => {
     .locator(".lesson-list .title")
     .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim()));
 
-  // Reading order, not catalog order. Relative to what is published so the
-  // suite stops encoding a lesson count it does not control.
-  expect(titles).toEqual(["Complexity as a Budget", "Two Pointers"]);
+  // Derived, not hardcoded. Listing the titles here re-encoded the catalog
+  // size and broke on the very next lesson, which is the mistake
+  // docs/catalog-assumptions.md item 7 exists to stop.
+  const declared = await page
+    .locator("[data-lesson-slug] .position")
+    .evaluateAll((nodes) => nodes.map((node) => Number(node.textContent)));
+
+  expect({
+    count: titles.length > 0,
+    ascending: declared.every(
+      (order, index) => index === 0 || order > (declared[index - 1] ?? 0),
+    ),
+  }).toEqual({ count: true, ascending: true });
 });
 
 test("opens the lesson from its row", async ({ page }) => {

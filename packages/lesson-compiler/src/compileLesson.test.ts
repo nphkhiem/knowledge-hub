@@ -223,7 +223,7 @@ test("diagnoses a highlight action targeting a non-array", () => {
         file: "lesson.yaml",
         path: "timeline[0].actions[0].objectId",
         message:
-          'Action "highlight" requires an array, but "left-pointer" resolves to a pointer.',
+          'Action "highlight" requires an array or buckets, but "left-pointer" resolves to a pointer.',
       },
     ],
   });
@@ -511,7 +511,7 @@ test("diagnoses a highlight outside its target array", () => {
         code: "reference.invalid",
         file: "lesson.yaml",
         path: "timeline[0].actions[0].indices",
-        message: 'Highlight indices must be inside array "values".',
+        message: 'Highlight indices must be inside "values".',
       },
     ],
   });
@@ -1071,7 +1071,7 @@ test("aggregates independent action diagnostics in canonical path order", () => 
         file: "lesson.yaml",
         path: "timeline[0].actions[1].objectId",
         message:
-          'Action "highlight" requires an array, but "left-pointer" resolves to a pointer.',
+          'Action "highlight" requires an array or buckets, but "left-pointer" resolves to a pointer.',
       },
     ],
   };
@@ -1237,6 +1237,33 @@ test("rejects inserting the same key twice", () => {
       { type: "insert", objectId: "slots", key: "alpha", slot: 0 },
       { type: "insert", objectId: "slots", key: "alpha", slot: 1 },
     ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("highlights a buckets slot, which no action could reach before", () => {
+  const compiled = compileLesson(
+    bucketsSource([
+      { type: "insert", objectId: "slots", key: "alpha", slot: 2 },
+      { type: "highlight", objectId: "slots", indices: [2], tone: "success" },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(true);
+  if (!compiled.ok) return;
+
+  expect(compiled.value.snapshots.at(-1)?.highlights["slots"]).toEqual([2]);
+});
+
+test("rejects highlighting a slot the buckets object does not have", () => {
+  const compiled = compileLesson(
+    bucketsSource(
+      [{ type: "highlight", objectId: "slots", indices: [9], tone: "compare" }],
+      2,
+    ),
     compiledContent,
   );
 

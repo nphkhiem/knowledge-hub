@@ -205,18 +205,23 @@ export function applyAction(
       return { ok: true, value: state };
     }
     case "highlight": {
-      if (object.kind !== "array") {
+      // Highlight emphasizes a position in something indexed, so it accepts
+      // both kinds that have positions. Buckets rendered highlights from the
+      // start; without this no action could ever produce one.
+      if (object.kind !== "array" && object.kind !== "buckets") {
         return failure(
           context,
-          `Action "highlight" requires an array, but "${object.id}" resolves to a ${object.kind}.`,
+          `Action "highlight" requires an array or buckets, but "${object.id}" resolves to a ${object.kind}.`,
           "reference.wrong-kind",
           `${context.path}.objectId`,
         );
       }
-      if (action.indices.some((index) => index >= object.values.length)) {
+      const positions =
+        object.kind === "array" ? object.values.length : object.slotCount;
+      if (action.indices.some((index) => index >= positions)) {
         return failure(
           context,
-          `Highlight indices must be inside array "${object.id}".`,
+          `Highlight indices must be inside "${object.id}".`,
           "reference.invalid",
           `${context.path}.indices`,
         );
