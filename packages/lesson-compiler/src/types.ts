@@ -42,6 +42,15 @@ export type CompiledSceneObject =
       readonly values: readonly number[];
     })
   | (CompiledSceneObjectBase & {
+      readonly kind: "buckets";
+      readonly label: string;
+      readonly slotCount: number;
+      readonly entries: readonly {
+        readonly key: string;
+        readonly slot: number;
+      }[];
+    })
+  | (CompiledSceneObjectBase & {
       readonly kind: "pointer";
       readonly label: string;
       readonly targetObjectId: string;

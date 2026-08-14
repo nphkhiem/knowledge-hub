@@ -13,6 +13,7 @@ import { arrayPrimitive } from "./primitives/array.js";
 import { comparisonPrimitive } from "./primitives/comparison.js";
 import { labelPrimitive } from "./primitives/label.js";
 import { pointerPrimitive } from "./primitives/pointer.js";
+import { bucketsPrimitive } from "./primitives/buckets.js";
 import { resultPrimitive } from "./primitives/result.js";
 import type {
   PrimitiveContract,
@@ -27,6 +28,7 @@ export const primitiveContracts: Readonly<
   comparison: comparisonPrimitive,
   label: labelPrimitive,
   pointer: pointerPrimitive,
+  buckets: bucketsPrimitive,
   result: resultPrimitive,
 };
 

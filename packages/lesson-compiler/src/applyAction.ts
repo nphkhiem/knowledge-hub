@@ -173,6 +173,37 @@ export function applyAction(
       state.pointers[object.id] = action.toIndex;
       return { ok: true, value: state };
     }
+    case "insert": {
+      if (object.kind !== "buckets") {
+        return failure(
+          context,
+          `Action "insert" requires a buckets object, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      if (action.slot >= object.slotCount) {
+        return failure(
+          context,
+          `Slot ${action.slot} is outside "${object.id}", which has ${object.slotCount} slots.`,
+          "reference.invalid",
+          `${context.path}.slot`,
+        );
+      }
+      if (object.entries.some((entry) => entry.key === action.key)) {
+        return failure(
+          context,
+          `Key "${action.key}" is already in "${object.id}". A repeated insert would misrepresent what a lookup finds.`,
+          "reference.invalid",
+          `${context.path}.key`,
+        );
+      }
+      replaceObject(state, {
+        ...object,
+        entries: [...object.entries, { key: action.key, slot: action.slot }],
+      });
+      return { ok: true, value: state };
+    }
     case "highlight": {
       if (object.kind !== "array") {
         return failure(

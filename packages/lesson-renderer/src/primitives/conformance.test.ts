@@ -39,6 +39,36 @@ const resolvedSnapshot: SemanticSnapshot = {
   comparison: equalComparison,
 };
 
+/**
+ * Buckets get their own scene rather than joining the Two Pointers one. Adding
+ * them there would make that figure two rows tall, and the bounds this contract
+ * checks are the single-row ones.
+ */
+const bucketsObject: CompiledSceneObject = {
+  id: "slots",
+  kind: "buckets",
+  visible: true,
+  label: "Buckets",
+  slotCount: 4,
+  entries: [
+    { key: "alpha", slot: 0 },
+    { key: "beta", slot: 2 },
+    { key: "gamma", slot: 2 },
+  ],
+};
+
+/** The same primitive at its widest, for the narrow-geometry check. */
+const wideBuckets: CompiledSceneObject = {
+  ...bucketsObject,
+  slotCount: 12,
+} as CompiledSceneObject;
+
+const bucketsSnapshot: SemanticSnapshot = {
+  ...resolvedSnapshot,
+  objects: [bucketsObject],
+  highlights: { slots: [2] },
+};
+
 function objectOfKind(
   snapshot: SemanticSnapshot,
   kind: CompiledSceneObject["kind"],
@@ -66,6 +96,7 @@ const narrowSnapshot = mapObjects(resolvedSnapshot, (object) =>
 const untrustedSnapshot = mapObjects(resolvedSnapshot, (object) => {
   switch (object.kind) {
     case "array":
+    case "buckets":
     case "pointer":
       return { ...object, label: untrustedText };
     case "label":
@@ -76,9 +107,16 @@ const untrustedSnapshot = mapObjects(resolvedSnapshot, (object) => {
   }
 });
 
+const untrustedBuckets: CompiledSceneObject = {
+  ...bucketsObject,
+  label: untrustedText,
+  entries: [{ key: untrustedText.slice(0, 24), slot: 0 }],
+};
+
 /** Only these primitives draw an author-controlled string of their own. */
 const authorTextKinds: ReadonlySet<CompiledSceneObject["kind"]> = new Set([
   "array",
+  "buckets",
   "pointer",
   "label",
 ]);
@@ -92,6 +130,30 @@ function contractFor(
   kind: CompiledSceneObject["kind"],
 ): PrimitiveConformanceContract {
   const primitive = primitiveContracts[kind];
+  if (kind === "buckets") {
+    const scene = createRenderContext(bucketsSnapshot, "interactive");
+    const wide = createRenderContext(
+      { ...bucketsSnapshot, objects: [wideBuckets] },
+      "interactive",
+    );
+    const hostile = createRenderContext(
+      { ...bucketsSnapshot, objects: [untrustedBuckets] },
+      "interactive",
+    );
+    return {
+      accepts: (object) => primitive.accepts(object),
+      describe: (object) => primitive.describe(object, scene),
+      kind,
+      renderInteractive: (object) => primitive.render(object, scene),
+      renderNarrow: () => primitive.render(wideBuckets, wide),
+      renderStatic: (object) =>
+        primitive.render(
+          object,
+          createRenderContext(bucketsSnapshot, "static"),
+        ),
+      renderUntrusted: () => primitive.render(untrustedBuckets, hostile),
+    };
+  }
   const interactive = createRenderContext(resolvedSnapshot, "interactive");
   const staticView = createRenderContext(resolvedSnapshot, "static");
   const narrow = createRenderContext(narrowSnapshot, "interactive");
@@ -113,6 +175,7 @@ const foreignKinds: Readonly<
   Record<CompiledSceneObject["kind"], CompiledSceneObject["kind"]>
 > = {
   array: "pointer",
+  buckets: "array",
   comparison: "result",
   label: "array",
   pointer: "label",
@@ -121,6 +184,7 @@ const foreignKinds: Readonly<
 
 for (const kind of [
   "array",
+  "buckets",
   "pointer",
   "label",
   "comparison",
@@ -133,7 +197,10 @@ for (const kind of [
       foreignObject: objectOfKind(resolvedSnapshot, foreignKinds[kind]),
       logicalHeight: 420,
       logicalWidth: 960,
-      object: objectOfKind(resolvedSnapshot, kind),
+      object:
+        kind === "buckets"
+          ? bucketsObject
+          : objectOfKind(resolvedSnapshot, kind),
       untrustedText,
     });
   });

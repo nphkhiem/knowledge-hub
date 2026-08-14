@@ -125,14 +125,27 @@ export function createRenderContext(
    * two arrays draw on top of each other and sized the second one's cells for
    * the first one's length.
    */
-  const arrays = snapshot.objects.filter((object) => object.kind === "array");
+  // Buckets share the array band system so a figure mixing them lines up.
+  const arrays = snapshot.objects.filter(
+    (object) => object.kind === "array" || object.kind === "buckets",
+  );
   const geometries = new Map<string, ArrayGeometry>(
     arrays.map((object, rowIndex) => [
       object.id,
-      computeArrayGeometry(object.values.length, rowIndex),
+      computeArrayGeometry(
+        object.kind === "array" ? object.values.length : object.slotCount,
+        rowIndex,
+      ),
     ]),
   );
-  const first = computeArrayGeometry(arrays[0]?.values.length ?? 0);
+  const head = arrays[0];
+  const first = computeArrayGeometry(
+    head === undefined
+      ? 0
+      : head.kind === "array"
+        ? head.values.length
+        : head.slotCount,
+  );
 
   return {
     geometry: first,

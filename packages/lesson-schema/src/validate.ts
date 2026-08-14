@@ -16,9 +16,11 @@ const supportedActions = [
   "disconnect",
   "enqueue",
   "dequeue",
+  "insert",
 ] as const;
 const supportedPrimitives = [
   "array",
+  "buckets",
   "pointer",
   "label",
   "comparison",
@@ -62,7 +64,7 @@ function unsupportedActionDiagnostic(input: VersionOneInput, file: string) {
           file,
           path: `timeline[${stepIndex}].actions[${actionIndex}].type`,
           message:
-            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue.",
+            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert.",
         };
       }
     }
@@ -93,7 +95,7 @@ function unsupportedPrimitiveDiagnostic(input: VersionOneInput, file: string) {
         file,
         path: `scene.objects[${objectIndex}].kind`,
         message:
-          "Supported primitives: array, pointer, label, comparison, result.",
+          "Supported primitives: array, buckets, pointer, label, comparison, result.",
       };
     }
   }
