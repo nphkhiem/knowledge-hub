@@ -21,14 +21,14 @@ interface CellAppearance {
   readonly fontWeight: number;
 }
 
-const emphasizedCell: CellAppearance = {
+export const emphasizedCell: CellAppearance = {
   fill: "--color-visual-compare-fill",
   fontWeight: 600,
   stroke: "--color-visual-compare-stroke",
   strokeWidth: "--visual-active-stroke-width",
 };
 
-const plainCell: CellAppearance = {
+export const plainCell: CellAppearance = {
   fill: "--color-visual-object-fill",
   fontWeight: 400,
   stroke: "--color-visual-object-stroke",

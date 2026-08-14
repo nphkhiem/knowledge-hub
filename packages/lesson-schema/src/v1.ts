@@ -9,6 +9,7 @@ const actionTargetSchema = { objectId: objectIdSchema };
 
 export const primitiveKindSchema = z.enum([
   "array",
+  "buckets",
   "pointer",
   "label",
   "comparison",
@@ -41,6 +42,27 @@ export const comparisonPrimitiveSchema = z.strictObject({
   rightPointerId: objectIdSchema,
   target: z.number(),
 });
+/**
+ * A row of slots, each holding zero or more named entries.
+ *
+ * The first primitive that is not about a numeric array. Buckets exist to show
+ * what a hash trades: a key names its slot directly, so a lookup goes to one
+ * place instead of scanning, and two keys naming the same slot is the cost.
+ */
+export const bucketsPrimitiveSchema = z.strictObject({
+  id: objectIdSchema,
+  kind: z.literal("buckets"),
+  label: z.string().min(1),
+  slotCount: z.number().int().min(2).max(12),
+  entries: z
+    .array(
+      z.strictObject({
+        key: z.string().min(1).max(24),
+        slot: z.number().int().min(0),
+      }),
+    )
+    .max(24),
+});
 export const resultPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
   kind: z.literal("result"),
@@ -49,6 +71,7 @@ export const resultPrimitiveSchema = z.strictObject({
 
 export const primitiveSchema = z.discriminatedUnion("kind", [
   arrayPrimitiveSchema,
+  bucketsPrimitiveSchema,
   pointerPrimitiveSchema,
   labelPrimitiveSchema,
   comparisonPrimitiveSchema,
@@ -107,6 +130,13 @@ export const dequeueActionSchema = z.strictObject({
   type: z.literal("dequeue"),
   ...actionTargetSchema,
 });
+/** Places a named entry into one slot of a buckets object. */
+export const insertActionSchema = z.strictObject({
+  type: z.literal("insert"),
+  ...actionTargetSchema,
+  key: z.string().min(1).max(24),
+  slot: z.number().int().min(0),
+});
 
 export const actionSchema = z.discriminatedUnion("type", [
   showActionSchema,
@@ -119,6 +149,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   disconnectActionSchema,
   enqueueActionSchema,
   dequeueActionSchema,
+  insertActionSchema,
 ]);
 
 export const timelineStepSchema = z.strictObject({

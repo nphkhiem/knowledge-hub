@@ -1159,3 +1159,86 @@ test("compiles each declared implementation with its own source text", async () 
     },
   ]);
 });
+
+function bucketsSource(
+  actions: readonly unknown[],
+  slotCount = 4,
+): LessonSourceV1 {
+  const migrated = migrateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        objects: [
+          {
+            id: "slots",
+            kind: "buckets",
+            label: "Buckets",
+            slotCount,
+            entries: [],
+          },
+        ],
+      },
+      timeline: [
+        {
+          id: "only",
+          narration: "Place keys into slots.",
+          terminal: true,
+          actions,
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the buckets fixture to be valid.");
+  }
+  return migrated.value;
+}
+
+test("fills buckets slots by inserting keys, collisions included", () => {
+  const compiled = compileLesson(
+    bucketsSource([
+      { type: "insert", objectId: "slots", key: "alpha", slot: 0 },
+      { type: "insert", objectId: "slots", key: "beta", slot: 2 },
+      { type: "insert", objectId: "slots", key: "gamma", slot: 2 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(true);
+  if (!compiled.ok) return;
+  const last = compiled.value.snapshots.at(-1)?.objects[0];
+
+  // Two keys naming one slot is the trade the lesson exists to show, so the
+  // compiler must record it rather than treat it as a conflict.
+  expect(last?.kind === "buckets" ? last.entries : undefined).toEqual([
+    { key: "alpha", slot: 0 },
+    { key: "beta", slot: 2 },
+    { key: "gamma", slot: 2 },
+  ]);
+});
+
+test("rejects an insert into a slot the buckets object does not have", () => {
+  const compiled = compileLesson(
+    bucketsSource(
+      [{ type: "insert", objectId: "slots", key: "a", slot: 9 }],
+      2,
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("rejects inserting the same key twice", () => {
+  // A repeated key would misrepresent what a lookup finds.
+  const compiled = compileLesson(
+    bucketsSource([
+      { type: "insert", objectId: "slots", key: "alpha", slot: 0 },
+      { type: "insert", objectId: "slots", key: "alpha", slot: 1 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
