@@ -69,6 +69,55 @@ const bucketsSnapshot: SemanticSnapshot = {
   highlights: { slots: [2] },
 };
 
+/**
+ * A window draws over an array's own band instead of claiming a row, so its
+ * scene must hold the array it covers. It gets a dedicated one rather than
+ * joining Two Pointers, so the covered values stay short enough to state.
+ */
+const windowArray: CompiledSceneObject = {
+  id: "readings",
+  kind: "array",
+  visible: true,
+  label: "Readings",
+  values: [4, 2, 7, 1, 9, 3],
+};
+
+const windowObject: CompiledSceneObject = {
+  id: "frame",
+  kind: "window",
+  visible: true,
+  label: "Window",
+  targetObjectId: "readings",
+  start: 1,
+  end: 3,
+};
+
+/** The widest window over the longest array, for the narrow-geometry check. */
+const wideWindowArray: CompiledSceneObject = {
+  ...windowArray,
+  values: Array.from({ length: 40 }, (_, at) => at + 1),
+};
+
+const wideWindow: CompiledSceneObject = {
+  ...windowObject,
+  start: 0,
+  end: 39,
+};
+
+const untrustedWindow: CompiledSceneObject = {
+  ...windowObject,
+  label: untrustedText,
+};
+
+function windowSceneOf(
+  array: CompiledSceneObject,
+  frame: CompiledSceneObject,
+): SemanticSnapshot {
+  return { ...resolvedSnapshot, objects: [array, frame], highlights: {} };
+}
+
+const windowSnapshot = windowSceneOf(windowArray, windowObject);
+
 function objectOfKind(
   snapshot: SemanticSnapshot,
   kind: CompiledSceneObject["kind"],
@@ -98,6 +147,7 @@ const untrustedSnapshot = mapObjects(resolvedSnapshot, (object) => {
     case "array":
     case "buckets":
     case "pointer":
+    case "window":
       return { ...object, label: untrustedText };
     case "label":
       return { ...object, text: untrustedText };
@@ -118,6 +168,7 @@ const authorTextKinds: ReadonlySet<CompiledSceneObject["kind"]> = new Set([
   "array",
   "buckets",
   "pointer",
+  "window",
   "label",
 ]);
 
@@ -154,6 +205,27 @@ function contractFor(
       renderUntrusted: () => primitive.render(untrustedBuckets, hostile),
     };
   }
+  if (kind === "window") {
+    const scene = createRenderContext(windowSnapshot, "interactive");
+    const wide = createRenderContext(
+      windowSceneOf(wideWindowArray, wideWindow),
+      "interactive",
+    );
+    const hostile = createRenderContext(
+      windowSceneOf(windowArray, untrustedWindow),
+      "interactive",
+    );
+    return {
+      accepts: (object) => primitive.accepts(object),
+      describe: (object) => primitive.describe(object, scene),
+      kind,
+      renderInteractive: (object) => primitive.render(object, scene),
+      renderNarrow: () => primitive.render(wideWindow, wide),
+      renderStatic: (object) =>
+        primitive.render(object, createRenderContext(windowSnapshot, "static")),
+      renderUntrusted: () => primitive.render(untrustedWindow, hostile),
+    };
+  }
   const interactive = createRenderContext(resolvedSnapshot, "interactive");
   const staticView = createRenderContext(resolvedSnapshot, "static");
   const narrow = createRenderContext(narrowSnapshot, "interactive");
@@ -179,13 +251,22 @@ const foreignKinds: Readonly<
   comparison: "result",
   label: "array",
   pointer: "label",
+  window: "array",
   result: "comparison",
+};
+
+const fixtureObjects: Partial<
+  Record<CompiledSceneObject["kind"], CompiledSceneObject>
+> = {
+  buckets: bucketsObject,
+  window: windowObject,
 };
 
 for (const kind of [
   "array",
   "buckets",
   "pointer",
+  "window",
   "label",
   "comparison",
   "result",
@@ -197,10 +278,7 @@ for (const kind of [
       foreignObject: objectOfKind(resolvedSnapshot, foreignKinds[kind]),
       logicalHeight: 420,
       logicalWidth: 960,
-      object:
-        kind === "buckets"
-          ? bucketsObject
-          : objectOfKind(resolvedSnapshot, kind),
+      object: fixtureObjects[kind] ?? objectOfKind(resolvedSnapshot, kind),
       untrustedText,
     });
   });

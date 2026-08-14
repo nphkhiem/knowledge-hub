@@ -173,6 +173,61 @@ export function applyAction(
       state.pointers[object.id] = action.toIndex;
       return { ok: true, value: state };
     }
+    case "slide": {
+      if (object.kind !== "window") {
+        return failure(
+          context,
+          `Action "slide" requires a window, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      const target = state.objectsById.get(object.targetObjectId);
+      if (!target || target.kind !== "array") {
+        return failure(
+          context,
+          `Window "${object.id}" requires an array target.`,
+        );
+      }
+      if (action.toEnd < action.toStart) {
+        return failure(
+          context,
+          `Window "${object.id}" cannot end at ${action.toEnd}, before its start ${action.toStart}.`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      if (action.toEnd >= target.values.length) {
+        return failure(
+          context,
+          `Window range ${action.toStart} to ${action.toEnd} is outside array "${target.id}".`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      /**
+       * A slide moves a window; it does not resize one. Letting the width drift
+       * would let a lesson claim a fixed window while showing a growing one,
+       * which is the single thing this primitive exists to show honestly. A
+       * lesson that needs a changing width needs its own action, not this one.
+       */
+      const width = object.end - object.start;
+      const requested = action.toEnd - action.toStart;
+      if (requested !== width) {
+        return failure(
+          context,
+          `Action "slide" keeps the width of "${object.id}". It covers ${width + 1} cells, but ${action.toStart} to ${action.toEnd} covers ${requested + 1}.`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      replaceObject(state, {
+        ...object,
+        start: action.toStart,
+        end: action.toEnd,
+      });
+      return { ok: true, value: state };
+    }
     case "insert": {
       if (object.kind !== "buckets") {
         return failure(

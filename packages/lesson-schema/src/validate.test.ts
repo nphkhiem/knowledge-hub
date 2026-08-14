@@ -63,7 +63,7 @@ test("rejects an executable action with a stable diagnostic", () => {
       file: "lesson.yaml",
       path: "timeline[0].actions[0].type",
       message:
-        "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert.",
+        "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide.",
     });
   }
 });
@@ -145,7 +145,7 @@ test("rejects a primitive outside the V1 catalog", () => {
       file: "lesson.yaml",
       path: "scene.objects[0].kind",
       message:
-        "Supported primitives: array, buckets, pointer, label, comparison, result.",
+        "Supported primitives: array, buckets, pointer, window, label, comparison, result.",
     });
   }
 });

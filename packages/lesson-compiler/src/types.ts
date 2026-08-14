@@ -57,6 +57,14 @@ export type CompiledSceneObject =
       readonly index: number;
     })
   | (CompiledSceneObjectBase & {
+      readonly kind: "window";
+      readonly label: string;
+      readonly targetObjectId: string;
+      /** Inclusive bounds, both inside the target array. */
+      readonly start: number;
+      readonly end: number;
+    })
+  | (CompiledSceneObjectBase & {
       readonly kind: "label";
       readonly text: string;
     })

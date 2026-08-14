@@ -1269,3 +1269,150 @@ test("rejects highlighting a slot the buckets object does not have", () => {
 
   expect(compiled.ok).toBe(false);
 });
+
+function windowSource(
+  actions: readonly unknown[],
+  frame: Readonly<{ start: number; end: number }> = { start: 0, end: 2 },
+): LessonSourceV1 {
+  const migrated = migrateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        objects: [
+          {
+            id: "readings",
+            kind: "array",
+            label: "Readings",
+            values: [4, 2, 7, 1, 9, 3],
+          },
+          {
+            id: "frame",
+            kind: "window",
+            label: "Window",
+            targetObjectId: "readings",
+            start: frame.start,
+            end: frame.end,
+          },
+        ],
+      },
+      timeline: [
+        {
+          id: "only",
+          narration: "Cross the readings one position at a time.",
+          terminal: true,
+          actions,
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the window fixture to be valid.");
+  }
+  return migrated.value;
+}
+
+function compiledWindow(
+  compiled: ReturnType<typeof compileLesson>,
+): Readonly<{ start: number; end: number }> | undefined {
+  if (!compiled.ok) return undefined;
+  const last = compiled.value.snapshots
+    .at(-1)
+    ?.objects.find((object) => object.kind === "window");
+  return last?.kind === "window"
+    ? { start: last.start, end: last.end }
+    : undefined;
+}
+
+test("slides a window across the array one position at a time", () => {
+  const compiled = compileLesson(
+    windowSource([
+      { type: "slide", objectId: "frame", toStart: 1, toEnd: 3 },
+      { type: "slide", objectId: "frame", toStart: 2, toEnd: 4 },
+      { type: "slide", objectId: "frame", toStart: 3, toEnd: 5 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiledWindow(compiled)).toEqual({ start: 3, end: 5 });
+});
+
+test("rejects a slide that changes the width of a window", () => {
+  // A fixed window that quietly grew would show the opposite of the lesson.
+  const compiled = compileLesson(
+    windowSource([{ type: "slide", objectId: "frame", toStart: 1, toEnd: 4 }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "slide" keeps the width of "frame". It covers 3 cells, but 1 to 4 covers 4.',
+  );
+});
+
+test("rejects a slide that runs off the end of the array", () => {
+  const compiled = compileLesson(
+    windowSource([{ type: "slide", objectId: "frame", toStart: 4, toEnd: 6 }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("rejects a slide whose range ends before it starts", () => {
+  const compiled = compileLesson(
+    windowSource([{ type: "slide", objectId: "frame", toStart: 3, toEnd: 1 }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("rejects sliding something that is not a window", () => {
+  const compiled = compileLesson(
+    windowSource([
+      { type: "slide", objectId: "readings", toStart: 0, toEnd: 2 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "slide" requires a window, but "readings" resolves to an array.',
+  );
+});
+
+test("rejects a window whose authored range falls outside its array", () => {
+  const compiled = compileLesson(
+    windowSource([{ type: "slide", objectId: "frame", toStart: 0, toEnd: 2 }], {
+      start: 4,
+      end: 9,
+    }),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Window "frame" covers 4 to 9, outside target array "readings" (length 6).',
+  );
+});
+
+test("reports every bad slide in a lesson rather than only the first", () => {
+  // Preflight carries its own copy of these rules so one compile names them all.
+  const compiled = compileLesson(
+    windowSource([
+      { type: "slide", objectId: "frame", toStart: 1, toEnd: 4 },
+      { type: "slide", objectId: "frame", toStart: 9, toEnd: 11 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(
+    compiled.diagnostics.filter(({ path }) => path.endsWith(".toEnd")).length,
+  ).toBeGreaterThan(1);
+});
