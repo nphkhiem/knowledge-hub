@@ -1,0 +1,133 @@
+schemaVersion: 1
+id: "dsa.fixed-sliding-window"
+slug: "fixed-sliding-window"
+domain: "dsa"
+collection: "interview-foundations"
+order: 5
+difficulty: "easy"
+license: "CC-BY-4.0"
+title: "Fixed Sliding Window"
+durationMinutes: 4
+objective: "Explain how a window of fixed width crosses a sequence once, updating its total instead of rebuilding it."
+recognitionSignals:
+  - "Every group of a fixed size in a sequence has to be scored."
+  - "Neighboring groups overlap in everything but their first and last value."
+  - "A direct answer keeps re-adding values the previous answer already added."
+limitations:
+  - "The width has to be known in advance, so a question about the best group of any size is a different pattern."
+  - "A value leaving has to be removable from the running answer, which rules out operations with no inverse, such as a maximum."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/window_totals.py"
+    - language: "typescript"
+      file: "examples/window-totals.ts"
+    - language: "java"
+      file: "examples/WindowTotals.java"
+    - language: "cpp"
+      file: "examples/window_totals.cpp"
+    - language: "go"
+      file: "examples/window_totals.go"
+scene:
+  objects:
+    - id: "values"
+      kind: "array"
+      label: "Values"
+      values: [5, 1, 8, 2, 3, 7]
+    - id: "frame"
+      kind: "window"
+      label: "Window"
+      targetObjectId: "values"
+      start: 0
+      end: 2
+    - id: "question"
+      kind: "label"
+      text: "Largest total of any three neighbors"
+timeline:
+  - id: "first-window"
+    narration: "The first three values total 14. Reaching that took two additions."
+    actions:
+      - type: "highlight"
+        objectId: "values"
+        indices: [0, 1, 2]
+        tone: "compare"
+  - id: "slide-once"
+    narration: "Move one step right. 5 leaves and 2 arrives, so the total is 14 minus 5 plus 2, which is 11. The 1 and the 8 were never added again."
+    actions:
+      - type: "slide"
+        objectId: "frame"
+        toStart: 1
+        toEnd: 3
+      - type: "highlight"
+        objectId: "values"
+        indices: [0, 3]
+        tone: "compare"
+  - id: "slide-twice"
+    narration: "Again. 1 leaves and 3 arrives, so 11 minus 1 plus 3 is 13."
+    actions:
+      - type: "slide"
+        objectId: "frame"
+        toStart: 2
+        toEnd: 4
+      - type: "highlight"
+        objectId: "values"
+        indices: [1, 4]
+        tone: "compare"
+  - id: "slide-thrice"
+    narration: "Once more. 8 leaves and 7 arrives, so 13 minus 8 plus 7 is 12."
+    actions:
+      - type: "slide"
+        objectId: "frame"
+        toStart: 3
+        toEnd: 5
+      - type: "highlight"
+        objectId: "values"
+        indices: [2, 5]
+        tone: "compare"
+  - id: "best-window"
+    narration: "Four windows. After the first, each move cost one subtraction and one addition. The largest total was the first one, 14."
+    terminal: true
+    actions:
+      - type: "slide"
+        objectId: "frame"
+        toStart: 0
+        toEnd: 2
+      - type: "highlight"
+        objectId: "values"
+        indices: [0, 1, 2]
+        tone: "success"
+modelCheck:
+  prompt: "The window is widened from three values to fifty. What does each move cost?"
+  options:
+    - id: "fifty"
+      label: "Fifty additions, because the window holds fifty values"
+    - id: "two"
+      label: "One subtraction and one addition, the same as before"
+    - id: "depends"
+      label: "It depends on how large the values are"
+  correctOptionId: "two"
+  explanation: "A move changes the window by exactly two values whatever its width: the one leaving and the one arriving. The total is updated rather than rebuilt, which is why the whole pass stays proportional to the length of the sequence instead of growing with the window."
+accessibility:
+  summary: "An animation of a three-value window moving along a sequence, updating its total by removing the value that leaves and adding the value that arrives."
+  initialDescription: "Six values with a window covering the first three, and the question asking for the largest total of any three neighbors."
+  motionEquivalentLabel: "Window totals step by step"
+evidence:
+  verifiedOn: "2026-08-14"
+  scope: "Describes a window of fixed width over a sequence that does not change, combined with an operation that has an inverse. Variable width windows and windows over changing data are out of scope."
+  sources:
+    - title: "Competitive Programmer's Handbook, chapter 8: Amortized analysis"
+      citation: "Laaksonen, Antti. Competitive Programmer's Handbook, chapter 8."
+      publisher: "Antti Laaksonen"
+      accessedOn: "2026-08-14"
+      supports:
+        - "A sliding window is a constant-size subarray that moves through an array from left to right."
+        - "Each move of the window removes one element and adds one element, so its contents are updated rather than recomputed."
+    - title: "Introduction to Algorithms, fourth edition, chapter 3: Characterizing Running Times"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 3."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-14"
+      supports:
+        - "Work that is constant per position, repeated across n positions, grows linearly with n."

@@ -82,6 +82,22 @@ Two enforcement points had to change for one rule, because `applyAction` and `pr
 
 **7 recurred, and it was mine.** After documenting that the suite must not encode the catalog size, I hardcoded two lesson titles into `home.spec.ts` while fixing that very problem. It broke on the next lesson. The assertion now derives declared order from the page and checks it ascends, which cannot rot as content lands.
 
+## Reviewed at five lessons, 2026-08-14
+
+"Fixed Sliding Window" was the fourth growth, and it contradicted the rule the previous review wrote down.
+
+**1, ranking.** Sound at five, and separating lessons for a reason rather than by luck. Searching `window` returns Fixed Sliding Window ahead of Prefix Sums, a title match over a prose match. Searching `total` returns them the other way round, because "the total of a range" is one of Prefix Sums' recognition signals while the other lesson matches only in its objective. That is the weighting doing what it was designed to do, and it is the first query where two lessons both genuinely matched and the ranking had to choose between them.
+
+One property worth naming rather than rediscovering: the prose test is `includes`, a substring match over the joined words, so `sum` matches "sums" and "summing", and a short query can land inside a longer word. That is generous rather than wrong at this size, and it is the kind of thing that becomes wrong quietly.
+
+**2, schema generality. The pattern recorded at three lessons predicted this one wrong.** That pattern said a lesson whose subject is a **sequence** needs no primitive work and ships as one pull request. Fixed Sliding Window's subject is a sequence, and it needed a new primitive, a new action, and two pull requests anyway.
+
+The better rule, which fits all five lessons rather than the first four: **a lesson needs a new primitive when it puts a new thing on the screen, not when its data stops being a sequence.** A window is a new thing, a range over an array, even though the array underneath is the one Two Pointers already uses. Prefix Sums added nothing because a second array is still an array. Hash Lookup added `buckets` because buckets are not an array. On that reading the remaining tickets should be re-read for what the reader must *see*, not for what the data *is*, and the count of twelve lessons needing new primitives is a guess made under the old rule.
+
+**5, aggregates.** Correct at five with no defects. Home reads "5 of 15 lessons published so far, 20 minutes of reading in DSA", the path detail "5 of 15 lessons published, 20 minutes of reading in DSA", the paths index "5 of 15 published", the DSA domain page "5 lessons published, 20 minutes of reading", and Explore "Showing all 5 lessons". The arithmetic and every plural check out.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
