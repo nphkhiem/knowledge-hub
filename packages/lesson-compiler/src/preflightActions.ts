@@ -58,6 +58,53 @@ export function validateStaticActions(
           }
           break;
         }
+        case "slide": {
+          // Duplicated from applyAction so every bad slide in a lesson is
+          // reported at once. The width is read from the authored window
+          // rather than from a running state, which is sound precisely because
+          // no slide is allowed to change it.
+          if (object.kind !== "window") {
+            diagnostics.push({
+              code: "reference.wrong-kind",
+              file,
+              path: `${path}.objectId`,
+              message: `Action "slide" requires a window, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
+            });
+            break;
+          }
+          if (action.toEnd < action.toStart) {
+            diagnostics.push({
+              code: "reference.invalid",
+              file,
+              path: `${path}.toEnd`,
+              message: `Window "${object.id}" cannot end at ${action.toEnd}, before its start ${action.toStart}.`,
+            });
+            break;
+          }
+          const target = objectFor(object.targetObjectId);
+          if (
+            target?.kind === "array" &&
+            action.toEnd >= target.values.length
+          ) {
+            diagnostics.push({
+              code: "reference.invalid",
+              file,
+              path: `${path}.toEnd`,
+              message: `Window range ${action.toStart} to ${action.toEnd} is outside array "${target.id}".`,
+            });
+          }
+          const width = object.end - object.start;
+          const requested = action.toEnd - action.toStart;
+          if (width >= 0 && requested !== width) {
+            diagnostics.push({
+              code: "reference.invalid",
+              file,
+              path: `${path}.toEnd`,
+              message: `Action "slide" keeps the width of "${object.id}". It covers ${width + 1} cells, but ${action.toStart} to ${action.toEnd} covers ${requested + 1}.`,
+            });
+          }
+          break;
+        }
         case "highlight": {
           // Both kinds that have positions accept a highlight. This rule is
           // duplicated from applyAction because preflight reports every

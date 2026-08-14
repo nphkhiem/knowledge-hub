@@ -11,6 +11,7 @@ export const primitiveKindSchema = z.enum([
   "array",
   "buckets",
   "pointer",
+  "window",
   "label",
   "comparison",
   "result",
@@ -28,6 +29,24 @@ export const pointerPrimitiveSchema = z.strictObject({
   label: z.string().min(1),
   targetObjectId: objectIdSchema,
   index: z.number().int().min(0),
+});
+/**
+ * An inclusive range of an array's indices, held as its own object.
+ *
+ * A window is a range rather than a start and a width, so a lesson that grows
+ * or shrinks one can extend this shape instead of replacing it. What keeps a
+ * window fixed is the slide action, which refuses to change its width.
+ *
+ * Both bounds are checked against the array the window covers by the compiler,
+ * the way a pointer's index is, because the schema cannot see the array here.
+ */
+export const windowPrimitiveSchema = z.strictObject({
+  id: objectIdSchema,
+  kind: z.literal("window"),
+  label: z.string().min(1),
+  targetObjectId: objectIdSchema,
+  start: z.number().int().min(0),
+  end: z.number().int().min(0),
 });
 export const labelPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
@@ -73,6 +92,7 @@ export const primitiveSchema = z.discriminatedUnion("kind", [
   arrayPrimitiveSchema,
   bucketsPrimitiveSchema,
   pointerPrimitiveSchema,
+  windowPrimitiveSchema,
   labelPrimitiveSchema,
   comparisonPrimitiveSchema,
   resultPrimitiveSchema,
@@ -137,6 +157,19 @@ export const insertActionSchema = z.strictObject({
   key: z.string().min(1).max(24),
   slot: z.number().int().min(0),
 });
+/**
+ * Moves a window to a new inclusive range.
+ *
+ * The range is absolute rather than a step count, so a step reads as the
+ * position it produces and cannot drift from an accumulated offset. The
+ * compiler rejects a slide that changes the window's width.
+ */
+export const slideActionSchema = z.strictObject({
+  type: z.literal("slide"),
+  ...actionTargetSchema,
+  toStart: z.number().int().min(0),
+  toEnd: z.number().int().min(0),
+});
 
 export const actionSchema = z.discriminatedUnion("type", [
   showActionSchema,
@@ -150,6 +183,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   enqueueActionSchema,
   dequeueActionSchema,
   insertActionSchema,
+  slideActionSchema,
 ]);
 
 export const timelineStepSchema = z.strictObject({

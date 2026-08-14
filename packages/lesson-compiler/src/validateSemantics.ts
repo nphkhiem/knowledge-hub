@@ -57,6 +57,44 @@ export function validateLessonSemantics(
         });
       }
     }
+    if (object.kind === "window") {
+      const target = objectsById.get(object.targetObjectId);
+      if (!target) {
+        diagnostics.push({
+          code: "reference.broken",
+          file,
+          path: `scene.objects[${objectIndex}].targetObjectId`,
+          message: `Reference "${object.targetObjectId}" does not resolve to a scene object.`,
+        });
+      } else if (target.kind !== "array") {
+        diagnostics.push({
+          code: "reference.wrong-kind",
+          file,
+          path: `scene.objects[${objectIndex}].targetObjectId`,
+          message: `Reference "${object.targetObjectId}" must resolve to an array, but resolves to ${primitiveWithArticle(target.kind)}.`,
+        });
+      } else {
+        /**
+         * Both bounds are checked here rather than clamped later. A window that
+         * silently narrowed to fit would show a width the lesson never wrote.
+         */
+        if (object.end < object.start) {
+          diagnostics.push({
+            code: "reference.invalid",
+            file,
+            path: `scene.objects[${objectIndex}].end`,
+            message: `Window "${object.id}" ends at ${object.end}, before its start ${object.start}.`,
+          });
+        } else if (object.end >= target.values.length) {
+          diagnostics.push({
+            code: "reference.invalid",
+            file,
+            path: `scene.objects[${objectIndex}].end`,
+            message: `Window "${object.id}" covers ${object.start} to ${object.end}, outside target array "${target.id}" (length ${target.values.length}).`,
+          });
+        }
+      }
+    }
     if (object.kind === "comparison") {
       const references = [
         ["arrayObjectId", object.arrayObjectId, "array"],
