@@ -1,0 +1,112 @@
+schemaVersion: 1
+id: "dsa.prefix-sums"
+slug: "prefix-sums"
+domain: "dsa"
+collection: "interview-foundations"
+order: 4
+difficulty: "easy"
+license: "CC-BY-4.0"
+title: "Prefix Sums"
+durationMinutes: 4
+objective: "Explain how summing once in advance turns a repeated range question into one subtraction."
+recognitionSignals:
+  - "The same collection is asked for the total of a range, again and again."
+  - "Each answer re-adds numbers that an earlier answer already added."
+  - "The values do not change between questions."
+limitations:
+  - "The precomputed sums are only valid while the values stay put, so a single update invalidates every prefix after it."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/range_sums.py"
+    - language: "typescript"
+      file: "examples/range-sums.ts"
+    - language: "java"
+      file: "examples/RangeSums.java"
+    - language: "cpp"
+      file: "examples/range_sums.cpp"
+    - language: "go"
+      file: "examples/range_sums.go"
+scene:
+  objects:
+    - id: "values"
+      kind: "array"
+      label: "Values"
+      values: [3, 1, 4, 1, 5, 9]
+    - id: "prefix"
+      kind: "array"
+      label: "Running total after each value"
+      values: [3, 4, 8, 9, 14, 23]
+    - id: "question"
+      kind: "label"
+      text: "Total of positions 2 to 4"
+timeline:
+  - id: "scan-the-range"
+    narration: "Answering directly means adding 4, 1 and 5. Three additions for one question."
+    actions:
+      - type: "highlight"
+        objectId: "values"
+        indices: [2, 3, 4]
+        tone: "compare"
+  - id: "show-prefix"
+    narration: "The second row was built once: each entry is the total of everything up to that position."
+    actions:
+      - type: "highlight"
+        objectId: "prefix"
+        indices: [0, 1, 2, 3, 4, 5]
+        tone: "compare"
+  - id: "read-end"
+    narration: "The total up to position 4 is 14."
+    actions:
+      - type: "highlight"
+        objectId: "prefix"
+        indices: [4]
+        tone: "compare"
+  - id: "read-before"
+    narration: "The total up to position 1, just before the range, is 4."
+    actions:
+      - type: "highlight"
+        objectId: "prefix"
+        indices: [1]
+        tone: "compare"
+  - id: "subtract"
+    narration: "14 minus 4 is 10, which is the range total. One subtraction, no matter how long the range is."
+    terminal: true
+    actions:
+      - type: "highlight"
+        objectId: "prefix"
+        indices: [1, 4]
+        tone: "success"
+      - type: "highlight"
+        objectId: "values"
+        indices: [2, 3, 4]
+        tone: "success"
+modelCheck:
+  prompt: "The range is widened to positions 0 to 5. How much more work is the subtraction approach?"
+  options:
+    - id: "more"
+      label: "More, because the range holds more values"
+    - id: "same"
+      label: "The same, because it is still one subtraction"
+    - id: "rebuild"
+      label: "The running totals must be rebuilt for the wider range"
+  correctOptionId: "same"
+  explanation: "The answer reads two entries and subtracts, whatever the range covers. That is the whole trade: one pass to build the running totals buys a constant-cost answer for every range question afterwards."
+accessibility:
+  summary: "An animation contrasting adding three values directly with reading two running totals and subtracting them to get the same range total."
+  initialDescription: "Six values and their running totals, with the question asking for the total of positions 2 to 4."
+  motionEquivalentLabel: "Range total step by step"
+evidence:
+  verifiedOn: "2026-08-12"
+  scope: "Describes a one-dimensional prefix sum over a static sequence of numbers. Updates, multiple dimensions, and non-invertible operations are out of scope."
+  sources:
+    - title: "Introduction to Algorithms, fourth edition, chapter 4 exercises on cumulative sums"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-12"
+      supports:
+        - "The sum of a contiguous range equals the difference of two cumulative sums."
+        - "Building cumulative sums takes one pass over the sequence."

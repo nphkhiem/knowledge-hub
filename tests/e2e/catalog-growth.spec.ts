@@ -120,5 +120,5 @@ test("PROMPT: review the five catalog assumptions once a second lesson exists", 
   expect(
     catalog.length,
     "The catalog grew. Work through docs/catalog-assumptions.md items 1, 2, and 5, then raise this number.",
-  ).toBe(3);
+  ).toBe(4);
 });
