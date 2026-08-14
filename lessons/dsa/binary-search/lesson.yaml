@@ -1,0 +1,131 @@
+schemaVersion: 1
+id: "dsa.binary-search"
+slug: "binary-search"
+domain: "dsa"
+collection: "interview-foundations"
+order: 6
+difficulty: "easy"
+license: "CC-BY-4.0"
+title: "Binary Search"
+durationMinutes: 4
+objective: "Explain how comparing against the middle of an ordered range discards half the remaining candidates at every step."
+recognitionSignals:
+  - "The collection is already sorted, and the question is where one value sits."
+  - "A scan would examine values the existing order has already ruled out."
+  - "The same collection is searched far more often than it changes."
+limitations:
+  - "The order has to exist already. Sorting a collection to enable a single search costs more than scanning it once would."
+  - "It needs to reach the middle of a range directly, so a structure that can only be walked from one end cannot use it."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/binary_search.py"
+    - language: "typescript"
+      file: "examples/binary-search.ts"
+    - language: "java"
+      file: "examples/BinarySearch.java"
+    - language: "cpp"
+      file: "examples/binary_search.cpp"
+    - language: "go"
+      file: "examples/binary_search.go"
+scene:
+  objects:
+    - id: "values"
+      kind: "array"
+      label: "Sorted values"
+      values: [2, 5, 8, 12, 16, 23, 38, 56, 72, 91]
+    - id: "frame"
+      kind: "window"
+      label: "Still possible"
+      targetObjectId: "values"
+      start: 0
+      end: 9
+    - id: "probe"
+      kind: "pointer"
+      label: "Middle"
+      targetObjectId: "values"
+      index: 4
+    - id: "against-target"
+      kind: "comparison"
+      arrayObjectId: "values"
+      leftPointerId: "probe"
+      target: 23
+    - id: "question"
+      kind: "label"
+      text: "Where is 23?"
+timeline:
+  - id: "first-probe"
+    narration: "Ten values in order. Rather than start at one end, look at the middle of the range: 16."
+    actions:
+      - type: "compare"
+        objectId: "against-target"
+  - id: "drop-the-small-half"
+    narration: "16 is too small, and everything left of it is smaller still. Five values are ruled out without being looked at."
+    actions:
+      - type: "narrow"
+        objectId: "frame"
+        toStart: 5
+        toEnd: 9
+      - type: "move"
+        objectId: "probe"
+        toIndex: 7
+  - id: "second-probe"
+    narration: "The middle of what is left is 56, which is too large. Everything from it rightward goes."
+    actions:
+      - type: "compare"
+        objectId: "against-target"
+  - id: "drop-the-large-half"
+    narration: "Two values remain, and the middle of them is the one at position 5."
+    actions:
+      - type: "narrow"
+        objectId: "frame"
+        toStart: 5
+        toEnd: 6
+      - type: "move"
+        objectId: "probe"
+        toIndex: 5
+  - id: "found"
+    narration: "23, found in three looks at ten values. Each look halved what was still possible."
+    terminal: true
+    actions:
+      - type: "compare"
+        objectId: "against-target"
+      - type: "highlight"
+        objectId: "values"
+        indices: [5]
+        tone: "success"
+modelCheck:
+  prompt: "The collection grows from ten values to twenty. How many more looks does the search need?"
+  options:
+    - id: "double"
+      label: "About twice as many, because there is twice as much to search"
+    - id: "one-more"
+      label: "One more"
+    - id: "same"
+      label: "The same, because it still starts in the middle"
+  correctOptionId: "one-more"
+  explanation: "Every look halves what is left, so the question is how many halvings reach one value. Doubling the collection adds exactly one halving. Going from a thousand values to a million adds ten looks, not a thousand times the work."
+accessibility:
+  summary: "An animation of a search range shrinking by half at each step, as the value at the middle of the range is weighed against the one being sought."
+  initialDescription: "Ten sorted values with the whole range still possible and the middle position under examination, looking for 23."
+  motionEquivalentLabel: "Search steps one at a time"
+evidence:
+  verifiedOn: "2026-08-14"
+  scope: "Describes searching a sorted, randomly addressable collection that does not change during the search. Insertion, deletion, and searching by anything other than the ordered key are out of scope."
+  sources:
+    - title: "The Art of Computer Programming, volume 3, section 6.2.1: Searching an Ordered Table"
+      citation: "Knuth, Donald E. The Art of Computer Programming, Volume 3: Sorting and Searching, 2nd ed. Addison-Wesley, 1998, section 6.2.1."
+      publisher: "Addison-Wesley"
+      accessedOn: "2026-08-14"
+      supports:
+        - "Binary search compares the sought key against the middle element of an ordered table and continues in whichever half can still contain it."
+        - "The method requires the table to be in order and to allow direct access to the middle of a range."
+    - title: "Introduction to Algorithms, fourth edition, chapter 2: Getting Started"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 2."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-14"
+      supports:
+        - "Halving the remaining candidates at each step gives a running time logarithmic in the number of elements."

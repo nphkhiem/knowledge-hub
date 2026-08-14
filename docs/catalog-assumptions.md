@@ -98,6 +98,28 @@ The better rule, which fits all five lessons rather than the first four: **a les
 
 **3 and 4** were defended by their assertions and needed no changes.
 
+## Reviewed at six lessons, 2026-08-14
+
+"Binary Search" was the fifth growth, and the first where the review changed the lesson rather than the code.
+
+**1, ranking. A real defect, and it was authorial.** Searching `sorted` returned Two Pointers ahead of Binary Search. Neither lesson used the word in a title, objective, or recognition signal, so both scored only on prose and the tie broke on reading order, which put the lesson that is not about sorted data first.
+
+The weighting was behaving correctly; the content was not. Binary Search's first recognition signal said "already in order" where a learner searches "sorted". Changed to say sorted, and the query now returns Binary Search first. **The lesson worth carrying: a recognition signal has to use the word a learner would type, not the word an author prefers.** Nothing in the pipeline can catch that, which is why this item is a prompt.
+
+`search`, `half`, and `middle` all return Binary Search first on their own merits. `order` still returns Two Pointers first, which is right: it is the lesson about traversal order.
+
+One cap artifact, noted rather than fixed: `log` does not return Binary Search, although its deep dive explains the logarithm. The ninety-word prose cap truncates before reaching it. That is the documented trade and the term is genuinely deep-dive-only content here, so it stays.
+
+**2, schema generality. The corrected rule predicted this lesson right.** The rule written at five lessons says a lesson needs primitive work when it puts a new thing on the screen. Binary Search puts a shrinking range on the screen, so it needed work, and it did: `narrow`, because `slide` refuses to change a window's width, and an optional second pointer on `comparison`, because it could only weigh a pair's sum. Both shipped in #24 before any content was written against them.
+
+The ticket had named only the comparison change. The window gap was found by reading the code rather than the ticket, which is the argument for checking the vocabulary against the lesson before starting, not during.
+
+**5, aggregates.** Correct at six with no defects: "6 of 15 lessons published so far, 24 minutes of reading in DSA" on Home, matching figures on the path detail, the paths index, the domain page, and "Showing all 6 lessons" on Explore.
+
+**A problem this item will hit in about nine lessons.** The denominator is `INTERVIEW_FOUNDATIONS_TOTAL`, pinned at fifteen, and the DSA curriculum alone is twenty-five. At fifteen published the path will report itself complete and then start reporting more published than exist. It is correct today and will be wrong without any code changing, so it needs a decision before C14, not after.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
