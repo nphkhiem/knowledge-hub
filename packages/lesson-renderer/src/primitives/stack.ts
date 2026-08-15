@@ -1,7 +1,4 @@
-import {
-  STACK_CAPACITY,
-  type CompiledSceneObject,
-} from "@knowledge-hub/lesson-compiler";
+import type { CompiledSceneObject } from "@knowledge-hub/lesson-compiler";
 import { definePrimitive } from "../definePrimitive.js";
 import { escapeText, formatCoordinate } from "../escapeMarkup.js";
 import { LOGICAL_WIDTH, clampTextStart, fitFontSize } from "../geometry.js";
@@ -17,6 +14,18 @@ import { renderGroup } from "../renderGroup.js";
  */
 type StackObject = Extract<CompiledSceneObject, { kind: "stack" }>;
 
+/**
+ * How many entries the figure reserves room for.
+ *
+ * Deliberately a renderer constant rather than the schema's `STACK_CAPACITY`,
+ * even though the two must agree and a test pins them together. Everything this
+ * package imports from the compiler is a type, erased at build; importing a
+ * runtime value from there pulls the compiler's whole graph, yaml and the
+ * markdown toolchain included, into the browser bundle. It took the script
+ * payload from 15 kB to 239 kB and the performance budget caught it.
+ */
+export const DRAWN_DEPTH = 6;
+
 const ENTRY_HEIGHT = 40;
 const COLUMN_WIDTH = 220;
 const ENTRY_RADIUS = 6;
@@ -28,7 +37,7 @@ const BASE_STROKE_WIDTH = 3;
 
 /** The pile hangs from a base that never moves, however deep it gets. */
 function baseline(top: number): number {
-  return top + STACK_CAPACITY * ENTRY_HEIGHT;
+  return top + DRAWN_DEPTH * ENTRY_HEIGHT;
 }
 
 function describeStack(object: StackObject): string {

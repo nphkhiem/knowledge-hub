@@ -1,6 +1,7 @@
-import type {
-  CompiledSceneObject,
-  SemanticSnapshot,
+import {
+  STACK_CAPACITY,
+  type CompiledSceneObject,
+  type SemanticSnapshot,
 } from "@knowledge-hub/lesson-compiler";
 import {
   compiledTwoPointersLesson,
@@ -10,6 +11,7 @@ import {
 import { describe, expect, test } from "vitest";
 import { createRenderContext } from "../geometry.js";
 import { primitiveContracts } from "../renderSnapshot.js";
+import { DRAWN_DEPTH } from "./stack.js";
 
 const untrustedText = "<script>alert(1)</script>";
 const escapedText = "&lt;script&gt;alert(1)&lt;/script&gt;";
@@ -360,6 +362,13 @@ describe("stack primitive, beyond the shared contract", () => {
     expect(stack.describe(stackObject, scene)).toBe(
       "Calls: 3 entries, top to bottom: inner, middle, outer",
     );
+  });
+
+  test("reserves room for exactly as many entries as an author may write", () => {
+    // The renderer keeps its own constant so that no runtime value is imported
+    // from the compiler into the browser bundle. This is what keeps the two
+    // honest instead of the import that used to.
+    expect(DRAWN_DEPTH).toBe(STACK_CAPACITY);
   });
 
   test("says an empty stack is empty instead of drawing nothing", () => {
