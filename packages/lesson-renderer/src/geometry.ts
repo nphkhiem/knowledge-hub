@@ -125,32 +125,37 @@ export function createRenderContext(
    * two arrays draw on top of each other and sized the second one's cells for
    * the first one's length.
    */
-  // Buckets share the array band system so a figure mixing them lines up.
-  const arrays = snapshot.objects.filter(
-    (object) => object.kind === "array" || object.kind === "buckets",
+  // Buckets and stacks share the array band system so a figure mixing them
+  // lines up. A stack takes only the band's top; its column is a fixed width.
+  const rows = snapshot.objects.filter(
+    (object) =>
+      object.kind === "array" ||
+      object.kind === "buckets" ||
+      object.kind === "stack",
   );
+  const cellsOf = (object: (typeof rows)[number]): number => {
+    switch (object.kind) {
+      case "array":
+        return object.values.length;
+      case "buckets":
+        return object.slotCount;
+      default:
+        return 1;
+    }
+  };
   const geometries = new Map<string, ArrayGeometry>(
-    arrays.map((object, rowIndex) => [
+    rows.map((object, rowIndex) => [
       object.id,
-      computeArrayGeometry(
-        object.kind === "array" ? object.values.length : object.slotCount,
-        rowIndex,
-      ),
+      computeArrayGeometry(cellsOf(object), rowIndex),
     ]),
   );
-  const head = arrays[0];
-  const first = computeArrayGeometry(
-    head === undefined
-      ? 0
-      : head.kind === "array"
-        ? head.values.length
-        : head.slotCount,
-  );
+  const head = rows[0];
+  const first = computeArrayGeometry(head === undefined ? 0 : cellsOf(head));
 
   return {
     geometry: first,
     geometryFor: (objectId: string) => geometries.get(objectId) ?? first,
-    rowCount: arrays.length,
+    rowCount: rows.length,
     presentation,
     snapshot,
   };

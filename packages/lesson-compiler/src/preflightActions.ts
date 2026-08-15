@@ -58,6 +58,22 @@ export function validateStaticActions(
           }
           break;
         }
+        case "push":
+        case "pop": {
+          // Only the kind check is duplicated here. Depth and which entry sits
+          // on top both depend on the pushes and pops of earlier steps, which
+          // preflight does not replay, so applyAction owns those two rules
+          // alone rather than this file guessing at them.
+          if (object.kind !== "stack") {
+            diagnostics.push({
+              code: "reference.wrong-kind",
+              file,
+              path: `${path}.objectId`,
+              message: `Action "${action.type}" requires a stack, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
+            });
+          }
+          break;
+        }
         case "narrow": {
           // Partially duplicated from applyAction. Preflight cannot know how
           // far a window has already narrowed, because that depends on earlier

@@ -1,8 +1,9 @@
-import type {
-  DiagnosticCode,
-  LessonDiagnostic,
-  LessonSourceV1,
-  ValidationResult,
+import {
+  STACK_CAPACITY,
+  type DiagnosticCode,
+  type LessonDiagnostic,
+  type LessonSourceV1,
+  type ValidationResult,
 } from "@knowledge-hub/lesson-schema";
 import { isResultStatus } from "./resultStatus.js";
 import type { CompiledSceneObject, SemanticSnapshot } from "./types.js";
@@ -20,8 +21,7 @@ export interface MutableSemanticState {
    * The most recent comparison, kept across steps so a later step can prove a
    * found result followed an equal comparison at the same pointer positions.
    * This is compiler bookkeeping and never reaches a snapshot.
-   */
-  /**
+   *
    * One or two positions, because a comparison may weigh a single probed value
    * rather than a pair sum. The V1 result action still requires a pair and
    * rejects the single-value form rather than inventing a meaning for it.
@@ -298,6 +298,69 @@ export function applyAction(
         ...object,
         start: action.toStart,
         end: action.toEnd,
+      });
+      return { ok: true, value: state };
+    }
+    case "push": {
+      if (object.kind !== "stack") {
+        return failure(
+          context,
+          `Action "push" requires a stack, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      // Repeated entries are ordinary here, unlike a buckets key: recursion
+      // pushes the same frame shape over and over. Only depth is bounded.
+      if (object.entries.length >= STACK_CAPACITY) {
+        return failure(
+          context,
+          `Stack "${object.id}" already holds ${STACK_CAPACITY} entries, which is all the figure can show.`,
+          "reference.invalid",
+          `${context.path}.key`,
+        );
+      }
+      replaceObject(state, {
+        ...object,
+        entries: [...object.entries, action.key],
+      });
+      return { ok: true, value: state };
+    }
+    case "pop": {
+      if (object.kind !== "stack") {
+        return failure(
+          context,
+          `Action "pop" requires a stack, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      const top = object.entries.at(-1);
+      if (top === undefined) {
+        return failure(
+          context,
+          `Action "pop" requires a non-empty stack, but "${object.id}" is empty.`,
+          "reference.invalid",
+          `${context.path}.expect`,
+        );
+      }
+      /**
+       * Which entry comes back is the one thing this primitive exists to show,
+       * so a step has to name it and the compiler has to agree. Without this a
+       * lesson could narrate first-in-first-out over a pile that does the
+       * opposite, and every test would still pass.
+       */
+      if (top !== action.expect) {
+        return failure(
+          context,
+          `Action "pop" expected "${action.expect}" from "${object.id}", but the top holds "${top}".`,
+          "reference.invalid",
+          `${context.path}.expect`,
+        );
+      }
+      replaceObject(state, {
+        ...object,
+        entries: object.entries.slice(0, -1),
       });
       return { ok: true, value: state };
     }

@@ -1,5 +1,6 @@
 export {
   EXAMPLE_LANGUAGES,
+  STACK_CAPACITY,
   domainIdSchema,
   lessonSourceV1Schema,
   type ExampleLanguage,

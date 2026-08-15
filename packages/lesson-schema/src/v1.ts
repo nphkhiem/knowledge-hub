@@ -12,6 +12,7 @@ export const primitiveKindSchema = z.enum([
   "buckets",
   "pointer",
   "window",
+  "stack",
   "label",
   "comparison",
   "result",
@@ -92,6 +93,28 @@ export const bucketsPrimitiveSchema = z.strictObject({
     )
     .max(24),
 });
+/**
+ * How many entries a stack may hold.
+ *
+ * A figure limit rather than a property of stacks. Entries are drawn as a pile
+ * inside one row's vertical budget, and past six the boxes stop being legible.
+ * A lesson needing a deeper pile to make its point needs a different figure.
+ */
+export const STACK_CAPACITY = 6;
+
+/**
+ * A pile of named entries where only the top is reachable.
+ *
+ * Entries run bottom first, so the last one is the top and the one a pop
+ * returns. That ordering is the whole subject, so it is fixed by the shape
+ * rather than left to a renderer to decide.
+ */
+export const stackPrimitiveSchema = z.strictObject({
+  id: objectIdSchema,
+  kind: z.literal("stack"),
+  label: z.string().min(1),
+  entries: z.array(z.string().min(1).max(24)).max(STACK_CAPACITY),
+});
 export const resultPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
   kind: z.literal("result"),
@@ -103,6 +126,7 @@ export const primitiveSchema = z.discriminatedUnion("kind", [
   bucketsPrimitiveSchema,
   pointerPrimitiveSchema,
   windowPrimitiveSchema,
+  stackPrimitiveSchema,
   labelPrimitiveSchema,
   comparisonPrimitiveSchema,
   resultPrimitiveSchema,
@@ -194,6 +218,26 @@ export const narrowActionSchema = z.strictObject({
   toEnd: z.number().int().min(0),
 });
 
+/** Places an entry on the top of a stack. */
+export const pushActionSchema = z.strictObject({
+  type: z.literal("push"),
+  ...actionTargetSchema,
+  key: z.string().min(1).max(24),
+});
+/**
+ * Removes the top entry of a stack.
+ *
+ * `expect` names the entry the step claims comes back, and the compiler rejects
+ * a mismatch. Which entry a pop returns is the one thing a stack lesson exists
+ * to show, so a step that disagrees with the pile is a defect rather than a
+ * detail.
+ */
+export const popActionSchema = z.strictObject({
+  type: z.literal("pop"),
+  ...actionTargetSchema,
+  expect: z.string().min(1).max(24),
+});
+
 export const actionSchema = z.discriminatedUnion("type", [
   showActionSchema,
   hideActionSchema,
@@ -208,6 +252,8 @@ export const actionSchema = z.discriminatedUnion("type", [
   insertActionSchema,
   slideActionSchema,
   narrowActionSchema,
+  pushActionSchema,
+  popActionSchema,
 ]);
 
 export const timelineStepSchema = z.strictObject({

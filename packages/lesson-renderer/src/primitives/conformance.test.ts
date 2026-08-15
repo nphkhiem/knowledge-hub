@@ -7,7 +7,7 @@ import {
   runPrimitiveConformance,
   type PrimitiveConformanceContract,
 } from "@knowledge-hub/lesson-testing";
-import { describe } from "vitest";
+import { describe, expect, test } from "vitest";
 import { createRenderContext } from "../geometry.js";
 import { primitiveContracts } from "../renderSnapshot.js";
 
@@ -118,6 +118,40 @@ function windowSceneOf(
 
 const windowSnapshot = windowSceneOf(windowArray, windowObject);
 
+/**
+ * A stack claims a row of its own, so it needs its own scene rather than
+ * joining Two Pointers: adding it there would make that figure two rows tall
+ * and break the single-row bounds this contract checks.
+ */
+const stackObject: CompiledSceneObject = {
+  id: "calls",
+  kind: "stack",
+  visible: true,
+  label: "Calls",
+  entries: ["outer", "middle", "inner"],
+};
+
+/** The same primitive at its deepest, for the bounds check. */
+const fullStack: CompiledSceneObject = {
+  ...stackObject,
+  entries: ["one", "two", "three", "four", "five", "six"],
+};
+
+/** And at its emptiest, which draws a different thing entirely. */
+const emptyStack: CompiledSceneObject = { ...stackObject, entries: [] };
+
+const untrustedStack: CompiledSceneObject = {
+  ...stackObject,
+  label: untrustedText,
+  entries: [untrustedText.slice(0, 24)],
+};
+
+function stackSceneOf(stack: CompiledSceneObject): SemanticSnapshot {
+  return { ...resolvedSnapshot, objects: [stack], highlights: {} };
+}
+
+const stackSnapshot = stackSceneOf(stackObject);
+
 function objectOfKind(
   snapshot: SemanticSnapshot,
   kind: CompiledSceneObject["kind"],
@@ -148,6 +182,7 @@ const untrustedSnapshot = mapObjects(resolvedSnapshot, (object) => {
     case "buckets":
     case "pointer":
     case "window":
+    case "stack":
       return { ...object, label: untrustedText };
     case "label":
       return { ...object, text: untrustedText };
@@ -169,6 +204,7 @@ const authorTextKinds: ReadonlySet<CompiledSceneObject["kind"]> = new Set([
   "buckets",
   "pointer",
   "window",
+  "stack",
   "label",
 ]);
 
@@ -203,6 +239,24 @@ function contractFor(
           createRenderContext(bucketsSnapshot, "static"),
         ),
       renderUntrusted: () => primitive.render(untrustedBuckets, hostile),
+    };
+  }
+  if (kind === "stack") {
+    const scene = createRenderContext(stackSnapshot, "interactive");
+    const deep = createRenderContext(stackSceneOf(fullStack), "interactive");
+    const hostile = createRenderContext(
+      stackSceneOf(untrustedStack),
+      "interactive",
+    );
+    return {
+      accepts: (object) => primitive.accepts(object),
+      describe: (object) => primitive.describe(object, scene),
+      kind,
+      renderInteractive: (object) => primitive.render(object, scene),
+      renderNarrow: () => primitive.render(fullStack, deep),
+      renderStatic: (object) =>
+        primitive.render(object, createRenderContext(stackSnapshot, "static")),
+      renderUntrusted: () => primitive.render(untrustedStack, hostile),
     };
   }
   if (kind === "window") {
@@ -252,6 +306,7 @@ const foreignKinds: Readonly<
   label: "array",
   pointer: "label",
   window: "array",
+  stack: "array",
   result: "comparison",
 };
 
@@ -260,6 +315,7 @@ const fixtureObjects: Partial<
 > = {
   buckets: bucketsObject,
   window: windowObject,
+  stack: stackObject,
 };
 
 for (const kind of [
@@ -267,6 +323,7 @@ for (const kind of [
   "buckets",
   "pointer",
   "window",
+  "stack",
   "label",
   "comparison",
   "result",
@@ -283,3 +340,37 @@ for (const kind of [
     });
   });
 }
+
+describe("stack primitive, beyond the shared contract", () => {
+  const scene = createRenderContext(stackSnapshot, "interactive");
+  const stack = primitiveContracts.stack;
+
+  test("names the top entry in words rather than by color alone", () => {
+    const markup = stack.render(stackObject, scene);
+
+    expect({
+      captionsTheTop: markup.includes("top, next out"),
+      // The caption must appear once. Two would mean every entry claims to be
+      // the one that comes back next.
+      captions: markup.split("top, next out").length - 1,
+    }).toEqual({ captionsTheTop: true, captions: 1 });
+  });
+
+  test("states the order top down, which is the whole subject", () => {
+    expect(stack.describe(stackObject, scene)).toBe(
+      "Calls: 3 entries, top to bottom: inner, middle, outer",
+    );
+  });
+
+  test("says an empty stack is empty instead of drawing nothing", () => {
+    const emptyScene = createRenderContext(
+      stackSceneOf(emptyStack),
+      "interactive",
+    );
+
+    expect({
+      describes: stack.describe(emptyStack, emptyScene),
+      saysSo: stack.render(emptyStack, emptyScene).includes(">empty<"),
+    }).toEqual({ describes: "Calls: empty", saysSo: true });
+  });
+});

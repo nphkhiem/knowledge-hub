@@ -65,6 +65,12 @@ export type CompiledSceneObject =
       readonly end: number;
     })
   | (CompiledSceneObjectBase & {
+      readonly kind: "stack";
+      readonly label: string;
+      /** Bottom first, so the last entry is the top and the one a pop returns. */
+      readonly entries: readonly string[];
+    })
+  | (CompiledSceneObjectBase & {
       readonly kind: "label";
       readonly text: string;
     })
