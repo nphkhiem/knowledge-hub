@@ -120,6 +120,30 @@ The ticket had named only the comparison change. The window gap was found by rea
 
 **3 and 4** were defended by their assertions and needed no changes.
 
+## Reviewed at seven lessons, 2026-08-15
+
+"Stack and Last-In Order" was the sixth growth, and it repeated the finding from six almost exactly.
+
+**1, ranking. The same defect as last time, in a different word.** Searching `recursion` returned nothing, although a section of the lesson's deep dive is about recursion depth and its limitations name it. Only the title, objective, recognition signals, and a ninety-word slice of prose are indexed, and "recursion" appeared in none of them.
+
+Fixed by adding a recognition signal that uses the word: "Recursion or nested calls leave several pieces of work pending at once, each waiting on a deeper one." That is a real signal rather than keyword stuffing, and `recursion` now returns the lesson.
+
+**This is now a pattern rather than an incident.** Two lessons running, the review caught a central term that the lesson never used in an indexed field. The check to run when authoring is: list the three or four words a learner would actually type for this lesson, and confirm each one is in the title, the objective, or a recognition signal. Prose is not enough, because the cap truncates it.
+
+Still returning nothing, and left alone deliberately: `trace` and `depth`. Both are body terms of one application and one deep-dive section rather than words for the lesson as a whole.
+
+`order` now returns this lesson first, ahead of Two Pointers, on a title match against "Last-In Order". That is correct.
+
+**2, schema generality. The corrected rule predicted this lesson right, and a real limit surfaced beside it.** A stack is a new thing on the screen, so it needed a new primitive, which #26 built.
+
+The limit is that **`array` holds numbers only**. The obvious subject for this lesson is bracket matching, and a string of brackets cannot be shown, because there is no primitive for a sequence of characters. The lesson became nested work instead, which is a better fit for the ticket's own wording, so nothing was lost here. It will be lost eventually: any lesson whose subject is text, and there are several later in the curriculum, has no way to show its input. Worth deciding before it blocks one rather than during.
+
+**5, aggregates.** Correct at seven: "7 of 15 lessons published so far, 28 minutes of reading in DSA", matching figures elsewhere, "Showing all 7 lessons" on Explore.
+
+The denominator problem recorded at six is now eight lessons away rather than nine.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
