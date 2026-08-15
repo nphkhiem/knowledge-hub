@@ -1,0 +1,113 @@
+schemaVersion: 1
+id: "dsa.stack-and-last-in-order"
+slug: "stack-and-last-in-order"
+domain: "dsa"
+collection: "interview-foundations"
+order: 7
+difficulty: "easy"
+license: "CC-BY-4.0"
+title: "Stack and Last-In Order"
+durationMinutes: 4
+objective: "Explain why work that starts last has to finish first, and why only the most recent unfinished item is ever ready to deal with."
+recognitionSignals:
+  - "Work starts before earlier work has finished, and each piece waits on the one started after it."
+  - "Only the most recent unfinished item is ever ready to be dealt with."
+  - "Something has to be remembered now and returned to in reverse order later."
+  - "Recursion or nested calls leave several pieces of work pending at once, each waiting on a deeper one."
+limitations:
+  - "Only the top is reachable. A question about the item that has waited longest needs a queue, not a stack."
+  - "Depth is bounded in practice, and recursion that never resolves is exactly how that bound is found."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/last_in_order.py"
+    - language: "typescript"
+      file: "examples/last-in-order.ts"
+    - language: "java"
+      file: "examples/LastInOrder.java"
+    - language: "cpp"
+      file: "examples/last_in_order.cpp"
+    - language: "go"
+      file: "examples/last_in_order.go"
+scene:
+  objects:
+    - id: "work"
+      kind: "stack"
+      label: "Started but not finished"
+      entries: []
+    - id: "question"
+      kind: "label"
+      text: "Which one finishes first?"
+timeline:
+  - id: "start-render"
+    narration: "Rendering a page begins. It cannot finish yet, because it needs the list laid out first."
+    actions:
+      - type: "push"
+        objectId: "work"
+        key: "render page"
+  - id: "start-layout"
+    narration: "Laying out the list begins. It cannot finish either, because it needs one row measured."
+    actions:
+      - type: "push"
+        objectId: "work"
+        key: "lay out list"
+  - id: "start-measure"
+    narration: "Measuring the row begins. Nothing is waiting on this one, so it is the only piece of work that can actually proceed."
+    actions:
+      - type: "push"
+        objectId: "work"
+        key: "measure row"
+  - id: "finish-measure"
+    narration: "The measurement finishes first, because it started last. Nothing else was ever ready."
+    actions:
+      - type: "pop"
+        objectId: "work"
+        expect: "measure row"
+  - id: "finish-layout"
+    narration: "Now the layout can finish, because the thing it was waiting for is done."
+    actions:
+      - type: "pop"
+        objectId: "work"
+        expect: "lay out list"
+  - id: "finish-render"
+    narration: "And last the render. Three things started in one order and finished in exactly the reverse."
+    terminal: true
+    actions:
+      - type: "pop"
+        objectId: "work"
+        expect: "render page"
+modelCheck:
+  prompt: "While the row is being measured, a fourth piece of work starts. Which finishes first?"
+  options:
+    - id: "newest"
+      label: "The fourth one, because it started last"
+    - id: "measure"
+      label: "The row measurement, because it started earliest of the unfinished"
+    - id: "quickest"
+      label: "Whichever happens to be quickest"
+  correctOptionId: "newest"
+  explanation: "Nothing that is waiting on later work can finish, so the only item ever ready is the most recent one. That is not a scheduling preference, it is the shape of the dependency: each piece is blocked by the one started after it."
+accessibility:
+  summary: "An animation of three pieces of work starting in order and finishing in the reverse order, with only the most recently started one ever ready to proceed."
+  initialDescription: "Nothing has started yet, so there is no unfinished work and no piece of work is waiting."
+  motionEquivalentLabel: "Work started and finished, step by step"
+evidence:
+  verifiedOn: "2026-08-15"
+  scope: "Describes last-in-first-out order over work that nests strictly. Concurrency, interleaved work that does not nest, and stack allocation strategy are out of scope."
+  sources:
+    - title: "The Art of Computer Programming, volume 1, section 2.2.1: Stacks, Queues, and Deques"
+      citation: "Knuth, Donald E. The Art of Computer Programming, Volume 1: Fundamental Algorithms, 3rd ed. Addison-Wesley, 1997, section 2.2.1."
+      publisher: "Addison-Wesley"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A stack is a linear list where insertions and deletions are made at one end, so the last item inserted is the first removed."
+        - "Stacks describe nested processes, where a process started later must be completed before the one that started it."
+    - title: "Introduction to Algorithms, fourth edition, chapter 10: Elementary Data Structures"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 10."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A stack implements a last-in, first-out policy, and its push and pop operations each take constant time."
