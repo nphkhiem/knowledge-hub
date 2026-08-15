@@ -1596,3 +1596,142 @@ test("rejects narrowing something that is not a window", () => {
     'Action "narrow" requires a window, but "readings" resolves to an array.',
   );
 });
+
+function stackSource(
+  actions: readonly unknown[],
+  entries: readonly string[] = [],
+): LessonSourceV1 {
+  const migrated = migrateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        objects: [
+          {
+            id: "calls",
+            kind: "stack",
+            label: "Calls",
+            entries: [...entries],
+          },
+        ],
+      },
+      timeline: [
+        {
+          id: "only",
+          narration: "Work the stack from the top.",
+          terminal: true,
+          actions,
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the stack fixture to be valid.");
+  }
+  return migrated.value;
+}
+
+function compiledStack(
+  compiled: ReturnType<typeof compileLesson>,
+): readonly string[] | undefined {
+  if (!compiled.ok) return undefined;
+  const last = compiled.value.snapshots
+    .at(-1)
+    ?.objects.find((object) => object.kind === "stack");
+  return last?.kind === "stack" ? last.entries : undefined;
+}
+
+test("pushes onto the top of a stack, bottom entry first", () => {
+  const compiled = compileLesson(
+    stackSource([
+      { type: "push", objectId: "calls", key: "outer" },
+      { type: "push", objectId: "calls", key: "middle" },
+      { type: "push", objectId: "calls", key: "inner" },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiledStack(compiled)).toEqual(["outer", "middle", "inner"]);
+});
+
+test("pops the entry that went on last, not the one that went on first", () => {
+  const compiled = compileLesson(
+    stackSource(
+      [{ type: "pop", objectId: "calls", expect: "inner" }],
+      ["outer", "middle", "inner"],
+    ),
+    compiledContent,
+  );
+
+  expect(compiledStack(compiled)).toEqual(["outer", "middle"]);
+});
+
+test("rejects a pop that names an entry other than the top", () => {
+  // The one thing this primitive exists to show is which entry comes back. A
+  // pop whose narration disagrees with the stack would teach the opposite.
+  const compiled = compileLesson(
+    stackSource(
+      [{ type: "pop", objectId: "calls", expect: "outer" }],
+      ["outer", "middle", "inner"],
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "pop" expected "outer" from "calls", but the top holds "inner".',
+  );
+});
+
+test("rejects popping an empty stack", () => {
+  const compiled = compileLesson(
+    stackSource([{ type: "pop", objectId: "calls", expect: "anything" }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "pop" requires a non-empty stack, but "calls" is empty.',
+  );
+});
+
+test("rejects pushing past what the figure can show", () => {
+  const compiled = compileLesson(
+    stackSource(
+      [{ type: "push", objectId: "calls", key: "seventh" }],
+      ["a", "b", "c", "d", "e", "f"],
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("allows a stack to hold the same value twice", () => {
+  // Unlike buckets keys, repeated entries are ordinary: recursion pushes the
+  // same frame shape repeatedly.
+  const compiled = compileLesson(
+    stackSource([
+      { type: "push", objectId: "calls", key: "step" },
+      { type: "push", objectId: "calls", key: "step" },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiledStack(compiled)).toEqual(["step", "step"]);
+});
+
+test("rejects pushing onto something that is not a stack", () => {
+  const compiled = compileLesson(
+    sourceWithTerminalAction({ type: "push", objectId: "values", key: "x" }),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "push" requires a stack, but "values" resolves to an array.',
+  );
+});

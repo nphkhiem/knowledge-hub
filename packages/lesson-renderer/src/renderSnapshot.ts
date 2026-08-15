@@ -16,6 +16,7 @@ import { pointerPrimitive } from "./primitives/pointer.js";
 import { bucketsPrimitive } from "./primitives/buckets.js";
 import { resultPrimitive } from "./primitives/result.js";
 import { windowPrimitive } from "./primitives/window.js";
+import { stackPrimitive } from "./primitives/stack.js";
 import type {
   PrimitiveContract,
   PrimitivePresentation,
@@ -30,6 +31,7 @@ export const primitiveContracts: Readonly<
   label: labelPrimitive,
   pointer: pointerPrimitive,
   window: windowPrimitive,
+  stack: stackPrimitive,
   buckets: bucketsPrimitive,
   result: resultPrimitive,
 };
