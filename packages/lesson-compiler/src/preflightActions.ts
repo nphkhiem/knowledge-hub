@@ -296,21 +296,20 @@ export function validateStaticActions(
           });
           break;
         case "enqueue":
-          diagnostics.push({
-            code: "reference.invalid",
-            file,
-            path: `${path}.objectId`,
-            message: `Action "enqueue" has no compatible V1 queue primitive for "${object.id}".`,
-          });
+        case "dequeue": {
+          // Only the kind check, for the same reason push and pop carry only
+          // that one: depth and which entry is at the front both depend on
+          // earlier steps, which preflight does not replay.
+          if (object.kind !== "queue") {
+            diagnostics.push({
+              code: "reference.wrong-kind",
+              file,
+              path: `${path}.objectId`,
+              message: `Action "${action.type}" requires a queue, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
+            });
+          }
           break;
-        case "dequeue":
-          diagnostics.push({
-            code: "reference.invalid",
-            file,
-            path: `${path}.objectId`,
-            message: `Action "dequeue" has no compatible V1 queue primitive for "${object.id}".`,
-          });
-          break;
+        }
       }
     }
   }

@@ -145,7 +145,7 @@ test("rejects a primitive outside the V1 catalog", () => {
       file: "lesson.yaml",
       path: "scene.objects[0].kind",
       message:
-        "Supported primitives: array, buckets, pointer, window, stack, label, comparison, result.",
+        "Supported primitives: array, buckets, pointer, window, stack, queue, label, comparison, result.",
     });
   }
 });
@@ -537,8 +537,8 @@ test.each([
     },
   ],
   ["disconnect", { type: "disconnect", objectId: "values" }],
-  ["enqueue", { type: "enqueue", objectId: "values", value: 21 }],
-  ["dequeue", { type: "dequeue", objectId: "values" }],
+  ["enqueue", { type: "enqueue", objectId: "values", key: "ada" }],
+  ["dequeue", { type: "dequeue", objectId: "values", expect: "ada" }],
 ] as const)("accepts the %s action contract", (_type, action) => {
   const result = validateLessonSource(
     {

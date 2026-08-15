@@ -16,7 +16,7 @@ export { compileLesson } from "./compileLesson.js";
  * package is a type, erased at build; a runtime value pulls the whole compiler
  * graph into the browser bundle. See DRAWN_DEPTH in primitives/stack.ts.
  */
-export { STACK_CAPACITY } from "@knowledge-hub/lesson-schema";
+export { QUEUE_CAPACITY, STACK_CAPACITY } from "@knowledge-hub/lesson-schema";
 export {
   LessonPackageError,
   type CompiledAccessibility,

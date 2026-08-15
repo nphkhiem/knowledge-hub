@@ -13,6 +13,7 @@ export const primitiveKindSchema = z.enum([
   "pointer",
   "window",
   "stack",
+  "queue",
   "label",
   "comparison",
   "result",
@@ -103,6 +104,14 @@ export const bucketsPrimitiveSchema = z.strictObject({
 export const STACK_CAPACITY = 6;
 
 /**
+ * How many entries a queue may hold.
+ *
+ * A figure limit, like the stack's. Entries are drawn as one row of boxes, and
+ * past six they stop being legible at the width available.
+ */
+export const QUEUE_CAPACITY = 6;
+
+/**
  * A pile of named entries where only the top is reachable.
  *
  * Entries run bottom first, so the last one is the top and the one a pop
@@ -114,6 +123,19 @@ export const stackPrimitiveSchema = z.strictObject({
   kind: z.literal("stack"),
   label: z.string().min(1),
   entries: z.array(z.string().min(1).max(24)).max(STACK_CAPACITY),
+});
+/**
+ * A line of named entries where only the front is reachable.
+ *
+ * Entries run front first, so the first is the one a dequeue returns. That is
+ * the exact opposite of the stack's ordering, and stating both in the shape is
+ * what keeps the two lessons from having to argue about it in prose.
+ */
+export const queuePrimitiveSchema = z.strictObject({
+  id: objectIdSchema,
+  kind: z.literal("queue"),
+  label: z.string().min(1),
+  entries: z.array(z.string().min(1).max(24)).max(QUEUE_CAPACITY),
 });
 export const resultPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
@@ -127,6 +149,7 @@ export const primitiveSchema = z.discriminatedUnion("kind", [
   pointerPrimitiveSchema,
   windowPrimitiveSchema,
   stackPrimitiveSchema,
+  queuePrimitiveSchema,
   labelPrimitiveSchema,
   comparisonPrimitiveSchema,
   resultPrimitiveSchema,
@@ -175,14 +198,23 @@ export const disconnectActionSchema = z.strictObject({
   type: z.literal("disconnect"),
   ...actionTargetSchema,
 });
+/** Places an entry at the back of a queue. */
 export const enqueueActionSchema = z.strictObject({
   type: z.literal("enqueue"),
   ...actionTargetSchema,
-  value: z.json(),
+  key: z.string().min(1).max(24),
 });
+/**
+ * Removes the front entry of a queue.
+ *
+ * `expect` names the entry the step claims comes back, and the compiler rejects
+ * a mismatch, exactly as pop does for a stack. Which end is served is the one
+ * thing separating this primitive from that one.
+ */
 export const dequeueActionSchema = z.strictObject({
   type: z.literal("dequeue"),
   ...actionTargetSchema,
+  expect: z.string().min(1).max(24),
 });
 /** Places a named entry into one slot of a buckets object. */
 export const insertActionSchema = z.strictObject({

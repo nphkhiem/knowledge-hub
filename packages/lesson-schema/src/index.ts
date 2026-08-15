@@ -1,5 +1,6 @@
 export {
   EXAMPLE_LANGUAGES,
+  QUEUE_CAPACITY,
   STACK_CAPACITY,
   domainIdSchema,
   lessonSourceV1Schema,

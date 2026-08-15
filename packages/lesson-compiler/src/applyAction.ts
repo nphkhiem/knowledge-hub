@@ -1,4 +1,5 @@
 import {
+  QUEUE_CAPACITY,
   STACK_CAPACITY,
   type DiagnosticCode,
   type LessonDiagnostic,
@@ -617,19 +618,64 @@ export function applyAction(
         "reference.invalid",
         `${context.path}.objectId`,
       );
-    case "enqueue":
-      return failure(
-        context,
-        `Action "enqueue" has no compatible V1 queue primitive for "${object.id}".`,
-        "reference.invalid",
-        `${context.path}.objectId`,
-      );
-    case "dequeue":
-      return failure(
-        context,
-        `Action "dequeue" has no compatible V1 queue primitive for "${object.id}".`,
-        "reference.invalid",
-        `${context.path}.objectId`,
-      );
+    case "enqueue": {
+      if (object.kind !== "queue") {
+        return failure(
+          context,
+          `Action "enqueue" requires a queue, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      if (object.entries.length >= QUEUE_CAPACITY) {
+        return failure(
+          context,
+          `Queue "${object.id}" already holds ${QUEUE_CAPACITY} entries, which is all the figure can show.`,
+          "reference.invalid",
+          `${context.path}.key`,
+        );
+      }
+      // Arrivals join the back. Repeated names are ordinary, as they are for a
+      // stack: two requests can carry the same label.
+      replaceObject(state, {
+        ...object,
+        entries: [...object.entries, action.key],
+      });
+      return { ok: true, value: state };
+    }
+    case "dequeue": {
+      if (object.kind !== "queue") {
+        return failure(
+          context,
+          `Action "dequeue" requires a queue, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      const front = object.entries[0];
+      if (front === undefined) {
+        return failure(
+          context,
+          `Action "dequeue" requires a non-empty queue, but "${object.id}" is empty.`,
+          "reference.invalid",
+          `${context.path}.expect`,
+        );
+      }
+      /**
+       * The mirror of pop's rule. Which end is served is the only thing
+       * separating a queue from a stack, so a step that names the wrong entry
+       * would teach the other lesson by accident.
+       */
+      if (front !== action.expect) {
+        return failure(
+          context,
+          `Action "dequeue" expected "${action.expect}" from "${object.id}", but the front holds "${front}".`,
+          "reference.invalid",
+          `${context.path}.expect`,
+        );
+      }
+      replaceObject(state, { ...object, entries: object.entries.slice(1) });
+      return { ok: true, value: state };
+    }
   }
 }
