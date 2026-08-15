@@ -125,13 +125,14 @@ export function createRenderContext(
    * two arrays draw on top of each other and sized the second one's cells for
    * the first one's length.
    */
-  // Buckets and stacks share the array band system so a figure mixing them
-  // lines up. A stack takes only the band's top; its column is a fixed width.
+  // Buckets, stacks, and queues share the array band system so a figure mixing
+  // them lines up. Each takes only the band's top; their own extents are fixed.
   const rows = snapshot.objects.filter(
     (object) =>
       object.kind === "array" ||
       object.kind === "buckets" ||
-      object.kind === "stack",
+      object.kind === "stack" ||
+      object.kind === "queue",
   );
   const cellsOf = (object: (typeof rows)[number]): number => {
     switch (object.kind) {

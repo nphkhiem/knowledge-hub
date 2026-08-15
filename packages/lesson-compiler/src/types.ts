@@ -71,6 +71,12 @@ export type CompiledSceneObject =
       readonly entries: readonly string[];
     })
   | (CompiledSceneObjectBase & {
+      readonly kind: "queue";
+      readonly label: string;
+      /** Front first, so the first entry is the one a dequeue returns. */
+      readonly entries: readonly string[];
+    })
+  | (CompiledSceneObjectBase & {
       readonly kind: "label";
       readonly text: string;
     })

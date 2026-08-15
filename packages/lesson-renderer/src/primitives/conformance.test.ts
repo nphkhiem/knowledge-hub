@@ -1,4 +1,5 @@
 import {
+  QUEUE_CAPACITY,
   STACK_CAPACITY,
   type CompiledSceneObject,
   type SemanticSnapshot,
@@ -12,6 +13,7 @@ import { describe, expect, test } from "vitest";
 import { createRenderContext } from "../geometry.js";
 import { primitiveContracts } from "../renderSnapshot.js";
 import { DRAWN_DEPTH } from "./stack.js";
+import { DRAWN_WIDTH } from "./queue.js";
 
 const untrustedText = "<script>alert(1)</script>";
 const escapedText = "&lt;script&gt;alert(1)&lt;/script&gt;";
@@ -154,6 +156,35 @@ function stackSceneOf(stack: CompiledSceneObject): SemanticSnapshot {
 
 const stackSnapshot = stackSceneOf(stackObject);
 
+/** A queue claims a row of its own, so it gets its own scene like the stack. */
+const queueObject: CompiledSceneObject = {
+  id: "line",
+  kind: "queue",
+  visible: true,
+  label: "Waiting",
+  entries: ["ada", "grace", "alan"],
+};
+
+/** The same primitive at its longest, for the bounds check. */
+const fullQueue: CompiledSceneObject = {
+  ...queueObject,
+  entries: ["one", "two", "three", "four", "five", "six"],
+};
+
+const emptyQueue: CompiledSceneObject = { ...queueObject, entries: [] };
+
+const untrustedQueue: CompiledSceneObject = {
+  ...queueObject,
+  label: untrustedText,
+  entries: [untrustedText.slice(0, 24)],
+};
+
+function queueSceneOf(queue: CompiledSceneObject): SemanticSnapshot {
+  return { ...resolvedSnapshot, objects: [queue], highlights: {} };
+}
+
+const queueSnapshot = queueSceneOf(queueObject);
+
 function objectOfKind(
   snapshot: SemanticSnapshot,
   kind: CompiledSceneObject["kind"],
@@ -185,6 +216,7 @@ const untrustedSnapshot = mapObjects(resolvedSnapshot, (object) => {
     case "pointer":
     case "window":
     case "stack":
+    case "queue":
       return { ...object, label: untrustedText };
     case "label":
       return { ...object, text: untrustedText };
@@ -207,6 +239,7 @@ const authorTextKinds: ReadonlySet<CompiledSceneObject["kind"]> = new Set([
   "pointer",
   "window",
   "stack",
+  "queue",
   "label",
 ]);
 
@@ -241,6 +274,24 @@ function contractFor(
           createRenderContext(bucketsSnapshot, "static"),
         ),
       renderUntrusted: () => primitive.render(untrustedBuckets, hostile),
+    };
+  }
+  if (kind === "queue") {
+    const scene = createRenderContext(queueSnapshot, "interactive");
+    const longest = createRenderContext(queueSceneOf(fullQueue), "interactive");
+    const hostile = createRenderContext(
+      queueSceneOf(untrustedQueue),
+      "interactive",
+    );
+    return {
+      accepts: (object) => primitive.accepts(object),
+      describe: (object) => primitive.describe(object, scene),
+      kind,
+      renderInteractive: (object) => primitive.render(object, scene),
+      renderNarrow: () => primitive.render(fullQueue, longest),
+      renderStatic: (object) =>
+        primitive.render(object, createRenderContext(queueSnapshot, "static")),
+      renderUntrusted: () => primitive.render(untrustedQueue, hostile),
     };
   }
   if (kind === "stack") {
@@ -309,6 +360,7 @@ const foreignKinds: Readonly<
   pointer: "label",
   window: "array",
   stack: "array",
+  queue: "array",
   result: "comparison",
 };
 
@@ -318,6 +370,7 @@ const fixtureObjects: Partial<
   buckets: bucketsObject,
   window: windowObject,
   stack: stackObject,
+  queue: queueObject,
 };
 
 for (const kind of [
@@ -326,6 +379,7 @@ for (const kind of [
   "pointer",
   "window",
   "stack",
+  "queue",
   "label",
   "comparison",
   "result",
@@ -381,5 +435,54 @@ describe("stack primitive, beyond the shared contract", () => {
       describes: stack.describe(emptyStack, emptyScene),
       saysSo: stack.render(emptyStack, emptyScene).includes(">empty<"),
     }).toEqual({ describes: "Calls: empty", saysSo: true });
+  });
+});
+
+describe("queue primitive, beyond the shared contract", () => {
+  const scene = createRenderContext(queueSnapshot, "interactive");
+  const queue = primitiveContracts.queue;
+
+  test("captions both ends in words rather than by position alone", () => {
+    const markup = queue.render(queueObject, scene);
+
+    expect({
+      backs: markup.split(">back<").length - 1,
+      fronts: markup.split("front, next out").length - 1,
+    }).toEqual({ backs: 1, fronts: 1 });
+  });
+
+  test("states the order front to back, the reverse of the stack's", () => {
+    expect(queue.describe(queueObject, scene)).toBe(
+      "Waiting: 3 entries, front to back: ada, grace, alan",
+    );
+  });
+
+  test("reserves room for exactly as many entries as an author may write", () => {
+    expect(DRAWN_WIDTH).toBe(QUEUE_CAPACITY);
+  });
+
+  test("says an empty queue is empty instead of drawing nothing", () => {
+    const emptyScene = createRenderContext(
+      queueSceneOf(emptyQueue),
+      "interactive",
+    );
+
+    expect({
+      describes: queue.describe(emptyQueue, emptyScene),
+      saysSo: queue.render(emptyQueue, emptyScene).includes(">empty<"),
+    }).toEqual({ describes: "Waiting: empty", saysSo: true });
+  });
+
+  test("a single entry is both the front and the back", () => {
+    const one = { ...queueObject, entries: ["only"] } as CompiledSceneObject;
+    const markup = queue.render(
+      one,
+      createRenderContext(queueSceneOf(one), "interactive"),
+    );
+
+    expect({
+      back: markup.includes(">back<"),
+      front: markup.includes("front, next out"),
+    }).toEqual({ back: false, front: true });
   });
 });

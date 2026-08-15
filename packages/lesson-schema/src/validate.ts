@@ -28,6 +28,7 @@ const supportedPrimitives = [
   "pointer",
   "window",
   "stack",
+  "queue",
   "label",
   "comparison",
   "result",
@@ -101,7 +102,7 @@ function unsupportedPrimitiveDiagnostic(input: VersionOneInput, file: string) {
         file,
         path: `scene.objects[${objectIndex}].kind`,
         message:
-          "Supported primitives: array, buckets, pointer, window, stack, label, comparison, result.",
+          "Supported primitives: array, buckets, pointer, window, stack, queue, label, comparison, result.",
       };
     }
   }

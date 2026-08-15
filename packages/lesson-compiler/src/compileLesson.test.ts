@@ -423,35 +423,17 @@ test("diagnoses disconnect when V1 has no connection primitive", () => {
   });
 });
 
-test("diagnoses enqueue when V1 has no queue primitive", () => {
-  const compiled = compileLesson(
-    sourceWithTerminalAction({
-      type: "enqueue",
-      objectId: "values",
-      value: 21,
-    }),
-    compiledContent,
-  );
-
-  expect(compiled).toEqual({
-    ok: false,
-    diagnostics: [
-      {
-        code: "reference.invalid",
-        file: "lesson.yaml",
-        path: "timeline[0].actions[0].objectId",
-        message:
-          'Action "enqueue" has no compatible V1 queue primitive for "values".',
-      },
-    ],
-  });
-});
-
-test("diagnoses dequeue when V1 has no queue primitive", () => {
+/**
+ * These two once asserted that enqueue and dequeue had no queue primitive at
+ * all, which was true from V1 until C07 built one. They now guard what is still
+ * worth guarding: neither action will operate on something that is not a queue.
+ */
+test("diagnoses dequeue against a non-queue", () => {
   const compiled = compileLesson(
     sourceWithTerminalAction({
       type: "dequeue",
       objectId: "values",
+      expect: "anything",
     }),
     compiledContent,
   );
@@ -460,11 +442,11 @@ test("diagnoses dequeue when V1 has no queue primitive", () => {
     ok: false,
     diagnostics: [
       {
-        code: "reference.invalid",
+        code: "reference.wrong-kind",
         file: "lesson.yaml",
         path: "timeline[0].actions[0].objectId",
         message:
-          'Action "dequeue" has no compatible V1 queue primitive for "values".',
+          'Action "dequeue" requires a queue, but "values" resolves to an array.',
       },
     ],
   });
@@ -1734,4 +1716,153 @@ test("rejects pushing onto something that is not a stack", () => {
   expect(compiled.diagnostics.map(({ message }) => message)).toContain(
     'Action "push" requires a stack, but "values" resolves to an array.',
   );
+});
+
+function queueSource(
+  actions: readonly unknown[],
+  entries: readonly string[] = [],
+): LessonSourceV1 {
+  const migrated = migrateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        objects: [
+          {
+            id: "line",
+            kind: "queue",
+            label: "Waiting",
+            entries: [...entries],
+          },
+        ],
+      },
+      timeline: [
+        {
+          id: "only",
+          narration: "Serve the line from the front.",
+          terminal: true,
+          actions,
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the queue fixture to be valid.");
+  }
+  return migrated.value;
+}
+
+function compiledQueue(
+  compiled: ReturnType<typeof compileLesson>,
+): readonly string[] | undefined {
+  if (!compiled.ok) return undefined;
+  const last = compiled.value.snapshots
+    .at(-1)
+    ?.objects.find((object) => object.kind === "queue");
+  return last?.kind === "queue" ? last.entries : undefined;
+}
+
+test("enqueues onto the back of a queue, front entry first", () => {
+  const compiled = compileLesson(
+    queueSource([
+      { type: "enqueue", objectId: "line", key: "ada" },
+      { type: "enqueue", objectId: "line", key: "grace" },
+      { type: "enqueue", objectId: "line", key: "alan" },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiledQueue(compiled)).toEqual(["ada", "grace", "alan"]);
+});
+
+test("dequeues the entry that arrived first, not the one that arrived last", () => {
+  // The whole difference from a stack, stated as a test.
+  const compiled = compileLesson(
+    queueSource(
+      [{ type: "dequeue", objectId: "line", expect: "ada" }],
+      ["ada", "grace", "alan"],
+    ),
+    compiledContent,
+  );
+
+  expect(compiledQueue(compiled)).toEqual(["grace", "alan"]);
+});
+
+test("rejects a dequeue that names an entry other than the front", () => {
+  const compiled = compileLesson(
+    queueSource(
+      [{ type: "dequeue", objectId: "line", expect: "alan" }],
+      ["ada", "grace", "alan"],
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "dequeue" expected "alan" from "line", but the front holds "ada".',
+  );
+});
+
+test("rejects dequeuing an empty queue", () => {
+  const compiled = compileLesson(
+    queueSource([{ type: "dequeue", objectId: "line", expect: "anyone" }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "dequeue" requires a non-empty queue, but "line" is empty.',
+  );
+});
+
+test("rejects enqueuing past what the figure can show", () => {
+  const compiled = compileLesson(
+    queueSource(
+      [{ type: "enqueue", objectId: "line", key: "seventh" }],
+      ["a", "b", "c", "d", "e", "f"],
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("rejects enqueuing onto something that is not a queue", () => {
+  const compiled = compileLesson(
+    sourceWithTerminalAction({ type: "enqueue", objectId: "values", key: "x" }),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "enqueue" requires a queue, but "values" resolves to an array.',
+  );
+});
+
+test("a queue and a stack given the same arrivals hand them back in opposite orders", () => {
+  // The two lessons exist to draw this distinction, so it is pinned here rather
+  // than left to prose.
+  const arrivals = ["first", "second", "third"];
+  const queue = compileLesson(
+    queueSource(
+      [{ type: "dequeue", objectId: "line", expect: "first" }],
+      arrivals,
+    ),
+    compiledContent,
+  );
+  const stack = compileLesson(
+    stackSource(
+      [{ type: "pop", objectId: "calls", expect: "third" }],
+      arrivals,
+    ),
+    compiledContent,
+  );
+
+  expect({ queue: compiledQueue(queue), stack: compiledStack(stack) }).toEqual({
+    queue: ["second", "third"],
+    stack: ["first", "second"],
+  });
 });
