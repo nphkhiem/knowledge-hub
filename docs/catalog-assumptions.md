@@ -144,6 +144,28 @@ The denominator problem recorded at six is now eight lessons away rather than ni
 
 **3 and 4** were defended by their assertions and needed no changes.
 
+## Reviewed at eight lessons, 2026-08-15
+
+"Queue and First-In Order" was the seventh growth, and the first where the review found no ranking defect. That is the finding.
+
+**1, ranking. Clean, because the check moved before publication.** The last two reviews each caught a central term missing from every indexed field, after the lesson was written. This time the words a learner would type were listed first and checked against the title, objective, and recognition signals while authoring: `queue`, `fifo`, `fair`, `waiting`, `backlog`, `arrival`. All six resolve to this lesson, and `fifo` only does because the acronym was put into a recognition signal deliberately rather than left to prose.
+
+The check works. It belongs in the authoring routine rather than in this document as an observation.
+
+Two words still return nothing, and both are left alone on purpose. `starvation` and `buffer` are deep-dive concepts rather than names for the lesson, and the ninety-word prose cap truncates before reaching them. That is the same trade recorded for `log` and `trace`.
+
+`waiting` returns the Stack lesson first, then this one. Both match on a recognition signal, so the tie breaks on reading order and the earlier lesson wins. Both genuinely match; nothing to fix.
+
+**2, schema generality. Nothing new was needed, and that is the first time a new primitive has been used without one.** C07 part one built the queue against the same contract the stack uses, and the lesson compiled against it without a single schema change. The two structures needed one primitive each and no adjustments to anything shared, which is the first real evidence that the primitive contract generalizes rather than being stretched per lesson.
+
+The rule corrected at five lessons has now predicted four in a row.
+
+**5, aggregates.** Correct at eight: "8 of 15 lessons published so far, 32 minutes of reading in DSA", matching figures on the path detail and domain page, "Showing all 8 lessons" on Explore.
+
+**The denominator problem is now seven lessons away.** At fifteen published the path reports itself complete and then reports more published than exist. Nothing breaks; it starts lying. It needs a decision before C14.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
