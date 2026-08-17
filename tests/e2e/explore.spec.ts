@@ -152,7 +152,25 @@ test("searches from the home page entry", async ({ page }) => {
   await page.getByRole("button", { name: "Search" }).click();
 
   await expect(page).toHaveURL(/explore\/\?q=pair/);
-  await expect(visibleRows(page)).toHaveCount(1);
+
+  /**
+   * Deliberately not a fixed count. This asserted exactly one match until a
+   * later lesson mentioned closest pairs, which is legitimate content rather
+   * than a defect. How many lessons mention a term is catalog size in
+   * disguise, and docs/catalog-assumptions.md item 7 has recorded that mistake
+   * twice already. What must hold is that the query reached Explore, narrowed
+   * the list, and kept the lesson the term names.
+   */
+  const matched = await visibleRows(page).count();
+  await expect(page.locator('[data-lesson-slug="two-pointers"]')).toBeVisible();
+
+  await page.goto("explore/");
+  const published = await visibleRows(page).count();
+
+  expect({ narrowed: matched < published, someMatched: matched > 0 }).toEqual({
+    narrowed: true,
+    someMatched: true,
+  });
 });
 
 test("finds a lesson by a term that appears only in its prose", async ({

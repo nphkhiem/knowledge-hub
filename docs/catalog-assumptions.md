@@ -166,6 +166,32 @@ The rule corrected at five lessons has now predicted four in a row.
 
 **3 and 4** were defended by their assertions and needed no changes.
 
+## Reviewed at nine lessons, 2026-08-15
+
+"Sorting as a Precondition" was the eighth growth. It found more than any review since the second.
+
+**1, ranking. A defect, and it runs in the opposite direction from the previous ones.** Searching `pair` returned this new lesson **above Two Pointers**, which is the lesson actually about finding a pair.
+
+The cause was not the new lesson. Its recognition signal legitimately says "duplicates, closest pairs, and grouping all become adjacent once ordered", which scores as a signal match. Two Pointers had "pair" only in its objective, scoring lower, because its recognition signals never say what the technique finds: they describe ordering and comparison in the abstract. Fixed by adding "The question asks for a pair of positions, and checking every pair would be too slow" to Two Pointers, and `pair` now returns it first.
+
+**The authoring check has to run in both directions.** Until now it was "does my lesson own the words a learner would type for it". This adds: "does my lesson accidentally outrank an older one on a word that belongs to that older lesson". A new lesson can demote an existing one without either being wrong, and only a search across the real index shows it.
+
+Left alone deliberately: `stable` and `stability` return nothing, although the deep dive has a section on stability. Same trade as `log`, `trace`, and `starvation`, all deep-dive concepts rather than names for a lesson. `sorted` returns Binary Search first and this lesson second, both on signal matches with the tie broken by reading order; both genuinely match.
+
+**2, schema generality. No primitive work, exactly as the ticket said, but the audit found a larger gap while confirming it.**
+
+**No action can change an array's values.** Arrays are immutable once authored: every action moves a pointer, changes a window range, mutates stack, queue, or bucket entries, sets highlights, or sets a result status. Nothing reorders or rewrites an array.
+
+This lesson is unaffected because its subject is the precondition rather than the algorithm, so it uses two arrays, before and after, and highlights. That was a design choice made once the gap was known, not a workaround discovered late.
+
+It will block later lessons. **C17 Heap** must show values moving into place, **C20 and C21 dynamic programming** must show a table being filled, and any lesson that wants to animate a sort needs the same thing. All three need an action that writes to an array, most likely a `swap` for the first and a `set-value` for the others. Deciding that before C17 rather than during it is the lesson C05 already taught.
+
+**5, aggregates.** Correct at nine: "9 of 15 lessons published so far, 36 minutes of reading in DSA", with matching figures elsewhere. **The denominator problem is now six lessons away.**
+
+**7 recurred, and a normal test caught it rather than a tripwire.** `tests/e2e/explore.spec.ts` asserted that searching "pair" returns exactly one lesson. That is catalog size in disguise, and it broke the moment a second lesson legitimately mentioned pairs. Rewritten to assert that the query reached Explore, narrowed the list, and kept the lesson the term names, with no fixed count. This is the third time item 7 has been recorded; the difference now is that the failure arrived through the ordinary suite, which is the system working.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
