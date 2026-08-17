@@ -10,6 +10,7 @@ title: "Two Pointers"
 durationMinutes: 4
 objective: "Explain how two coordinated positions discard impossible candidates without checking every pair."
 recognitionSignals:
+  - "The question asks for a pair of positions, and checking every pair would be too slow."
   - "The data is ordered or can be traversed in a meaningful order."
   - "A comparison proves which side cannot contain a useful candidate."
 limitations:
