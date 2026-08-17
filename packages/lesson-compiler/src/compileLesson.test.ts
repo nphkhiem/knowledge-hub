@@ -1866,3 +1866,111 @@ test("a queue and a stack given the same arrivals hand them back in opposite ord
     stack: ["first", "second"],
   });
 });
+
+test("advances a window's right edge to grow it", () => {
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "advance", objectId: "frame", toStart: 0, toEnd: 3 }],
+      { start: 0, end: 1 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiledWindow(compiled)).toEqual({ start: 0, end: 3 });
+});
+
+test("advances a window's left edge to shrink it from the front", () => {
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "advance", objectId: "frame", toStart: 2, toEnd: 3 }],
+      { start: 0, end: 3 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiledWindow(compiled)).toEqual({ start: 2, end: 3 });
+});
+
+test("advances both edges in one step", () => {
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "advance", objectId: "frame", toStart: 1, toEnd: 4 }],
+      { start: 0, end: 2 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiledWindow(compiled)).toEqual({ start: 1, end: 4 });
+});
+
+test("rejects an advance that moves the right edge backward", () => {
+  // The rule the whole pattern rests on. A window whose edges can retreat is
+  // not making one pass, and its cost is no longer proportional to the input.
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "advance", objectId: "frame", toStart: 1, toEnd: 2 }],
+      { start: 1, end: 4 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "advance" cannot move an edge of "frame" backward. It covers 1 to 4, and 1 to 2 moves the end left.',
+  );
+});
+
+test("rejects an advance that moves the left edge backward", () => {
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "advance", objectId: "frame", toStart: 0, toEnd: 4 }],
+      { start: 2, end: 4 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "advance" cannot move an edge of "frame" backward. It covers 2 to 4, and 0 to 4 moves the start left.',
+  );
+});
+
+test("allows an advance that leaves the window exactly where it is", () => {
+  const compiled = compileLesson(
+    windowSource(
+      [{ type: "advance", objectId: "frame", toStart: 1, toEnd: 3 }],
+      { start: 1, end: 3 },
+    ),
+    compiledContent,
+  );
+
+  expect(compiledWindow(compiled)).toEqual({ start: 1, end: 3 });
+});
+
+test("rejects an advance that runs off the end of the array", () => {
+  const compiled = compileLesson(
+    windowSource([
+      { type: "advance", objectId: "frame", toStart: 0, toEnd: 9 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("rejects advancing something that is not a window", () => {
+  const compiled = compileLesson(
+    windowSource([
+      { type: "advance", objectId: "readings", toStart: 0, toEnd: 2 },
+    ]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "advance" requires a window, but "readings" resolves to an array.',
+  );
+});

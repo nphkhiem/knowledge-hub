@@ -249,6 +249,22 @@ export const narrowActionSchema = z.strictObject({
   toStart: z.number().int().min(0),
   toEnd: z.number().int().min(0),
 });
+/**
+ * Moves a window forward, growing or shrinking it, with neither edge allowed
+ * to move backward.
+ *
+ * The third window action, and the one a window that changes width needs.
+ * `slide` keeps the width; `narrow` only moves edges inward and is what a
+ * halving search wants. This one lets the range change size while forbidding
+ * any retreat, because a window whose edges can move backward is no longer
+ * making one pass and its cost stops being proportional to the input.
+ */
+export const advanceActionSchema = z.strictObject({
+  type: z.literal("advance"),
+  ...actionTargetSchema,
+  toStart: z.number().int().min(0),
+  toEnd: z.number().int().min(0),
+});
 
 /** Places an entry on the top of a stack. */
 export const pushActionSchema = z.strictObject({
@@ -284,6 +300,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   insertActionSchema,
   slideActionSchema,
   narrowActionSchema,
+  advanceActionSchema,
   pushActionSchema,
   popActionSchema,
 ]);

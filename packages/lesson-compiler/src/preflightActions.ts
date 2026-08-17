@@ -74,6 +74,43 @@ export function validateStaticActions(
           }
           break;
         }
+        case "advance": {
+          // Only the kind and the inverted-range check are duplicated here.
+          // Whether an edge retreats depends on where earlier steps left the
+          // window, which preflight does not replay, so applyAction owns that
+          // rule alone rather than this file guessing at it.
+          if (object.kind !== "window") {
+            diagnostics.push({
+              code: "reference.wrong-kind",
+              file,
+              path: `${path}.objectId`,
+              message: `Action "advance" requires a window, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
+            });
+            break;
+          }
+          if (action.toEnd < action.toStart) {
+            diagnostics.push({
+              code: "reference.invalid",
+              file,
+              path: `${path}.toEnd`,
+              message: `Window "${object.id}" cannot end at ${action.toEnd}, before its start ${action.toStart}.`,
+            });
+            break;
+          }
+          const target = objectFor(object.targetObjectId);
+          if (
+            target?.kind === "array" &&
+            action.toEnd >= target.values.length
+          ) {
+            diagnostics.push({
+              code: "reference.invalid",
+              file,
+              path: `${path}.toEnd`,
+              message: `Window range ${action.toStart} to ${action.toEnd} is outside array "${target.id}".`,
+            });
+          }
+          break;
+        }
         case "narrow": {
           // Partially duplicated from applyAction. Preflight cannot know how
           // far a window has already narrowed, because that depends on earlier
