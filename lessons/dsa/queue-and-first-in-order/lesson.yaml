@@ -1,0 +1,113 @@
+schemaVersion: 1
+id: "dsa.queue-and-first-in-order"
+slug: "queue-and-first-in-order"
+domain: "dsa"
+collection: "interview-foundations"
+order: 8
+difficulty: "easy"
+license: "CC-BY-4.0"
+title: "Queue and First-In Order"
+durationMinutes: 4
+objective: "Explain why work is served in the order it arrived, and why a newly arrived item joins the back however recent it is."
+recognitionSignals:
+  - "Work arrives from outside and waits, so the fair thing is to serve whoever has waited longest."
+  - "The order is first in, first out (FIFO), and jumping the line is a defect rather than an optimization."
+  - "A new arrival must not delay something that was already waiting."
+  - "Arrivals and departures happen independently, so a backlog can form."
+limitations:
+  - "Only the front is reachable. A question about the most recent arrival needs a stack, not a queue."
+  - "Serving in order does not make the queue keep up. If arrivals outpace service the backlog grows without bound, and the waiting time grows with it."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/first_in_order.py"
+    - language: "typescript"
+      file: "examples/first-in-order.ts"
+    - language: "java"
+      file: "examples/FirstInOrder.java"
+    - language: "cpp"
+      file: "examples/first_in_order.cpp"
+    - language: "go"
+      file: "examples/first_in_order.go"
+scene:
+  objects:
+    - id: "line"
+      kind: "queue"
+      label: "Waiting to print"
+      entries: []
+    - id: "question"
+      kind: "label"
+      text: "Which one is served next?"
+timeline:
+  - id: "first-arrival"
+    narration: "A report is sent to the printer. Nothing is ahead of it, so it is both the front and the back of the line."
+    actions:
+      - type: "enqueue"
+        objectId: "line"
+        key: "report.pdf"
+  - id: "second-arrival"
+    narration: "A photo is sent while the report is still waiting. It joins the back."
+    actions:
+      - type: "enqueue"
+        objectId: "line"
+        key: "photo.jpg"
+  - id: "serve-the-report"
+    narration: "The printer takes the front of the line, which is the report: it has waited the longest."
+    actions:
+      - type: "dequeue"
+        objectId: "line"
+        expect: "report.pdf"
+  - id: "third-arrival"
+    narration: "Now a note arrives. It is the most recent thing here, and it still joins the back, behind the photo that was already waiting."
+    actions:
+      - type: "enqueue"
+        objectId: "line"
+        key: "notes.txt"
+  - id: "serve-the-photo"
+    narration: "So the photo is served next, not the note. This is the step where a pile would have done the opposite."
+    actions:
+      - type: "dequeue"
+        objectId: "line"
+        expect: "photo.jpg"
+  - id: "serve-the-note"
+    narration: "And the note last. Three jobs arrived in one order and were served in exactly that order."
+    terminal: true
+    actions:
+      - type: "dequeue"
+        objectId: "line"
+        expect: "notes.txt"
+modelCheck:
+  prompt: "Two jobs are already waiting when a third arrives. When is the third one served?"
+  options:
+    - id: "last"
+      label: "After both of them, because it arrived last"
+    - id: "next"
+      label: "Next, because it is the most recent"
+    - id: "smallest"
+      label: "Whenever it is the smallest job remaining"
+  correctOptionId: "last"
+  explanation: "A queue is defined by which end is served, not by how long the work takes. An arrival joins the back however recent it is, which is exactly what stops a steady stream of new work from indefinitely delaying something that was already waiting."
+accessibility:
+  summary: "An animation of print jobs joining the back of a line and being served from the front, including a new arrival that joins behind a job already waiting."
+  initialDescription: "Nothing is waiting to print, so the line is empty."
+  motionEquivalentLabel: "Arrivals and departures, step by step"
+evidence:
+  verifiedOn: "2026-08-15"
+  scope: "Describes first-in-first-out order over a single queue with one server. Priority ordering, multiple servers, and the arrival-rate mathematics of queueing theory are out of scope."
+  sources:
+    - title: "The Art of Computer Programming, volume 1, section 2.2.1: Stacks, Queues, and Deques"
+      citation: "Knuth, Donald E. The Art of Computer Programming, Volume 1: Fundamental Algorithms, 3rd ed. Addison-Wesley, 1997, section 2.2.1."
+      publisher: "Addison-Wesley"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A queue is a linear list where insertions are made at one end and deletions at the other, so the first item inserted is the first removed."
+        - "A stack and a queue differ in which end deletions are made from, and that difference alone determines the order items come back."
+    - title: "Introduction to Algorithms, fourth edition, chapter 10: Elementary Data Structures"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 10."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A queue implements a first-in, first-out policy, and its enqueue and dequeue operations each take constant time."
