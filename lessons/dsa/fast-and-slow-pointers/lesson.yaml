@@ -1,0 +1,121 @@
+schemaVersion: 1
+id: "dsa.fast-and-slow-pointers"
+slug: "fast-and-slow-pointers"
+domain: "dsa"
+collection: "interview-foundations"
+order: 11
+difficulty: "medium"
+license: "CC-BY-4.0"
+title: "Fast and Slow Pointers"
+durationMinutes: 5
+objective: "Explain how two positions moving at different speeds answer questions about a sequence's shape, such as its midpoint, in one pass without measuring its length first."
+recognitionSignals:
+  - "Two positions move through the same sequence at different speeds, one step against two."
+  - "The answer is a ratio of the sequence rather than a value in it: its middle, or whether it loops."
+  - "Detecting a cycle, sometimes called the tortoise and hare or Floyd's algorithm, without recording where you have been."
+  - "The length is unknown or costly to measure, so counting it first is not an option."
+limitations:
+  - "It answers questions about position and shape, never about values. It cannot find where a particular value sits."
+  - "On an array the length is already known, so the midpoint is simple arithmetic. This earns its place on a structure that can only be walked forward, such as a linked list, where nothing knows the length until it has been walked."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/two_speeds.py"
+    - language: "typescript"
+      file: "examples/two-speeds.ts"
+    - language: "java"
+      file: "examples/TwoSpeeds.java"
+    - language: "cpp"
+      file: "examples/two_speeds.cpp"
+    - language: "go"
+      file: "examples/two_speeds.go"
+scene:
+  objects:
+    - id: "values"
+      kind: "array"
+      label: "Readings"
+      values: [4, 8, 15, 16, 23, 42, 9]
+    - id: "slow"
+      kind: "pointer"
+      label: "Slow"
+      targetObjectId: "values"
+      index: 0
+    - id: "fast"
+      kind: "pointer"
+      label: "Fast"
+      targetObjectId: "values"
+      index: 0
+    - id: "question"
+      kind: "label"
+      text: "Which value is in the middle?"
+timeline:
+  - id: "one-against-two"
+    narration: "Both start at the front. The only difference between them is speed: slow takes one step, fast takes two."
+    actions:
+      - type: "move"
+        objectId: "slow"
+        toIndex: 1
+      - type: "move"
+        objectId: "fast"
+        toIndex: 2
+  - id: "the-gap-widens"
+    narration: "Each round the gap grows by one, because fast gains a step every time. Slow is on 15, fast is on 23."
+    actions:
+      - type: "move"
+        objectId: "slow"
+        toIndex: 2
+      - type: "move"
+        objectId: "fast"
+        toIndex: 4
+  - id: "fast-reaches-the-end"
+    narration: "Fast lands on the last reading and can go no further. Nothing counted the seven values; fast simply ran out of sequence."
+    actions:
+      - type: "move"
+        objectId: "slow"
+        toIndex: 3
+      - type: "move"
+        objectId: "fast"
+        toIndex: 6
+  - id: "slow-is-the-middle"
+    narration: "Fast crossed the whole sequence and slow crossed half of it, so slow is standing on the middle: 16. One pass, and the length was never measured."
+    terminal: true
+    actions:
+      - type: "highlight"
+        objectId: "values"
+        indices: [3]
+        tone: "success"
+modelCheck:
+  prompt: "The sequence is twice as long. How many passes does finding the middle take?"
+  options:
+    - id: "one"
+      label: "Still one, because both positions move within the same pass"
+    - id: "two"
+      label: "Two: one to measure the length, then one to reach the middle"
+    - id: "parity"
+      label: "It depends on whether the length is even or odd"
+  correctOptionId: "one"
+  explanation: "The two positions advance together, so the whole thing is one traversal however long the sequence is. That is the point of the technique: it replaces measure-then-walk with a single walk, which matters when measuring means walking anyway."
+accessibility:
+  summary: "An animation of two positions crossing a sequence of readings, one moving a step at a time and the other two, until the faster reaches the end and the slower stands on the middle."
+  initialDescription: "Seven readings with both the slow and the fast position on the first one, and the question asking which value is in the middle."
+  motionEquivalentLabel: "Two speeds crossing the readings, step by step"
+evidence:
+  verifiedOn: "2026-08-15"
+  scope: "Describes two positions advancing at a fixed ratio through a sequence traversed forward only. Cycle detection is described but shown on a linked structure in the examples rather than in the figure, because the figure's sequence is an array."
+  sources:
+    - title: "The Art of Computer Programming, volume 2, section 3.1, exercise 6"
+      citation: "Knuth, Donald E. The Art of Computer Programming, Volume 2: Seminumerical Algorithms, 3rd ed. Addison-Wesley, 1997, section 3.1, exercise 6."
+      publisher: "Addison-Wesley"
+      accessedOn: "2026-08-15"
+      supports:
+        - "Advancing one position by a single step and another by two detects a repetition without recording the positions already visited."
+        - "The method is credited to R. W. Floyd."
+    - title: "Introduction to Algorithms, fourth edition, chapter 10: Elementary Data Structures"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 10."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A linked list is traversed from its head by following each element's successor, so its length is not available without walking it."

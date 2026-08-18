@@ -218,6 +218,30 @@ The window now carries three actions whose differing refusals are the design: `s
 
 Two tests in two reviews have now encoded catalog composition rather than catalog size. The general form of item 7 is wider than first written: **an assertion about what the catalog contains, not only how much it contains, rots as content lands.**
 
+## Reviewed at eleven lessons, 2026-08-15
+
+"Fast and Slow Pointers" was the tenth growth, and the quietest review so far. Both assertions held, nothing in the schema moved, and the aggregates were right first time. What it found was in search.
+
+**1, ranking. Two gaps, both caught by the pre-authoring check rather than after publishing.**
+
+`middle` returned Binary Search first and this lesson second. Both are about a middle, but this is the lesson that *finds* one, and its recognition signals said "midpoint" where a learner types "middle". Changed to say middle, and it now ranks first with Binary Search second, which is the right order for a query about finding the middle.
+
+`floyd` returned nothing at all. The algorithm's common name appeared only in the evidence citation, which is not indexed. Added to a recognition signal alongside "tortoise and hare", and it resolves.
+
+Fixing `middle` cost `midpoint`, which then matched nothing, because prose beyond the ninety-word cap does not count. Adding it to the objective restored it. **The words compete for a small number of indexed fields, and moving one can silently drop another**, which is worth knowing before the next author reshuffles a signal.
+
+**A general property, not a lesson defect:** multi-word queries barely work. `linked list` returns nothing across the whole catalog, because the prose index is unique words joined by spaces and the score is a substring test against the entire query. Any query of two words that are not adjacent in that joined list fails. This has been true since the index shipped and no lesson has surfaced it before. Worth a decision at some point; not urgent, and not this lesson's problem.
+
+**2, schema generality. Nothing needed, and the ticket said so correctly.** The `pointer` primitive already alternates above and below the array by ordinal, so two pointers can share an index without colliding, which is exactly what a fast and slow pair does at the start. The vocabulary audit confirmed the ticket before any content was written.
+
+That is now three tickets in a row where the audit was worth running, and two where it changed the plan. This one it did not, which is also information.
+
+**5, aggregates.** Correct at eleven: "11 of 15 lessons published so far, 46 minutes of reading in DSA". Two lessons now run five minutes rather than four, and the total reflects it.
+
+**The denominator problem is four lessons away.** At fifteen the path reports itself complete with ten still to write. This is the last review where it can be described as distant.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
