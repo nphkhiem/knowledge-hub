@@ -25,7 +25,7 @@ export const LEARNING_PATHS: readonly LearningPathDefinition[] = [
     collection: "interview-foundations",
     title: "Interview Foundations",
     purpose:
-      "The ideas that come up most often in demanding technical interviews, across data structures and algorithms, networking, and system design. Read them in order to build up, or open any one on its own.",
+      "The data structure and algorithm ideas that come up most often in demanding technical interviews. Read them in order to build up, or open any one on its own.",
     totalCount: INTERVIEW_FOUNDATIONS_TOTAL,
   },
 ];

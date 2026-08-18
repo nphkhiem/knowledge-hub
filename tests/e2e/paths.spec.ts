@@ -20,7 +20,7 @@ test("opens a path and shows its lessons in recommended order", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: "Interview Foundations" }),
   ).toBeVisible();
-  await expect(page.getByText(/\d+ of 15 lessons published/)).toBeVisible();
+  await expect(page.getByText(/\d+ of \d+ lessons published/)).toBeVisible();
   await expect(page.locator("[data-lesson-slug]")).not.toHaveCount(0);
 });
 

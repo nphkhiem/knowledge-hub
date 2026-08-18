@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 
 import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
 
+import { INTERVIEW_FOUNDATIONS_TOTAL } from "./collection.js";
 import { LEARNING_PATHS, summarizePaths } from "./paths.js";
 
 function lesson(
@@ -29,7 +30,10 @@ test("describes the declared path even before it is fully written", () => {
     slug: "interview-foundations",
     title: "Interview Foundations",
     publishedCount: 1,
-    totalCount: 15,
+    // The declared total, not a literal. What this test cares about is that a
+    // path reports its declared size rather than what happens to be published;
+    // the size itself is pinned once, in collection.test.ts.
+    totalCount: INTERVIEW_FOUNDATIONS_TOTAL,
   });
 });
 
