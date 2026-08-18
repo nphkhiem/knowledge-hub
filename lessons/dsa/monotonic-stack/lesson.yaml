@@ -1,0 +1,144 @@
+schemaVersion: 1
+id: "dsa.monotonic-stack"
+slug: "monotonic-stack"
+domain: "dsa"
+collection: "interview-foundations"
+order: 12
+difficulty: "medium"
+license: "CC-BY-4.0"
+title: "Monotonic Stack"
+durationMinutes: 5
+objective: "Explain how keeping a pile in order lets each value wait for its answer, so one pass resolves every question at an amortized cost of one push and one pop per value."
+recognitionSignals:
+  - "Every position needs the next greater thing to its right, or the next smaller one."
+  - "A value cannot be answered when it is read, so it has to wait until something answers it."
+  - "Once a larger value arrives, everything smaller still waiting is answered at once and never needed again."
+  - "The obvious approach compares every pair, and the ordering makes most of those comparisons unnecessary."
+limitations:
+  - "It answers next-greater and next-smaller questions, not arbitrary ones. The condition that pops has to be the same condition that orders the pile."
+  - "Whatever is still waiting at the end has no answer, and that is a real outcome rather than an error to hide."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/next_warmer.py"
+    - language: "typescript"
+      file: "examples/next-warmer.ts"
+    - language: "java"
+      file: "examples/NextWarmer.java"
+    - language: "cpp"
+      file: "examples/next_warmer.cpp"
+    - language: "go"
+      file: "examples/next_warmer.go"
+scene:
+  objects:
+    - id: "temps"
+      kind: "array"
+      label: "Daily high"
+      values: [30, 28, 33, 31, 35]
+    - id: "today"
+      kind: "pointer"
+      label: "Reading"
+      targetObjectId: "temps"
+      index: 0
+    - id: "waiting"
+      kind: "stack"
+      label: "Still waiting for a warmer day"
+      entries: []
+    - id: "question"
+      kind: "label"
+      text: "How long until a warmer day?"
+timeline:
+  - id: "first-day-waits"
+    narration: "The first day cannot be answered when it is read: nothing after it has been seen yet. It goes on the pile to wait."
+    actions:
+      - type: "push"
+        objectId: "waiting"
+        key: "30"
+  - id: "cooler-so-it-waits-too"
+    narration: "28 is cooler than the day already waiting, so it cannot answer it. It waits on top, and the pile is now in order from bottom to top."
+    actions:
+      - type: "move"
+        objectId: "today"
+        toIndex: 1
+      - type: "push"
+        objectId: "waiting"
+        key: "28"
+  - id: "one-day-answers-two"
+    narration: "33 is warmer than 28, so 28 is answered and leaves. It is warmer than 30 as well, so 30 leaves too. One reading answered everything waiting below it, and neither is ever looked at again."
+    actions:
+      - type: "move"
+        objectId: "today"
+        toIndex: 2
+      - type: "pop"
+        objectId: "waiting"
+        expect: "28"
+      - type: "pop"
+        objectId: "waiting"
+        expect: "30"
+      - type: "push"
+        objectId: "waiting"
+        key: "33"
+  - id: "cooler-again"
+    narration: "31 is cooler than 33, so it answers nothing and waits. The pile stays in order, which is the property that makes the next step cheap."
+    actions:
+      - type: "move"
+        objectId: "today"
+        toIndex: 3
+      - type: "push"
+        objectId: "waiting"
+        key: "31"
+  - id: "the-last-reading"
+    narration: "35 clears both. Every day was pushed once and popped at most once, so five readings cost ten operations rather than the twenty-five that comparing every pair would."
+    terminal: true
+    actions:
+      - type: "move"
+        objectId: "today"
+        toIndex: 4
+      - type: "pop"
+        objectId: "waiting"
+        expect: "31"
+      - type: "pop"
+        objectId: "waiting"
+        expect: "33"
+      - type: "push"
+        objectId: "waiting"
+        key: "35"
+      - type: "highlight"
+        objectId: "temps"
+        indices: [4]
+        tone: "success"
+modelCheck:
+  prompt: "One reading pops four values off the pile. Does that make the pass more expensive than one pop per reading?"
+  options:
+    - id: "no"
+      label: "No, because each value is pushed once and popped at most once across the whole pass"
+    - id: "yes"
+      label: "Yes, because that reading did four times the work"
+    - id: "sometimes"
+      label: "Only when the values are in descending order"
+  correctOptionId: "no"
+  explanation: "Counting per reading is the wrong unit. A reading that pops four has been paid for by four earlier readings that pushed and popped nothing, and no value can be popped twice. Across the pass the total is at most one push and one pop per value, which is why an inner loop that sometimes runs many times still leaves the whole thing proportional to the number of readings."
+accessibility:
+  summary: "An animation of daily temperatures being read one at a time, with each unanswered day waiting on a pile until a warmer reading arrives and clears everything cooler than it."
+  initialDescription: "Five daily highs with the first one being read, nothing waiting yet, and the question asking how long until a warmer day."
+  motionEquivalentLabel: "Readings and the waiting pile, step by step"
+evidence:
+  verifiedOn: "2026-08-15"
+  scope: "Describes a stack kept in one order over a sequence read once, answering next-greater questions. Problems needing the previous greater element, or two-sided conditions, use the same structure and are not shown."
+  sources:
+    - title: "Introduction to Algorithms, fourth edition, chapter 17: Amortized Analysis"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 17."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A sequence of operations can be bounded in aggregate even when an individual operation is expensive, by charging its cost to earlier operations that paid for it."
+        - "An element pushed once and popped at most once contributes constant total cost across the whole sequence."
+    - title: "Competitive Programmer's Handbook, chapter 8: Amortized analysis"
+      citation: "Laaksonen, Antti. Competitive Programmer's Handbook, chapter 8."
+      publisher: "Antti Laaksonen"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A stack holding elements in increasing or decreasing order answers nearest-smaller and nearest-greater queries in a single left-to-right pass."

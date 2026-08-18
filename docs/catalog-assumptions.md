@@ -256,6 +256,28 @@ The count, the arithmetic, and the plurals in those reviews were genuinely check
 
 **What to do when item 5 trips from now on:** read the sentence out of a browser with `textContent`, not out of the HTML with a tag-stripping regex, and look at the whitespace rather than the numbers.
 
+## Reviewed at twelve lessons, 2026-08-15
+
+"Monotonic Stack" was the eleventh growth, and the first review since the denominator was settled.
+
+**1, ranking. The worst gap yet, and the canonical name of the pattern was missing.** `greater` and `next greater` both returned nothing. "Next greater element" is what this pattern is called almost everywhere it is taught, and the lesson's recognition signal said "larger". Changed to "the next greater thing to its right, or the next smaller one", and both queries now return it first.
+
+`amortized` also returned nothing, although the entire cost argument of the lesson is amortized analysis and one of its sources is the CLRS chapter of that name. Evidence is not indexed. Added to the objective, where it belongs anyway: the claim is one push and one pop per value amortized, not per step.
+
+Worth noting because it contradicts the eleven-lesson finding: **`next greater` works as a multi-word query**, because those two words end up adjacent in the joined signal text. Multi-word search is not uniformly broken, it succeeds exactly when the words happen to be adjacent in an indexed field, which is worse than uniformly broken because it is unpredictable.
+
+Left alone: `histogram` and `temperature` return nothing. Both are figure and application vocabulary rather than names for the pattern, consistent with `log`, `trace`, `starvation`, and `buffer`.
+
+**2, schema generality. The ticket was wrong again, and in the now-familiar direction.** It said "EXTEND: C06 stack" and "ships as two pull requests". The audit found nothing to extend: the lesson needs `move`, `push`, `pop`, and `highlight`, all of which exist, and a step's `actions` is already a list so one reading popping several entries needs no new capability. It shipped as one pull request with no primitive work.
+
+That is three tickets out of five audited whose primitive-work line was wrong. The audit is now the most valuable few minutes in the lesson workflow, and the tickets should be treated as a plan rather than a specification.
+
+**5, aggregates.** Correct at twelve, and reading them from a browser rather than through a tag-stripping regex, which is the method this document adopted after that regex hid a live defect. Home, path, domain, and Explore all agree: "12 of 25 lessons published, 51 minutes".
+
+The denominator now says twenty-five and names only DSA. The problem recorded in five consecutive reviews is closed.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
