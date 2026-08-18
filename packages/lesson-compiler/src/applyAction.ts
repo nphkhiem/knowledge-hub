@@ -302,6 +302,66 @@ export function applyAction(
       });
       return { ok: true, value: state };
     }
+    case "advance": {
+      if (object.kind !== "window") {
+        return failure(
+          context,
+          `Action "advance" requires a window, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      const target = state.objectsById.get(object.targetObjectId);
+      if (!target || target.kind !== "array") {
+        return failure(
+          context,
+          `Window "${object.id}" requires an array target.`,
+        );
+      }
+      if (action.toEnd < action.toStart) {
+        return failure(
+          context,
+          `Window "${object.id}" cannot end at ${action.toEnd}, before its start ${action.toStart}.`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      if (action.toEnd >= target.values.length) {
+        return failure(
+          context,
+          `Window range ${action.toStart} to ${action.toEnd} is outside array "${target.id}".`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      /**
+       * Neither edge may move left. This is the rule the whole pattern rests
+       * on: each edge crosses the sequence once, so the total work is
+       * proportional to the length rather than to the length times the width.
+       * A window allowed to retreat is doing something else, whatever the
+       * narration claims.
+       */
+      const retreating =
+        action.toStart < object.start
+          ? "start"
+          : action.toEnd < object.end
+            ? "end"
+            : undefined;
+      if (retreating !== undefined) {
+        return failure(
+          context,
+          `Action "advance" cannot move an edge of "${object.id}" backward. It covers ${object.start} to ${object.end}, and ${action.toStart} to ${action.toEnd} moves the ${retreating} left.`,
+          "reference.invalid",
+          `${context.path}.toEnd`,
+        );
+      }
+      replaceObject(state, {
+        ...object,
+        start: action.toStart,
+        end: action.toEnd,
+      });
+      return { ok: true, value: state };
+    }
     case "push": {
       if (object.kind !== "stack") {
         return failure(

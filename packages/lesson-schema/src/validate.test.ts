@@ -63,7 +63,7 @@ test("rejects an executable action with a stable diagnostic", () => {
       file: "lesson.yaml",
       path: "timeline[0].actions[0].type",
       message:
-        "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide, narrow, push, pop.",
+        "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide, narrow, advance, push, pop.",
     });
   }
 });

@@ -19,6 +19,7 @@ const supportedActions = [
   "insert",
   "slide",
   "narrow",
+  "advance",
   "push",
   "pop",
 ] as const;
@@ -71,7 +72,7 @@ function unsupportedActionDiagnostic(input: VersionOneInput, file: string) {
           file,
           path: `timeline[${stepIndex}].actions[${actionIndex}].type`,
           message:
-            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide, narrow, push, pop.",
+            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide, narrow, advance, push, pop.",
         };
       }
     }
