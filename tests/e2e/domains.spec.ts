@@ -115,5 +115,22 @@ test("groups lessons by difficulty without moving any lesson address", async ({
   const headings = await page
     .locator("[id^='difficulty-']")
     .evaluateAll((nodes) => nodes.map((node) => node.id));
-  expect(headings).toEqual(["difficulty-easy"]);
+
+  /**
+   * Deliberately not a fixed list. This asserted exactly ["difficulty-easy"]
+   * until the tenth lesson, which was the first graded anything else. Which
+   * difficulties appear is content, and pinning them is catalog composition in
+   * disguise. What must hold is that every group is a known difficulty and
+   * that the groups run in graded order.
+   */
+  const graded = ["difficulty-easy", "difficulty-medium", "difficulty-hard"];
+  const ranks = headings.map((id) => graded.indexOf(id));
+
+  expect({
+    allKnown: ranks.every((rank) => rank >= 0),
+    ascending: ranks.every(
+      (rank, at) => at === 0 || rank > (ranks[at - 1] ?? -1),
+    ),
+    grouped: headings.length > 0,
+  }).toEqual({ allKnown: true, ascending: true, grouped: true });
 });

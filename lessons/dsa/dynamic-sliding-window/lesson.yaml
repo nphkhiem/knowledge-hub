@@ -1,0 +1,124 @@
+schemaVersion: 1
+id: "dsa.dynamic-sliding-window"
+slug: "dynamic-sliding-window"
+domain: "dsa"
+collection: "interview-foundations"
+order: 10
+difficulty: "medium"
+license: "CC-BY-4.0"
+title: "Dynamic Sliding Window"
+durationMinutes: 5
+objective: "Explain how a window whose width is decided by the data still crosses the sequence once, because neither of its edges ever moves backward."
+recognitionSignals:
+  - "The question asks for the longest or shortest stretch satisfying a condition, and the width is not known in advance."
+  - "Growing the stretch can only break the condition, and shrinking it from the front can only help."
+  - "A fixed width cannot be chosen because the answer's size is what is being asked for."
+limitations:
+  - "It needs the condition to be monotonic: adding a value must never make a failing stretch pass. Values that can be negative break that, and the answer needs prefix sums instead."
+  - "Each edge only ever moves forward, so a question whose answer requires revisiting an earlier position is not this pattern."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/longest_within.py"
+    - language: "typescript"
+      file: "examples/longest-within.ts"
+    - language: "java"
+      file: "examples/LongestWithin.java"
+    - language: "cpp"
+      file: "examples/longest_within.cpp"
+    - language: "go"
+      file: "examples/longest_within.go"
+scene:
+  objects:
+    - id: "readings"
+      kind: "array"
+      label: "Readings"
+      values: [2, 3, 1, 4, 2]
+    - id: "frame"
+      kind: "window"
+      label: "Within budget"
+      targetObjectId: "readings"
+      start: 0
+      end: 0
+    - id: "question"
+      kind: "label"
+      text: "Longest stretch totalling at most 6"
+timeline:
+  - id: "start-at-one"
+    narration: "The window starts holding one value, totalling 2. There is no fixed width to keep this time: the width is the answer."
+    actions:
+      - type: "advance"
+        objectId: "frame"
+        toStart: 0
+        toEnd: 0
+  - id: "grow-once"
+    narration: "Taking in 3 makes the total 5, still within the budget of 6, so the window keeps it."
+    actions:
+      - type: "advance"
+        objectId: "frame"
+        toStart: 0
+        toEnd: 1
+  - id: "grow-twice"
+    narration: "Taking in 1 makes 6, exactly the budget. Three values, and the best stretch found so far."
+    actions:
+      - type: "advance"
+        objectId: "frame"
+        toStart: 0
+        toEnd: 2
+  - id: "pull-the-front-up"
+    narration: "Taking in 4 would make 10, over budget. So the front edge comes up until the total fits again, and the window is now 1 and 4, totalling 5."
+    actions:
+      - type: "advance"
+        objectId: "frame"
+        toStart: 2
+        toEnd: 3
+  - id: "both-edges-move"
+    narration: "Taking in the last 2 makes 7, over again, so the front comes up once more. Both edges moved right in this step, and neither has ever moved left."
+    actions:
+      - type: "advance"
+        objectId: "frame"
+        toStart: 3
+        toEnd: 4
+  - id: "the-longest"
+    narration: "The window ends holding two values. The longest it ever held was three, back at the start, and finding that took one pass because each edge crossed the readings once."
+    terminal: true
+    actions:
+      - type: "highlight"
+        objectId: "readings"
+        indices: [0, 1, 2]
+        tone: "success"
+modelCheck:
+  prompt: "The readings are ten times longer. How many times is each value looked at?"
+  options:
+    - id: "twice"
+      label: "About twice: once as it enters the window and once as it leaves"
+    - id: "every-window"
+      label: "Once for every window it belongs to"
+    - id: "depends"
+      label: "It depends on how wide the window grows"
+  correctOptionId: "twice"
+  explanation: "Each edge only ever moves forward, so across the whole pass the front edge visits each position once and the back edge visits each position once. The window may grow and shrink many times, but no value is ever revisited, which is why the total work is proportional to the length of the readings and not to the width the window reaches."
+accessibility:
+  summary: "An animation of a window growing to take in values while a total stays within a budget, and its front edge coming up whenever the budget is exceeded."
+  initialDescription: "Five readings with a window holding only the first, and the question asking for the longest stretch totalling at most 6."
+  motionEquivalentLabel: "The window growing and shrinking, step by step"
+evidence:
+  verifiedOn: "2026-08-15"
+  scope: "Describes a window over a sequence of non-negative values with a monotonic condition, and one pass with both edges moving forward only. Negative values, and conditions that are not monotonic in the window's contents, are out of scope."
+  sources:
+    - title: "Competitive Programmer's Handbook, chapter 8: Amortized analysis"
+      citation: "Laaksonen, Antti. Competitive Programmer's Handbook, chapter 8."
+      publisher: "Antti Laaksonen"
+      accessedOn: "2026-08-15"
+      supports:
+        - "Two indices move through an array from left to right, and neither ever moves backward, so the total number of moves is proportional to the length of the array."
+        - "The window's contents are updated as each edge moves rather than recomputed for each position."
+    - title: "Introduction to Algorithms, fourth edition, chapter 17: Amortized Analysis"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 17."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-15"
+      supports:
+        - "The total cost of a sequence of operations can be bounded in aggregate even when an individual operation is expensive."
