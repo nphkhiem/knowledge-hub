@@ -118,7 +118,8 @@ test("describes an empty catalog without throwing", () => {
 });
 
 test("the declared total matches the approved collection size", () => {
-  // CONTEXT.md: Interview Foundations is exactly fifteen lessons, seven DSA,
-  // two networking, and six system design. Pinned so it cannot drift silently.
-  expect(INTERVIEW_FOUNDATIONS_TOTAL).toBe(15);
+  // CONTEXT.md: Interview Foundations is twenty-five lessons, all of them DSA,
+  // revised 2026-08-15 from an approved fifteen that the ticketed curriculum
+  // had already outgrown. Pinned so it cannot drift silently.
+  expect(INTERVIEW_FOUNDATIONS_TOTAL).toBe(25);
 });

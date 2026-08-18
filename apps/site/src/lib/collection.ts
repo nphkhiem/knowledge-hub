@@ -1,14 +1,22 @@
 import type { CompiledLesson } from "@knowledge-hub/lesson-compiler";
 
 /**
- * The planned size of Interview Foundations, from `CONTEXT.md`: fifteen
- * lessons, seven DSA, two networking, and six system design.
+ * The planned size of Interview Foundations, from `CONTEXT.md`: twenty-five
+ * lessons, all of them data structures and algorithms.
+ *
+ * This replaced an approved fifteen, split seven DSA, two networking and six
+ * system design, on 2026-08-15. The DSA curriculum ticketed as C00 through C24
+ * is twenty-five lessons on its own, and eleven were already published, so the
+ * old figure was three lessons away from reporting a half-written path as
+ * finished. The networking and system design lessons the collection used to
+ * promise have no tickets and no content, so the promise now names only what
+ * exists as a plan; adding them later means raising this and saying so.
  *
  * This is the one figure Home cannot derive from data, because an unpublished
  * lesson has no files to count. A test pins it to the approved number so it
  * cannot drift away from the collection it describes.
  */
-export const INTERVIEW_FOUNDATIONS_TOTAL = 15;
+export const INTERVIEW_FOUNDATIONS_TOTAL = 25;
 
 /** One lesson as a collection listing needs it. */
 export interface CollectionEntry {

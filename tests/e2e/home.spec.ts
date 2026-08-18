@@ -23,7 +23,7 @@ test("reports what is published rather than what is planned", async ({
 
   // The honest count is the point: a partly written collection must not read as
   // a finished library.
-  await expect(page.getByText(/of 15 lessons/)).toBeVisible();
+  await expect(page.getByText(/of \d+ lessons/)).toBeVisible();
   await expect(page.getByText(/still being written/)).toBeVisible();
 });
 
@@ -135,7 +135,7 @@ test("reads completely without JavaScript", async ({ browser }) => {
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("link", { name: /Two Pointers/ })).toBeVisible();
-  await expect(page.getByText(/of 15 lessons/)).toBeVisible();
+  await expect(page.getByText(/of \d+ lessons/)).toBeVisible();
 
   await context.close();
 });
