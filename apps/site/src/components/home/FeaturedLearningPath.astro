@@ -36,7 +36,11 @@ const composition = summary.domains.map(domainLabel).join(", ");
             <strong>
               {`${summary.publishedCount} of ${summary.totalCount} lessons`}
             </strong>
-            {`published so far, ${summary.totalMinutes} minutes of reading in ${composition}. The rest are still being written.`}
+            {/* The leading space belongs inside the literal. JSX drops
+                whitespace between a closing tag and an expression, and this
+                line has now shipped wrong twice: once with a doubled space,
+                once with none. */}
+            {` published so far, ${summary.totalMinutes} minutes of reading in ${composition}. The rest are still being written.`}
           </p>
 
           <ol class="lesson-list">

@@ -27,6 +27,26 @@ test("reports what is published rather than what is planned", async ({
   await expect(page.getByText(/still being written/)).toBeVisible();
 });
 
+test("reads the progress sentence as a sentence", async ({ page }) => {
+  await page.goto(HOME);
+
+  /**
+   * The count and the rest of the sentence come from two nodes, and JSX drops
+   * whitespace between a closing tag and an expression. This line has shipped
+   * wrong twice: once reading "2 of 15 lessons  published" with a doubled
+   * space, and once with the count running straight into the word after it.
+   *
+   * The tests above did not catch either, because a substring match on "of 15
+   * lessons" passes whatever follows it. This pins the whole sentence, so the
+   * spacing has somewhere to fail.
+   */
+  const progress = (await page.locator("p.progress").textContent()) ?? "";
+
+  expect(progress.trim()).toMatch(
+    /^\d+ of \d+ lessons published so far, \d+ minutes of reading in [^.]+\. The rest are still being written\.$/,
+  );
+});
+
 test("lists published lessons in their recommended order", async ({ page }) => {
   await page.goto(HOME);
 

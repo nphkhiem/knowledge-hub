@@ -242,6 +242,20 @@ That is now three tickets in a row where the audit was worth running, and two wh
 
 **3 and 4** were defended by their assertions and needed no changes.
 
+## Item 5 shipped wrong a second time, found 2026-08-15
+
+The doubled space recorded in the two-lesson review was fixed by deleting the space rather than moving it inside the literal. Home has since rendered the count running straight into the word after it, with no space at all, live, for an unknown number of lessons.
+
+Two things kept it hidden, and both are worth naming.
+
+**The tests matched a substring.** `getByText(/of 15 lessons/)` passes whatever follows "lessons", so neither spelling of the bug could fail it. There is now a test pinning the whole sentence, and reverting the fix fails exactly that test and nothing else.
+
+**Every aggregate review in this document checked the wrong text.** The reviews at six, seven, eight, nine, ten, and eleven lessons all reported the summary sentences as correct. They were read by stripping tags with a regex that replaces each tag with a space, which *inserts* a space exactly where the markup was missing one. The method could not detect this class of defect and quietly manufactured a pass.
+
+The count, the arithmetic, and the plurals in those reviews were genuinely checked and genuinely correct. The spacing was not checked at all, on any of them.
+
+**What to do when item 5 trips from now on:** read the sentence out of a browser with `textContent`, not out of the HTML with a tag-stripping regex, and look at the whitespace rather than the numbers.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
