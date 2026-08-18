@@ -37,6 +37,26 @@ async function renderedPositions(page: Page, path: string): Promise<number[]> {
     );
 }
 
+/**
+ * The same numerals, split by the list each belongs to.
+ *
+ * A surface may carry several lists, and the domain page does: it groups
+ * lessons under a heading per difficulty. Each list ordinates itself, so the
+ * numerals restart under each heading rather than running on across them.
+ */
+async function positionsPerList(page: Page, path: string): Promise<number[][]> {
+  await page.goto(path);
+  return page
+    .locator("ol.lesson-list")
+    .evaluateAll((lists) =>
+      lists.map((list) =>
+        [...list.querySelectorAll("[data-lesson-slug] .position")].map((node) =>
+          Number((node.textContent ?? "").trim()),
+        ),
+      ),
+    );
+}
+
 test("ASSERTION: path surfaces number lessons by declared order", async ({
   page,
 }) => {
@@ -64,12 +84,35 @@ test("ASSERTION: list surfaces number lessons sequentially", async ({
   const catalog = await readCatalog(page);
   const sequential = catalog.map((_, index) => index + 1);
 
+  // Explore is one list, so its numerals run straight through.
   expect(await renderedPositions(page, "explore/")).toEqual(sequential);
 
-  const dsa = catalog.filter((lesson) => lesson.domain === "dsa");
-  expect(await renderedPositions(page, "domains/dsa/")).toEqual(
-    dsa.map((_, index) => index + 1),
-  );
+  /**
+   * The domain page is not one list. It groups lessons under a heading per
+   * difficulty, and each group is its own ordered list that ordinates itself.
+   *
+   * This assertion read the whole page as one list until the tenth lesson,
+   * which was the first that is not `easy`, opened a second group starting at
+   * one. The rule it defends is that a list has no arbitrary gaps, and a
+   * restart under a new heading is not a gap: numbering the second group from
+   * ten would produce a list whose first item is 10, which reads worse than
+   * the restart does. So the rule is per list, and the page-wide reading was
+   * an accident of every lesson having shared one difficulty.
+   */
+  const perList = await positionsPerList(page, "domains/dsa/");
+  const dsaCount = catalog.filter((lesson) => lesson.domain === "dsa").length;
+
+  expect({
+    everyListOrdinatesItself: perList.every((list) =>
+      list.every((numeral, index) => numeral === index + 1),
+    ),
+    listsAreNotEmpty: perList.every((list) => list.length > 0),
+    totalNumbered: perList.reduce((count, list) => count + list.length, 0),
+  }).toEqual({
+    everyListOrdinatesItself: true,
+    listsAreNotEmpty: true,
+    totalNumbered: dsaCount,
+  });
 });
 
 test("ASSERTION: a lesson with a published neighbor offers a link to it", async ({
@@ -120,5 +163,5 @@ test("PROMPT: review the five catalog assumptions once a second lesson exists", 
   expect(
     catalog.length,
     "The catalog grew. Work through docs/catalog-assumptions.md items 1, 2, and 5, then raise this number.",
-  ).toBe(9);
+  ).toBe(10);
 });

@@ -192,6 +192,32 @@ It will block later lessons. **C17 Heap** must show values moving into place, **
 
 **3 and 4** were defended by their assertions and needed no changes.
 
+## Reviewed at ten lessons, 2026-08-15
+
+"Dynamic Sliding Window" was the ninth growth, and the first lesson graded anything other than `easy`. That single fact fired an assertion that had been vacuous for nine lessons.
+
+**3, displayed position. The assertion fired for real, and it needed a decision rather than a fix.** The domain page does not render one list. It groups lessons under a heading per difficulty, and each group is its own ordered list. Every lesson until now was `easy`, so there was one group and the page happened to read as a single list numbered 1 to 9. The tenth lesson opened a second group, which started again at 01, and the assertion caught it.
+
+**The decision: each list ordinates itself.** The rule this item defends is that a list has no arbitrary gaps, and a restart under a new heading is not a gap. Numbering the medium group from ten would produce a list whose first item is 10, which reads worse than the restart does. The assertion now checks positions per list rather than across the page, and the page-wide reading is recorded as an accident of every lesson having shared one difficulty.
+
+This is the first time one of the two assertions has fired on a real change rather than being vacuously satisfied. It behaved exactly as designed: it could not be silenced without deciding what a reader should see.
+
+**1, ranking. One defect, found by the pre-authoring check rather than after the fact.** `grow` and `shrink` returned nothing for this lesson, although growing and shrinking is literally how its own ticket describes it. Its recognition signal said "extending" and "shortening". Reworded to "Growing the stretch can only break the condition, and shrinking it from the front can only help", which keeps the monotonic meaning and uses the words a learner types. `shrink` now returns this lesson first.
+
+Left alone: `longest` returns the Queue lesson first and this one second. Both match on a recognition signal, and the tie breaks on reading order. Both genuinely use the word, and contorting either to win the query would be worse than the tie.
+
+**2, schema generality. A prediction made at C04 paid off five lessons later.** C04 built the window as a **range** rather than a start and a width, explicitly so that a lesson needing a changing width could extend the shape instead of replacing it. This lesson is that case, and the primitive needed no change at all: only a third action, `advance`, and no renderer work, because a window already draws any range.
+
+The window now carries three actions whose differing refusals are the design: `slide` refuses to change the width, `narrow` refuses to escape the current range, `advance` refuses to move either edge backward. Each refusal is the claim of the lesson that uses it.
+
+**5, aggregates.** Correct at ten: "10 of 15 lessons published so far, 41 minutes of reading in DSA". This is the first lesson with a duration other than four minutes, so the total is the first that is not a simple multiple, and it adds up.
+
+**The denominator problem is now five lessons away** and still needs a decision before C14.
+
+**7 recurred a fourth time.** `tests/e2e/domains.spec.ts` asserted that the difficulty headings were exactly `["difficulty-easy"]`. That is catalog composition in disguise, and it broke on the first lesson graded otherwise. Rewritten to assert every group is a known difficulty and the groups run in graded order, which is what the test's own comment says it cares about.
+
+Two tests in two reviews have now encoded catalog composition rather than catalog size. The general form of item 7 is wider than first written: **an assertion about what the catalog contains, not only how much it contains, rots as content lands.**
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
