@@ -278,6 +278,26 @@ The denominator now says twenty-five and names only DSA. The problem recorded in
 
 **3 and 4** were defended by their assertions and needed no changes.
 
+## Reviewed at thirteen lessons, 2026-08-15
+
+"Interval Merging" was the twelfth growth.
+
+**1, ranking. A gap that a title cannot close, and that is the finding.** Searching `merge` returned **nothing**, on a lesson called "Interval Merging".
+
+The score is a substring test, and `merge` is not a substring of `merging`: the shared prefix runs out at `merg`. A title that contains a word's stem does not make the word findable, and the author's instinct that the title covers it is wrong in exactly this case. Added `merge` to a recognition signal, and it now returns the lesson first.
+
+This is worth stating generally, because it will recur: **check the words a learner types, not the words the title contains.** `sort` matches `Sorting` because it is a prefix; `merge` does not match `Merging` because it is not. Nothing about the title tells you which case you are in.
+
+`overlap` returns Fixed Sliding Window first, then this lesson, both on recognition-signal matches broken by reading order. Both genuinely match: one lesson is about groups that overlap in all but their ends, the other about spans that overlap arbitrarily. Left alone.
+
+**2, schema generality. The ticket was right, and the audit that confirmed it is worth keeping.** A window is already a range, so reusing windows for intervals looks viable. It is not: a window draws at one fixed height with its label at one fixed offset, so two of them collide precisely where their ranges overlap, and overlapping is the entire subject. The new primitive draws each span on its own row against a shared axis.
+
+That is six tickets audited: three had the wrong primitive-work line, three were right. The audit has never been wasted, because on the three correct ones it produced the reason the primitive is needed, which is what the design then had to satisfy.
+
+**5, aggregates.** Correct at thirteen: "13 of 25 lessons published, 56 minutes", read from a browser rather than a tag-stripping regex.
+
+**3 and 4** were defended by their assertions and needed no changes.
+
 ## Why this exists as tests rather than a note
 
 Earlier notes about this project went stale without anyone noticing: a roadmap whose checkboxes lagged reality by two milestones, a handoff describing an administrator bypass that never existed, and design documents describing a feature deleted the day before. Each was prose, and prose does not fail.
