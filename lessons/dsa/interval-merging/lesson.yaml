@@ -1,0 +1,106 @@
+schemaVersion: 1
+id: "dsa.interval-merging"
+slug: "interval-merging"
+domain: "dsa"
+collection: "interview-foundations"
+order: 13
+difficulty: "medium"
+license: "CC-BY-4.0"
+title: "Interval Merging"
+durationMinutes: 5
+objective: "Explain why sorting spans by where they begin turns overlap into a question about neighbors, so one sweep combines everything that touches."
+recognitionSignals:
+  - "The data is spans with a start and an end, and some of them overlap."
+  - "Overlapping spans should merge into one, or the free gaps between them are the answer."
+  - "Comparing every span with every other is the obvious approach and grows with the square."
+  - "Once sorted by where they begin, anything that overlaps a span is right next to it."
+limitations:
+  - "Sorting by start is the precondition. On unsorted spans the sweep runs happily and returns a wrong answer, because overlap is no longer a question about neighbors."
+  - "It combines spans that touch. Whether two that merely meet at an endpoint should merge is a decision about the data, not a fact, and calendars and number ranges answer it differently."
+content:
+  quickUnderstanding: "quick-understanding.md"
+  realWorldApplications: "real-world-applications.md"
+  deepDive: "deep-dive.md"
+  examples:
+    - language: "python"
+      file: "examples/merge_spans.py"
+    - language: "typescript"
+      file: "examples/merge-spans.ts"
+    - language: "java"
+      file: "examples/MergeSpans.java"
+    - language: "cpp"
+      file: "examples/merge_spans.cpp"
+    - language: "go"
+      file: "examples/merge_spans.go"
+scene:
+  objects:
+    - id: "bookings"
+      kind: "intervals"
+      label: "Bookings, sorted by when they begin"
+      span: 14
+      entries:
+        - start: 1
+          end: 3
+        - start: 2
+          end: 6
+        - start: 5
+          end: 8
+        - start: 10
+          end: 12
+        - start: 11
+          end: 13
+    - id: "question"
+      kind: "label"
+      text: "Which hours are actually busy?"
+timeline:
+  - id: "first-overlap"
+    narration: "The first booking ends at 3 and the second begins at 2, so they overlap. They become one booking from 1 to 6."
+    actions:
+      - type: "merge"
+        objectId: "bookings"
+        at: 1
+  - id: "it-keeps-growing"
+    narration: "The merged booking now ends at 6, and the next begins at 5. Still overlapping, so it grows again, to 1 through 8. Only the end ever moves: the start was fixed the moment the group opened."
+    actions:
+      - type: "merge"
+        objectId: "bookings"
+        at: 1
+  - id: "a-gap-ends-the-group"
+    narration: "1 to 8 and 10 to 12 leave hours 9 free, so the group closes and a new one opens. The last two overlap and join it, giving 10 to 13. Two groups, one sweep, and every booking looked at once."
+    terminal: true
+    actions:
+      - type: "merge"
+        objectId: "bookings"
+        at: 2
+modelCheck:
+  prompt: "The bookings arrive in no particular order and the sweep is run on them as they are. What happens?"
+  options:
+    - id: "wrong-answer"
+      label: "It returns an answer, and the answer is wrong"
+    - id: "error"
+      label: "It fails, because it cannot compare unsorted spans"
+    - id: "fine"
+      label: "It works, since overlap does not depend on order"
+  correctOptionId: "wrong-answer"
+  explanation: "Sorting is what makes overlap a question about neighbors. Without it two spans that overlap can sit far apart in the list, the sweep never compares them, and it reports them as separate. Nothing detects this: the output is a shorter, plausible list of spans that happens to be wrong, which is why the ordering is a precondition rather than an optimization."
+accessibility:
+  summary: "An animation of booking spans drawn on a shared timeline, where overlapping ones combine into a single longer span and a gap between them starts a new group."
+  initialDescription: "Five bookings on a fourteen-hour timeline, sorted by when they begin, with three overlapping near the start and two more overlapping later."
+  motionEquivalentLabel: "Spans combining, step by step"
+evidence:
+  verifiedOn: "2026-08-15"
+  scope: "Describes combining closed intervals on one dimension after sorting by start. Interval trees, stabbing queries, and multi-dimensional rectangles are out of scope."
+  sources:
+    - title: "Introduction to Algorithms, fourth edition, chapter 17: Augmenting Data Structures, interval trees"
+      citation: "Cormen, Leiserson, Rivest, and Stein. Introduction to Algorithms, 4th ed. MIT Press, 2022, chapter 17."
+      publisher: "MIT Press"
+      accessedOn: "2026-08-15"
+      supports:
+        - "Two closed intervals overlap exactly when each one's start is no greater than the other's end."
+        - "Intervals are kept ordered by their low endpoint so that queries about overlap become comparisons against neighbors."
+    - title: "Computational Geometry: Algorithms and Applications, third edition, chapter 2: Line Segment Intersection"
+      citation: "de Berg, Cheong, van Kreveld, and Overmars. Computational Geometry: Algorithms and Applications, 3rd ed. Springer, 2008, chapter 2."
+      publisher: "Springer"
+      accessedOn: "2026-08-15"
+      supports:
+        - "A sweep processes events in sorted order so that only currently active objects need to be considered at each step."
