@@ -1,4 +1,5 @@
 import {
+  INTERVAL_CAPACITY,
   QUEUE_CAPACITY,
   STACK_CAPACITY,
   type CompiledSceneObject,
@@ -14,6 +15,7 @@ import { createRenderContext } from "../geometry.js";
 import { primitiveContracts } from "../renderSnapshot.js";
 import { DRAWN_DEPTH } from "./stack.js";
 import { DRAWN_WIDTH } from "./queue.js";
+import { DRAWN_ROWS } from "./intervals.js";
 
 const untrustedText = "<script>alert(1)</script>";
 const escapedText = "&lt;script&gt;alert(1)&lt;/script&gt;";
@@ -185,6 +187,50 @@ function queueSceneOf(queue: CompiledSceneObject): SemanticSnapshot {
 
 const queueSnapshot = queueSceneOf(queueObject);
 
+/** Intervals claim a row and draw their own bars, so they get their own scene. */
+const intervalsObject: CompiledSceneObject = {
+  id: "bookings",
+  kind: "intervals",
+  visible: true,
+  label: "Bookings",
+  span: 12,
+  entries: [
+    { start: 1, end: 3 },
+    { start: 2, end: 6 },
+    { start: 8, end: 10 },
+  ],
+};
+
+/** The same primitive at its fullest and widest, for the bounds check. */
+const fullIntervals: CompiledSceneObject = {
+  ...intervalsObject,
+  span: 40,
+  entries: [
+    { start: 0, end: 40 },
+    { start: 5, end: 39 },
+    { start: 10, end: 38 },
+    { start: 15, end: 37 },
+    { start: 20, end: 36 },
+    { start: 25, end: 35 },
+  ],
+} as CompiledSceneObject;
+
+const emptyIntervals: CompiledSceneObject = {
+  ...intervalsObject,
+  entries: [],
+} as CompiledSceneObject;
+
+const untrustedIntervals: CompiledSceneObject = {
+  ...intervalsObject,
+  label: untrustedText,
+} as CompiledSceneObject;
+
+function intervalsSceneOf(node: CompiledSceneObject): SemanticSnapshot {
+  return { ...resolvedSnapshot, objects: [node], highlights: {} };
+}
+
+const intervalsSnapshot = intervalsSceneOf(intervalsObject);
+
 function objectOfKind(
   snapshot: SemanticSnapshot,
   kind: CompiledSceneObject["kind"],
@@ -217,6 +263,7 @@ const untrustedSnapshot = mapObjects(resolvedSnapshot, (object) => {
     case "window":
     case "stack":
     case "queue":
+    case "intervals":
       return { ...object, label: untrustedText };
     case "label":
       return { ...object, text: untrustedText };
@@ -240,6 +287,7 @@ const authorTextKinds: ReadonlySet<CompiledSceneObject["kind"]> = new Set([
   "window",
   "stack",
   "queue",
+  "intervals",
   "label",
 ]);
 
@@ -274,6 +322,30 @@ function contractFor(
           createRenderContext(bucketsSnapshot, "static"),
         ),
       renderUntrusted: () => primitive.render(untrustedBuckets, hostile),
+    };
+  }
+  if (kind === "intervals") {
+    const scene = createRenderContext(intervalsSnapshot, "interactive");
+    const widest = createRenderContext(
+      intervalsSceneOf(fullIntervals),
+      "interactive",
+    );
+    const hostile = createRenderContext(
+      intervalsSceneOf(untrustedIntervals),
+      "interactive",
+    );
+    return {
+      accepts: (object) => primitive.accepts(object),
+      describe: (object) => primitive.describe(object, scene),
+      kind,
+      renderInteractive: (object) => primitive.render(object, scene),
+      renderNarrow: () => primitive.render(fullIntervals, widest),
+      renderStatic: (object) =>
+        primitive.render(
+          object,
+          createRenderContext(intervalsSnapshot, "static"),
+        ),
+      renderUntrusted: () => primitive.render(untrustedIntervals, hostile),
     };
   }
   if (kind === "queue") {
@@ -361,6 +433,7 @@ const foreignKinds: Readonly<
   window: "array",
   stack: "array",
   queue: "array",
+  intervals: "array",
   result: "comparison",
 };
 
@@ -371,6 +444,7 @@ const fixtureObjects: Partial<
   window: windowObject,
   stack: stackObject,
   queue: queueObject,
+  intervals: intervalsObject,
 };
 
 for (const kind of [
@@ -380,6 +454,7 @@ for (const kind of [
   "window",
   "stack",
   "queue",
+  "intervals",
   "label",
   "comparison",
   "result",
@@ -484,5 +559,48 @@ describe("queue primitive, beyond the shared contract", () => {
       back: markup.includes(">back<"),
       front: markup.includes("front, next out"),
     }).toEqual({ back: false, front: true });
+  });
+});
+
+describe("intervals primitive, beyond the shared contract", () => {
+  const scene = createRenderContext(intervalsSnapshot, "interactive");
+  const intervals = primitiveContracts.intervals;
+
+  test("states every span in text, not only as a bar", () => {
+    // Overlap is the subject, and a reader who cannot see the bars still has
+    // to be able to tell that two of these overlap.
+    expect(intervals.describe(intervalsObject, scene)).toBe(
+      "Bookings: 3 intervals, 1 to 3, 2 to 6, 8 to 10",
+    );
+  });
+
+  test("draws each interval on its own row so overlaps stay legible", () => {
+    const markup = intervals.render(intervalsObject, scene);
+    const rows = [
+      ...markup.matchAll(/data-interval-index="(\d+)" x="[^"]*" y="([^"]*)"/g),
+    ];
+
+    expect({
+      count: rows.length,
+      distinctRows: new Set(rows.map((row) => row[2])).size,
+    }).toEqual({ count: 3, distinctRows: 3 });
+  });
+
+  test("reserves room for exactly as many intervals as an author may write", () => {
+    expect(DRAWN_ROWS).toBe(INTERVAL_CAPACITY);
+  });
+
+  test("says so when nothing is left rather than drawing a bare axis", () => {
+    const emptyScene = createRenderContext(
+      intervalsSceneOf(emptyIntervals),
+      "interactive",
+    );
+
+    expect({
+      describes: intervals.describe(emptyIntervals, emptyScene),
+      saysSo: intervals
+        .render(emptyIntervals, emptyScene)
+        .includes(">nothing left<"),
+    }).toEqual({ describes: "Bookings: nothing left", saysSo: true });
   });
 });

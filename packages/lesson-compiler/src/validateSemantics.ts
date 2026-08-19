@@ -95,6 +95,25 @@ export function validateLessonSemantics(
         }
       }
     }
+    if (object.kind === "intervals") {
+      for (const [entryIndex, entry] of object.entries.entries()) {
+        if (entry.end < entry.start) {
+          diagnostics.push({
+            code: "reference.invalid",
+            file,
+            path: `scene.objects[${objectIndex}].entries[${entryIndex}].end`,
+            message: `Interval ${entry.start} to ${entry.end} of "${object.id}" ends before it starts.`,
+          });
+        } else if (entry.end > object.span) {
+          diagnostics.push({
+            code: "reference.invalid",
+            file,
+            path: `scene.objects[${objectIndex}].entries[${entryIndex}].end`,
+            message: `Interval ${entry.start} to ${entry.end} of "${object.id}" reaches past its axis of ${object.span}.`,
+          });
+        }
+      }
+    }
     if (object.kind === "comparison") {
       // The second pointer is checked only when the comparison declares one. A
       // comparison that weighs a single probed value has none to resolve.

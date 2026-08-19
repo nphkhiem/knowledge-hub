@@ -14,6 +14,7 @@ export const primitiveKindSchema = z.enum([
   "window",
   "stack",
   "queue",
+  "intervals",
   "label",
   "comparison",
   "result",
@@ -137,6 +138,38 @@ export const queuePrimitiveSchema = z.strictObject({
   label: z.string().min(1),
   entries: z.array(z.string().min(1).max(24)).max(QUEUE_CAPACITY),
 });
+/**
+ * How many intervals a figure may hold, and how long its axis may be.
+ *
+ * Figure limits like the stack's. Each interval is drawn on its own row so that
+ * overlapping ones stay legible, which is the entire reason this is not a set
+ * of windows: two windows over one array draw at the same height and collide
+ * exactly where intervals are most interesting.
+ */
+export const INTERVAL_CAPACITY = 6;
+export const INTERVAL_MAX_SPAN = 40;
+
+/**
+ * Ranges on a shared axis, each drawn on its own row.
+ *
+ * Bounds are inclusive and measured in axis units rather than array indices,
+ * because an interval is a span of something continuous, like time, rather than
+ * a selection of cells.
+ */
+export const intervalsPrimitiveSchema = z.strictObject({
+  id: objectIdSchema,
+  kind: z.literal("intervals"),
+  label: z.string().min(1),
+  span: z.number().int().min(1).max(INTERVAL_MAX_SPAN),
+  entries: z
+    .array(
+      z.strictObject({
+        start: z.number().int().min(0),
+        end: z.number().int().min(0),
+      }),
+    )
+    .max(INTERVAL_CAPACITY),
+});
 export const resultPrimitiveSchema = z.strictObject({
   id: objectIdSchema,
   kind: z.literal("result"),
@@ -150,6 +183,7 @@ export const primitiveSchema = z.discriminatedUnion("kind", [
   windowPrimitiveSchema,
   stackPrimitiveSchema,
   queuePrimitiveSchema,
+  intervalsPrimitiveSchema,
   labelPrimitiveSchema,
   comparisonPrimitiveSchema,
   resultPrimitiveSchema,
@@ -266,6 +300,20 @@ export const advanceActionSchema = z.strictObject({
   toEnd: z.number().int().min(0),
 });
 
+/**
+ * Absorbs one interval into the one before it.
+ *
+ * `at` names the interval that disappears. The compiler rejects a merge whose
+ * two intervals neither overlap nor touch, because merging across a gap is the
+ * opposite of what interval merging means and a lesson doing it would teach the
+ * wrong thing while every test still passed.
+ */
+export const mergeActionSchema = z.strictObject({
+  type: z.literal("merge"),
+  ...actionTargetSchema,
+  at: z.number().int().min(0),
+});
+
 /** Places an entry on the top of a stack. */
 export const pushActionSchema = z.strictObject({
   type: z.literal("push"),
@@ -301,6 +349,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   slideActionSchema,
   narrowActionSchema,
   advanceActionSchema,
+  mergeActionSchema,
   pushActionSchema,
   popActionSchema,
 ]);

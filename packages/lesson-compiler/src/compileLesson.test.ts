@@ -1974,3 +1974,168 @@ test("rejects advancing something that is not a window", () => {
     'Action "advance" requires a window, but "readings" resolves to an array.',
   );
 });
+
+function intervalsSource(
+  actions: readonly unknown[],
+  entries: readonly (readonly [number, number])[] = [
+    [1, 3],
+    [2, 6],
+    [8, 10],
+  ],
+): LessonSourceV1 {
+  const migrated = migrateLessonSource(
+    {
+      ...validTwoPointersSource,
+      scene: {
+        objects: [
+          {
+            id: "bookings",
+            kind: "intervals",
+            label: "Bookings",
+            span: 12,
+            entries: entries.map(([start, end]) => ({ start, end })),
+          },
+        ],
+      },
+      timeline: [
+        {
+          id: "only",
+          narration: "Merge what overlaps.",
+          terminal: true,
+          actions,
+        },
+      ],
+    },
+    "lesson.yaml",
+  );
+  if (!migrated.ok) {
+    throw new Error("Expected the intervals fixture to be valid.");
+  }
+  return migrated.value;
+}
+
+function compiledIntervals(
+  compiled: ReturnType<typeof compileLesson>,
+): readonly (readonly [number, number])[] | undefined {
+  if (!compiled.ok) return undefined;
+  const last = compiled.value.snapshots
+    .at(-1)
+    ?.objects.find((object) => object.kind === "intervals");
+  return last?.kind === "intervals"
+    ? last.entries.map((entry) => [entry.start, entry.end] as const)
+    : undefined;
+}
+
+test("merges an interval into the one before it", () => {
+  const compiled = compileLesson(
+    intervalsSource([{ type: "merge", objectId: "bookings", at: 1 }]),
+    compiledContent,
+  );
+
+  // [1,3] and [2,6] overlap, so they become [1,6]. [8,10] is untouched.
+  expect(compiledIntervals(compiled)).toEqual([
+    [1, 6],
+    [8, 10],
+  ]);
+});
+
+test("merges intervals that only touch at an endpoint", () => {
+  const compiled = compileLesson(
+    intervalsSource(
+      [{ type: "merge", objectId: "bookings", at: 1 }],
+      [
+        [1, 4],
+        [4, 7],
+      ],
+    ),
+    compiledContent,
+  );
+
+  expect(compiledIntervals(compiled)).toEqual([[1, 7]]);
+});
+
+test("keeps the wider end when the absorbed interval ends earlier", () => {
+  // [1,9] swallows [2,4] entirely. The result must not shrink to 4.
+  const compiled = compileLesson(
+    intervalsSource(
+      [{ type: "merge", objectId: "bookings", at: 1 }],
+      [
+        [1, 9],
+        [2, 4],
+      ],
+    ),
+    compiledContent,
+  );
+
+  expect(compiledIntervals(compiled)).toEqual([[1, 9]]);
+});
+
+test("rejects merging intervals that do not overlap or touch", () => {
+  // The one rule this primitive exists to enforce. A lesson that merged a gap
+  // would teach the opposite of what interval merging means.
+  const compiled = compileLesson(
+    intervalsSource([{ type: "merge", objectId: "bookings", at: 2 }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "merge" needs the two intervals of "bookings" to overlap or touch, but 2 to 6 ends before 8 begins.',
+  );
+});
+
+test("rejects merging the first interval, which has nothing before it", () => {
+  const compiled = compileLesson(
+    intervalsSource([{ type: "merge", objectId: "bookings", at: 0 }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "merge" cannot merge the first interval of "bookings" into anything.',
+  );
+});
+
+test("rejects merging past the end of the list", () => {
+  const compiled = compileLesson(
+    intervalsSource([{ type: "merge", objectId: "bookings", at: 9 }]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("rejects merging something that is not intervals", () => {
+  const compiled = compileLesson(
+    sourceWithTerminalAction({ type: "merge", objectId: "values", at: 1 }),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+  if (compiled.ok) return;
+  expect(compiled.diagnostics.map(({ message }) => message)).toContain(
+    'Action "merge" requires intervals, but "values" resolves to an array.',
+  );
+});
+
+test("rejects an interval that ends before it starts", () => {
+  // A step needs at least one action, so this carries a harmless one; the
+  // defect being checked is in the authored scene rather than the timeline.
+  const compiled = compileLesson(
+    intervalsSource([{ type: "show", objectId: "bookings" }], [[5, 2]]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
+
+test("rejects an interval reaching past the axis", () => {
+  const compiled = compileLesson(
+    intervalsSource([{ type: "show", objectId: "bookings" }], [[1, 99]]),
+    compiledContent,
+  );
+
+  expect(compiled.ok).toBe(false);
+});
