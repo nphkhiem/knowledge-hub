@@ -132,7 +132,8 @@ export function createRenderContext(
       object.kind === "array" ||
       object.kind === "buckets" ||
       object.kind === "stack" ||
-      object.kind === "queue",
+      object.kind === "queue" ||
+      object.kind === "intervals",
   );
   const cellsOf = (object: (typeof rows)[number]): number => {
     switch (object.kind) {

@@ -362,6 +362,63 @@ export function applyAction(
       });
       return { ok: true, value: state };
     }
+    case "merge": {
+      if (object.kind !== "intervals") {
+        return failure(
+          context,
+          `Action "merge" requires intervals, but "${object.id}" resolves to ${object.kind === "array" ? "an" : "a"} ${object.kind}.`,
+          "reference.wrong-kind",
+          `${context.path}.objectId`,
+        );
+      }
+      if (action.at === 0) {
+        return failure(
+          context,
+          `Action "merge" cannot merge the first interval of "${object.id}" into anything.`,
+          "reference.invalid",
+          `${context.path}.at`,
+        );
+      }
+      const absorbed = object.entries[action.at];
+      const into = object.entries[action.at - 1];
+      if (absorbed === undefined || into === undefined) {
+        return failure(
+          context,
+          `Interval ${action.at} is outside "${object.id}", which holds ${object.entries.length}.`,
+          "reference.invalid",
+          `${context.path}.at`,
+        );
+      }
+      /**
+       * The one rule this primitive exists to enforce. Merging across a gap is
+       * the opposite of what interval merging means, and a lesson doing it
+       * would teach the wrong thing while every other check still passed.
+       * Touching at an endpoint counts as overlapping, because two bookings
+       * that meet leave no free time between them.
+       */
+      if (into.end < absorbed.start) {
+        return failure(
+          context,
+          `Action "merge" needs the two intervals of "${object.id}" to overlap or touch, but ${into.start} to ${into.end} ends before ${absorbed.start} begins.`,
+          "reference.invalid",
+          `${context.path}.at`,
+        );
+      }
+      const merged = {
+        start: Math.min(into.start, absorbed.start),
+        // The absorbed interval may end earlier, so the wider end survives.
+        end: Math.max(into.end, absorbed.end),
+      };
+      replaceObject(state, {
+        ...object,
+        entries: [
+          ...object.entries.slice(0, action.at - 1),
+          merged,
+          ...object.entries.slice(action.at + 1),
+        ],
+      });
+      return { ok: true, value: state };
+    }
     case "push": {
       if (object.kind !== "stack") {
         return failure(

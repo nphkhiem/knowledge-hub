@@ -20,6 +20,7 @@ const supportedActions = [
   "slide",
   "narrow",
   "advance",
+  "merge",
   "push",
   "pop",
 ] as const;
@@ -30,6 +31,7 @@ const supportedPrimitives = [
   "window",
   "stack",
   "queue",
+  "intervals",
   "label",
   "comparison",
   "result",
@@ -72,7 +74,7 @@ function unsupportedActionDiagnostic(input: VersionOneInput, file: string) {
           file,
           path: `timeline[${stepIndex}].actions[${actionIndex}].type`,
           message:
-            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide, narrow, advance, push, pop.",
+            "Supported actions: show, hide, set, move, highlight, compare, connect, disconnect, enqueue, dequeue, insert, slide, narrow, advance, merge, push, pop.",
         };
       }
     }
@@ -103,7 +105,7 @@ function unsupportedPrimitiveDiagnostic(input: VersionOneInput, file: string) {
         file,
         path: `scene.objects[${objectIndex}].kind`,
         message:
-          "Supported primitives: array, buckets, pointer, window, stack, queue, label, comparison, result.",
+          "Supported primitives: array, buckets, pointer, window, stack, queue, intervals, label, comparison, result.",
       };
     }
   }

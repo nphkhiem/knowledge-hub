@@ -74,6 +74,20 @@ export function validateStaticActions(
           }
           break;
         }
+        case "merge": {
+          // Only the kind check. Which intervals sit next to each other, and
+          // whether they overlap, both depend on earlier merges that preflight
+          // does not replay, so applyAction owns those rules alone.
+          if (object.kind !== "intervals") {
+            diagnostics.push({
+              code: "reference.wrong-kind",
+              file,
+              path: `${path}.objectId`,
+              message: `Action "merge" requires intervals, but "${object.id}" resolves to ${primitiveWithArticle(object.kind)}.`,
+            });
+          }
+          break;
+        }
         case "advance": {
           // Only the kind and the inverted-range check are duplicated here.
           // Whether an edge retreats depends on where earlier steps left the

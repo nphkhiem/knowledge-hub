@@ -77,6 +77,17 @@ export type CompiledSceneObject =
       readonly entries: readonly string[];
     })
   | (CompiledSceneObjectBase & {
+      readonly kind: "intervals";
+      readonly label: string;
+      /** How many units the shared axis spans. */
+      readonly span: number;
+      /** Inclusive bounds in axis units, each drawn on its own row. */
+      readonly entries: readonly {
+        readonly start: number;
+        readonly end: number;
+      }[];
+    })
+  | (CompiledSceneObjectBase & {
       readonly kind: "label";
       readonly text: string;
     })
